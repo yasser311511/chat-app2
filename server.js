@@ -46,4 +46,49 @@ io.on("connection", (socket) => {
 });
 // هنا النهاية
 const PORT = process.env.PORT || 3000;
+const users = {}; // { socket.id: { name, muted, banned } }
+
+io.on("connection", (socket) => {
+  console.log("مستخدم جديد:", socket.id);
+
+  // استقبال الاسم من المستخدم
+  socket.on("setUsername", (username) => {
+    users[socket.id] = { name: username, muted: false, banned: false };
+    io.emit("userList", Object.values(users)); // إرسال قائمة للموجودين
+  });
+
+  // عند فصل الاتصال
+  socket.on("disconnect", () => {
+    delete users[socket.id];
+    io.emit("userList", Object.values(users));
+  });
+});
+socket.on("chatMessage", (msg) => {
+  if (users[socket.id].banned) {
+    socket.emit("message", "❌ تم حظرك من الدردشة");
+    socket.disconnect(); // يطرده
+    return;
+  }
+  if (users[socket.id].muted) {
+    socket.emit("message", "🔇 تم كتمك من قبل الإدارة");
+    return;
+  }
+
+  // إذا مو مكتوم ولا محظور → يرسل
+  io.emit("message", `${users[socket.id].name}: ${msg}`);
+});
+socket.on("adminCommand", ({ action, targetName }) => {
+  if (users[socket.id].name !== "admin") return; // بس الادمن يقدر
+
+  const targetSocketId = Object.keys(users).find(
+    (id) => users[id].name === targetName
+  );
+
+  if (!targetSocketId) return;
+
+  if (action === "mute") users[targetSocketId].muted = true;
+  if (action === "unmute") users[targetSocketId].muted = false;
+  if (action === "ban") users[targetSocketId].banned = true;
+});
+
 server.listen(PORT, () => console.log(`🚀 السيرفر شغال على http://localhost:${PORT}`));
