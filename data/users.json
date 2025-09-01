@@ -1,0 +1,14 @@
+{
+  "ahmed": {
+    "password": "ahmed",
+    "gender": "male"
+  },
+  "salem": {
+    "password": "salem",
+    "gender": "male"
+  },
+  "test": {
+    "password": "test",
+    "gender": "male"
+  }
+}

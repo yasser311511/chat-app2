@@ -1,15 +1,29 @@
 {
-"name": "chat-app2",
-"version": "1.0.0",
-"description": "Simple chat app with Node.js, Express, and Socket.IO",
-"main": "server.js",
-"type": "module",
-"scripts": {
-"start": "node server.js",
-"dev": "node --watch server.js"
-},
-"dependencies": {
-"express": "^4.19.2",
-"socket.io": "^4.7.5"
-}
+  "name": "walchat",
+  "version": "1.0.0",
+  "description": "تطبيق دردشة عربي مع نظام رتب وإدارة",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "chat",
+    "arabic",
+    "socket.io",
+    "express",
+    "real-time"
+  ],
+  "author": "Walid dz 31",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
 }

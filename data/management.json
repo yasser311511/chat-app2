@@ -1,0 +1,24 @@
+{
+  "mutedUsers": {
+    "غرفة الإدارة": {
+      "salem": {
+        "mutedBy": "Walid dz 31",
+        "expiresAt": "2025-08-31T19:53:55.847Z"
+      },
+      "ahmed": {
+        "mutedBy": "Walid dz 31",
+        "expiresAt": "2025-09-01T08:54:04.056Z"
+      }
+    }
+  },
+  "bannedFromRoom": {
+    "غرفة الإدارة": {
+      "ahmed": {
+        "bannedBy": "Walid dz 31",
+        "reason": "غير محدد",
+        "bannedAt": "2025-09-01T08:50:36.607Z"
+      }
+    }
+  },
+  "bannedFromSite": {}
+}

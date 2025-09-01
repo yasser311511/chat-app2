@@ -1,40 +1,1328 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>chat-app2</title>
-  <link rel="stylesheet" href="/style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WalChat</title>
+    <link rel="icon" href="icon.png" type="image/png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
+        body { font-family: 'Cairo', sans-serif; }
+        .chat-message {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .form-container { transition: all 0.3s ease; }
+        .tab-button { transition: all 0.2s ease; }
+        .avatar-option { transition: all 0.2s ease; }
+        .avatar-option:hover { transform: scale(1.1); }
+        .avatar-option.selected { border: 3px solid #3B82F6; }
+        .notification {
+            animation: notificationSlide 0.5s ease-out, notificationFade 5s forwards;
+        }
+        @keyframes notificationSlide {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes notificationFade {
+            0%, 70% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+        .rank-badge {
+            background: linear-gradient(45deg, #3B82F6, #8B5CF6);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            margin-left: 5px;
+        }
+        .messages-container {
+            height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+    
+        .users-container {
+            height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+    
+        /* نضمن أن المحتوى الرئيسي لا ينزاح */
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        @media (max-width: 768px) {
+            .users-container {
+                position: fixed;
+                top: 0;
+                right: -100%;
+                width: 80%;
+                height: 100vh;
+                z-index: 50;
+                transition: right 0.3s ease;
+                background: rgba(15, 23, 42, 0.95);
+                backdrop-filter: blur(10px);
+                padding: 1rem;
+            }
+            
+            .users-container.show {
+                right: 0;
+            }
+            
+            .users-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 40;
+            }
+            
+            .users-overlay.show {
+                display: block;
+            }
+        }
+    </style>
 </head>
-<body>
-  <div class="app">
-    <aside class="sidebar">
-      <h2>المتصلون الآن</h2>
-      <ul id="online"></ul>
-    </aside>
+<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen">
+    <!-- صفحة تسجيل الدخول -->
+    <div id="loginPage" class="min-h-screen flex items-center justify-center px-4">
+        <div class="bg-white/10 backdrop-blur-lg rounded-3xl p-8 max-w-md w-full border border-white/20 shadow-2xl">
+            <div class="text-center mb-8">
+                <div class="text-6xl mb-4">💬</div>
+                <h1 class="text-3xl font-bold text-white mb-2">WalChat</h1>
+                <p class="text-blue-200">سجل دخولك للانضمام إلى المحادثة</p>
+            </div>
 
-    <main class="chat">
-      <header class="chat__header">
-        <h1>chat-app2</h1>
-        <div class="username">
-          <input id="username" type="text" maxlength="20" placeholder="اكتب اسمك" />
-          <button id="joinBtn">دخول</button>
+            <!-- أزرار التبديل -->
+            <div class="flex bg-white/10 rounded-xl p-1 mb-6">
+                <button id="loginTab" class="tab-button flex-1 py-2 px-4 rounded-xl font-semibold bg-blue-600 text-white">تسجيل الدخول</button>
+                <button id="registerTab" class="tab-button flex-1 py-2 px-4 rounded-xl font-semibold text-blue-200">إنشاء حساب</button>
+            </div>
+
+            <!-- نموذج تسجيل الدخول -->
+            <form id="loginForm" class="form-container space-y-4">
+                <div>
+                    <label class="block text-white text-sm font-semibold mb-2">اسم المستخدم</label>
+                    <input type="text" id="loginUsername" placeholder="أدخل اسم المستخدم" required 
+                        class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+
+                <div>
+                    <label class="block text-white text-sm font-semibold mb-2">كلمة السر</label>
+                    <input type="password" id="loginPassword" placeholder="أدخل كلمة السر" required 
+                        class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+
+                <div class="flex items-center">
+                    <input type="checkbox" id="rememberMe" class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    <label for="rememberMe" class="block text-white text-sm">تذكرني</label>
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors">
+                    تسجيل الدخول
+                </button>
+            </form>
+
+            <!-- نموذج إنشاء حساب -->
+            <form id="registerForm" class="form-container hidden space-y-4">
+                <div>
+                    <label class="block text-white text-sm font-semibold mb-2">اسم المستخدم</label>
+                    <input type="text" id="registerUsername" placeholder="اختر اسم المستخدم" required 
+                        class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+
+                <div>
+                    <label class="block text-white text-sm font-semibold mb-2">كلمة السر</label>
+                    <input type="password" id="registerPassword" placeholder="اختر كلمة السر" required 
+                        class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+
+                <div>
+                    <label class="block text-white text-sm font-semibold mb-2">تأكيد كلمة السر</label>
+                    <input type="password" id="confirmPassword" placeholder="أعد إدخال كلمة السر" required 
+                        class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                </div>
+
+                <div>
+                    <label class="block text-white text-sm font-semibold mb-2">الجنس</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="flex items-center space-x-3 space-x-reverse bg-white/10 hover:bg-white/20 rounded-lg p-3 cursor-pointer transition-colors">
+                            <input type="radio" name="gender" value="male" required class="text-blue-600 focus:ring-blue-500">
+                            <span class="text-white">👨 ذكر</span>
+                        </label>
+                        <label class="flex items-center space-x-3 space-x-reverse bg-white/10 hover:bg-white/20 rounded-lg p-3 cursor-pointer transition-colors">
+                            <input type="radio" name="gender" value="female" required class="text-pink-600 focus:ring-pink-500">
+                            <span class="text-white">👩 أنثى</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors">
+                    إنشاء حساب
+                </button>
+            </form>
+
+            <div class="mt-6 bg-blue-900/30 rounded-lg p-3">
+                <p class="text-xs text-blue-200 text-center">
+                     حافظو على المرح والمتعة !💡
+                </p>
+            </div>
         </div>
-      </header>
+    </div>
 
-      <section id="messages" class="chat__messages"></section>
-      <div id="typing" class="typing" hidden></div>
+    <!-- الصفحة الرئيسية -->
+    <div id="mainPage" class="hidden container mx-auto px-4 py-8">
+        <div class="text-center mb-12">
+            <div class="flex justify-between items-center mb-6">
+                <div></div>
+                <h1 id="welcomeMessage" class="text-5xl font-bold text-white">🏠 غرف المحادثة</h1>
+                <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse">
+                    <span>خروج</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 01-3-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                </button>
+            </div>
+            <p class="text-xl text-blue-200">اختر غرفة المحادثة التي تريد الانضمام إليها</p>
+        </div>
+       
+        <div id="roomsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            <!-- الغرف سيتم تحميلها ديناميكياً -->
+        </div>
+    </div>
 
-      <form id="form" class="chat__input" autocomplete="off">
-        <input id="input" type="text" placeholder="اكتب رسالة..." maxlength="500" disabled />
-        <button id="sendBtn" disabled>إرسال</button>
-      </form>
-    </main>
-  </div>
+    <!-- صفحة المحادثة -->
+    <div id="chatPage" class="hidden min-h-screen flex flex-col">
+        <!-- رأس المحادثة -->
+        <div class="bg-white/10 backdrop-blur-lg border-b border-white/20 p-4">
+            <div class="container mx-auto flex items-center justify-between">
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <button onclick="goBack()" class="text-white hover:text-blue-200 transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                    </button>
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <div id="chatIcon" class="text-3xl"></div>
+                        <div>
+                            <h2 id="chatTitle" class="text-xl font-semibold text-white"></h2>
+                            <p class="text-sm text-blue-200">متصل الآن</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2 space-x-reverse">
+                    <button id="toggleUsersButton" class="md:hidden text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </button>
+                    <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                    <span class="text-white text-sm">نشط</span>
+                </div>
+            </div>
+        </div>
 
-  <!-- Socket.IO -->
-  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-  <!-- Client logic -->
-  <script src="/client.js"></script>
+        <!-- المحتوى الرئيسي -->
+        <div class="main-content">
+            <!-- منطقة الرسائل -->
+            <div class="flex-1 overflow-hidden p-4">
+                <div id="messagesContainer" class="container mx-auto max-w-4xl space-y-4 messages-container custom-scrollbar">
+                    <!-- الرسائل ستظهر هنا -->
+                </div>
+            </div>
+
+            <!-- قائمة المستخدمين المتصلين -->
+            <div id="onlineUsersPanel" class="hidden md:block w-80 bg-white/5 backdrop-blur-lg border-l border-white/10 p-4 users-container custom-scrollbar">
+                <h3 class="text-white font-bold mb-4 flex items-center space-x-2 space-x-reverse">
+                    <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                    <span>المستخدمون المتصلون</span>
+                    <span id="onlineUsersCount" class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">0</span>
+                </h3>
+        
+                <div id="onlineUsersList" class="space-y-3">
+                    <!-- المستخدمون المتصلون سيتم تحميلهم ديناميكياً -->
+                </div>
+            </div>
+            
+            <!-- زر إخفاء/إظهار قائمة المتصلين للجوال -->
+            <div id="usersOverlay" class="users-overlay" onclick="toggleUsersList()"></div>
+        </div>
+
+        <!-- منطقة إرسال الرسائل -->
+        <div id="messageArea" class="bg-white/10 backdrop-blur-lg border-t border-white/20 p-4">
+            <div class="container mx-auto max-w-4xl">
+                <!-- لوحة إدارة الرتب -->
+                <div id="rankManagementPanel" class="hidden mb-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-4 border border-purple-500/50">
+                    <h3 class="text-white font-bold mb-3 flex items-center space-x-2 space-x-reverse">
+                        <span>👑</span>
+                        <span>إدارة الرتب</span>
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-white text-sm font-semibold mb-2">اسم المستخدم</label>
+                            <input
+                                type="text"
+                                id="rankUserName"
+                                placeholder="أدخل اسم المستخدم..."
+                                class="w-full bg-white/20 border border-purple-300/50 rounded-lg px-4 py-2 text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-white text-sm font-semibold mb-2">الرتبة الجديدة</label>
+                            <select
+                                id="rankSelect"
+                                class="w-full bg-white/20 border border-purple-300/50 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                            >
+                                <option value="" class="bg-gray-800">اختر الرتبة...</option>
+                                <option value="جيد" class="bg-gray-800">❇️ جيد</option>
+                                <option value="بريميوم" class="bg-gray-800">💎 بريميوم</option>
+                                <option value="ادمن" class="bg-gray-800">🛡️ ادمن</option>
+                                <option value="سوبر ادمن" class="bg-gray-800">⭐ سوبر ادمن</option>
+                                <option value="منشئ" class="bg-gray-800">👑 منشئ</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="flex space-x-4 space-x-reverse">
+                        <button
+                            onclick="assignRank()"
+                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center space-x-2 space-x-reverse"
+                        >
+                            <span>منح الرتبة</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                        </button>
+                        <button
+                            onclick="removeRank()"
+                            class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center space-x-2 space-x-reverse"
+                        >
+                            <span>إزالة الرتبة</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                            </svg>
+                        </button>
+                        <button
+                            onclick="showAllRanks()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center space-x-2 space-x-reverse"
+                        >
+                            <span>عرض جميع الرتب</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- لوحة إدارة المستخدمين -->
+                <div id="userManagementPanel" class="hidden mb-4 bg-gradient-to-r from-red-900/30 to-orange-900/30 rounded-xl p-4 border border-red-500/50">
+                    <h3 class="text-white font-bold mb-3 flex items-center space-x-2 space-x-reverse">
+                        <span>👑</span>
+                        <span id="managementTitle">إدارة المستخدمين</span>
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-white text-sm font-semibold mb-2">اسم المستخدم</label>
+                            <input
+                                type="text"
+                                id="managedUserName"
+                                placeholder="أدخل اسم المستخدم..."
+                                class="w-full bg-white/20 border border-red-300/50 rounded-lg px-4 py-2 text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-red-400"
+                            >
+                        </div>
+                        <div>
+                            <label class="block text-white text-sm font-semibold mb-2">الإجراء</label>
+                            <select
+                                id="userActionSelect"
+                                class="w-full bg-white/20 border border-red-300/50 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-red-400"
+                                onchange="toggleManagementFields()"
+                            >
+                                <option value="" class="bg-gray-800">اختر الإجراء...</option>
+                                <option value="mute" class="bg-gray-800">🔇 كتم</option>
+                                <option value="unmute" class="bg-gray-800">🔊 إزالة الكتم</option>
+                                <option value="banFromRoom" class="bg-gray-800">🚫 حظر من الغرفة</option>
+                                <option value="unbanFromRoom" class="bg-gray-800">✅ إزالة حظر الغرفة</option>
+                                <option value="banFromSite" class="bg-gray-800">⛔ حظر من الموقع</option>
+                                <option value="unbanFromSite" class="bg-gray-800">🌐 إزالة حظر الموقع</option>
+                                <option value="deleteUser" class="bg-gray-800">🗑️ حذف المستخدم</option>
+                                <option value="showStatus" class="bg-gray-800">📋 عرض الحالة</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="durationField" class="hidden mb-4">
+                        <label class="block text-white text-sm font-semibold mb-2">مدة الكتم (دقائق)</label>
+                        <input
+                            type="number"
+                            id="muteDuration"
+                            placeholder="المدة بالدقائق..."
+                            min="1"
+                            class="w-full bg-white/20 border border-red-300/50 rounded-lg px-4 py-2 text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-red-400"
+                        >
+                    </div>
+                    
+                    <div id="reasonField" class="hidden mb-4">
+                        <label class="block text-white text-sm font-semibold mb-2">سبب الحظر (اختياري)</label>
+                        <input
+                            type="text"
+                            id="banReason"
+                            placeholder="أدخل سبب الحظر..."
+                            class="w-full bg-white/20 border border-red-300/50 rounded-lg px-4 py-2 text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-red-400"
+                        >
+                    </div>
+                    
+                    <div class="flex space-x-4 space-x-reverse">
+                        <button
+                            onclick="manageUser()"
+                            class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center space-x-2 space-x-reverse"
+                        >
+                            <span>تنفيذ</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </button>
+                        <button
+                            onclick="clearManagementFields()"
+                            class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center space-x-2 space-x-reverse"
+                        >
+                            <span>مسح الحقول</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- لوحة إدارة الصور الشخصية -->
+                <div id="avatarManagementPanel" class="hidden mb-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-4 border border-purple-500/50">
+                    <h3 class="text-white font-bold mb-3 flex items-center space-x-2 space-x-reverse">
+                        <span>🖼️</span>
+                        <span>إدارة الصورة الشخصية</span>
+                    </h3>
+                    
+                    <div class="mb-4">
+                        <label class="block text-white text-sm font-semibold mb-2">الصور الافتراضية</label>
+                        <div class="grid grid-cols-3 gap-3 mb-4">
+                            <!-- صور الأولاد -->
+                            <div class="avatar-option" onclick="selectAvatar('boy1')">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=boy1" class="w-full h-16 object-cover rounded-lg cursor-pointer" alt="صورة ولد 1">
+                            </div>
+                            <div class="avatar-option" onclick="selectAvatar('boy2')">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=boy2" class="w-full h-16 object-cover rounded-lg cursor-pointer" alt="صورة ولد 2">
+                            </div>
+                            <div class="avatar-option" onclick="selectAvatar('boy3')">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=boy3" class="w-full h-16 object-cover rounded-lg cursor-pointer" alt="صورة ولد 3">
+                            </div>
+                            <!-- صور البنات -->
+                            <div class="avatar-option" onclick="selectAvatar('girl1')">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=girl1&hair=long" class="w-full h-16 object-cover rounded-lg cursor-pointer" alt="صورة بنت 1">
+                            </div>
+                            <div class="avatar-option" onclick="selectAvatar('girl2')">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=girl2&hair=long" class="w-full h-16 object-cover rounded-lg cursor-pointer" alt="صورة بنت 2">
+                            </div>
+                            <div class="avatar-option" onclick="selectAvatar('girl3')">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=girl3&hair=long" class="w-full h-16 object-cover rounded-lg cursor-pointer" alt="صورة بنت 3">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-white text-sm font-semibold mb-2">رفع صورة شخصية</label>
+                        <div class="flex items-center space-x-3 space-x-reverse">
+                            <input
+                                type="file"
+                                id="avatarUpload"
+                                accept="image/*"
+                                class="hidden"
+                                onchange="handleAvatarUpload()"
+                            >
+                            <label for="avatarUpload" class="flex-1 bg-white/20 border border-purple-300/50 rounded-lg px-4 py-2 text-white text-center cursor-pointer hover:bg-white/30">
+                                اختر صورة
+                            </label>
+                            <button
+                                onclick="resetAvatar()"
+                                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                            >
+                                إعادة تعيين
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="inline-block bg-white/20 p-2 rounded-lg mb-2">
+                            <img id="currentAvatarPreview" src="https://api.dicebear.com/7.x/avataaars/svg?seed=guest" class="w-16 h-16 rounded-full object-cover" alt="الصورة الحالية">
+                        </div>
+                        <p class="text-xs text-purple-200">الصورة الشخصية الحالية</p>
+                    </div>
+                </div>
+               
+                <div id="messageInputContainer" class="flex space-x-4 space-x-reverse">
+                    <input
+                        type="text"
+                        id="messageInput"
+                        placeholder="اكتب رسالتك هنا..."
+                        class="flex-1 bg-white/20 border border-white/30 rounded-full px-6 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                        onkeypress="handleKeyPress(event)"
+                    >
+                    <button
+                        onclick="sendMessage()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse"
+                    >
+                        <span>إرسال</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- منطقة الإشعارات العامة -->
+    <div id="globalNotifications" class="fixed top-4 right-4 z-50 space-y-3 max-w-sm"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let currentUser = null;
+        let currentRoom = null;
+        let rooms = [];
+        let sessionChecked = false;
+
+        // نظام الرتب
+        const ranks = {
+            'صاحب الموقع': { color: 'from-red-600 to-orange-400', icon: '🏆', level: 6 },
+            'منشئ': { color: 'from-yellow-400 to-orange-500', icon: '👑', level: 5 },
+            'سوبر ادمن': { color: 'from-red-500 to-pink-600', icon: '⭐', level: 4 },
+            'ادمن': { color: 'from-purple-500 to-indigo-600', icon: '🛡️', level: 3 },
+            'بريميوم': { color: 'from-green-500 to-emerald-600', icon: '💎', level: 2 },
+            'جيد': { color: 'from-blue-500 to-cyan-600', icon: '❇️', level: 1 }
+        };
+
+        // صور افتراضية
+        const defaultAvatars = {
+            'boy1': 'https://api.dicebear.com/7.x/avataaars/svg?seed=boy1',
+            'boy2': 'https://api.dicebear.com/7.x/avataaars/svg?seed=boy2',
+            'boy3': 'https://api.dicebear.com/7.x/avataaars/svg?seed=boy3',
+            'girl1': 'https://api.dicebear.com/7.x/avataaars/svg?seed=girl1&hair=long',
+            'girl2': 'https://api.dicebear.com/7.x/avataaars/svg?seed=girl2&hair=long',
+            'girl3': 'https://api.dicebear.com/7.x/avataaars/svg?seed=girl3&hair=long',
+            'guest': 'https://api.dicebear.com/7.x/avataaars/svg?seed=guest'
+        };
+
+        // عناصر واجهة المستخدم
+        const loginTab = document.getElementById('loginTab');
+        const registerTab = document.getElementById('registerTab');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+        const toggleUsersButton = document.getElementById('toggleUsersButton');
+        const onlineUsersPanel = document.getElementById('onlineUsersPanel');
+        const usersOverlay = document.getElementById('usersOverlay');
+
+        // تحويل بين نماذج التسجيل والدخول
+        loginTab.addEventListener('click', () => {
+            loginForm.classList.remove('hidden');
+            registerForm.classList.add('hidden');
+            loginTab.classList.add('bg-blue-600', 'text-white');
+            loginTab.classList.remove('text-blue-200');
+            registerTab.classList.add('text-blue-200');
+            registerTab.classList.remove('bg-blue-600', 'text-white');
+        });
+
+        registerTab.addEventListener('click', () => {
+            registerForm.classList.remove('hidden');
+            loginForm.classList.add('hidden');
+            registerTab.classList.add('bg-blue-600', 'text-white');
+            registerTab.classList.remove('text-blue-200');
+            loginTab.classList.add('text-blue-200');
+            loginTab.classList.remove('bg-blue-600', 'text-white');
+        });
+
+        // التحقق من الجلسة المحفوظة عند تحميل الصفحة
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedSession = localStorage.getItem('userSession');
+            const savedRoom = localStorage.getItem('currentRoom');
+            
+            if (savedSession) {
+                const sessionData = JSON.parse(savedSession);
+                socket.emit('check session', sessionData.sessionId);
+            } else {
+                sessionChecked = true;
+            }
+        });
+
+        // استقبال نتائج التحقق من الجلسة
+        socket.on('session valid', (userData) => {
+            currentUser = userData;
+            showNotification(`مرحباً بعودتك ${userData.name}! 😊`, 'success');
+            showMainPage();
+            
+            // الانضمام إلى الغرفة المحفوظة إذا كانت موجودة
+            const savedRoom = localStorage.getItem('currentRoom');
+            if (savedRoom) {
+                const roomData = JSON.parse(savedRoom);
+                setTimeout(() => {
+                    openChat(roomData.id, roomData.name, roomData.icon);
+                }, 500);
+            }
+            
+            sessionChecked = true;
+        });
+
+        socket.on('session invalid', () => {
+            localStorage.removeItem('userSession');
+            localStorage.removeItem('currentRoom');
+            sessionChecked = true;
+        });
+
+        // معالجة تسجيل الدخول
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
+            
+            socket.emit('user login', { username, password, rememberMe });
+        });
+
+        // معالجة إنشاء حساب
+        registerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('registerUsername').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const gender = document.querySelector('input[name="gender"]:checked')?.value;
+            
+            if (password !== confirmPassword) {
+                showNotification('كلمة السر غير متطابقة!', 'error');
+                return;
+            }
+            
+            if (!gender) {
+                showNotification('يرجى اختيار الجنس!', 'error');
+                return;
+            }
+            
+            socket.emit('user register', { username, password, gender });
+        });
+
+        // استقبال نتائج تسجيل الدخول
+        socket.on('login success', (userData) => {
+            currentUser = userData;
+            
+            // حفظ الجلسة إذا طلب المستخدم ذلك
+            if (document.getElementById('rememberMe').checked) {
+                localStorage.setItem('userSession', JSON.stringify({
+                    username: userData.name,
+                    sessionId: userData.sessionId
+                }));
+            }
+            
+            showNotification(`مرحباً ${userData.name}! 😊`, 'success');
+            showMainPage();
+        });
+
+        socket.on('login error', (error) => {
+            showNotification(error, 'error');
+        });
+
+        // استقبال نتائج إنشاء الحساب
+        socket.on('register success', (userData) => {
+            currentUser = userData;
+            
+            // حفظ الجلسة تلقائياً عند إنشاء حساب جديد
+            localStorage.setItem('userSession', JSON.stringify({
+                username: userData.name,
+                sessionId: userData.sessionId
+            }));
+            
+            showNotification(`تم إنشاء حسابك بنجاح! 😊`, 'success');
+            showMainPage();
+        });
+
+        socket.on('register error', (error) => {
+            showNotification(error, 'error');
+        });
+
+        // استقبال تحديث الغرف
+        socket.on('rooms update', (updatedRooms) => {
+            rooms = updatedRooms;
+            loadRooms();
+        });
+
+        // استقبال تحديث المستخدمين
+        socket.on('users update', (users) => {
+            updateOnlineUsersList(users);
+        });
+
+        // استقبال رسائل جديدة
+        socket.on('new message', (message) => {
+            if (message.type === 'user') {
+                addMessageToChat(message.user, message.content, message.time, message.user === currentUser.name, message.rank, message.avatar);
+            } else {
+                addSystemMessage(message.content, message.time);
+            }
+            // تمرير إلى الأسفل عند استقبال رسالة جديدة
+            setTimeout(scrollToBottom, 100);
+        });
+
+        // استقبال إشعارات الرتب
+        socket.on('rank notification', (message) => {
+            addSystemMessage(message.content, message.time);
+        });
+
+        // استقبال تاريخ المحادثة
+        socket.on('chat history', (messages) => {
+            const container = document.getElementById('messagesContainer');
+            container.innerHTML = '';
+            
+            messages.forEach(msg => {
+                if (msg.type === 'user') {
+                    addMessageToChat(msg.user, msg.content, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar);
+                } else {
+                    addSystemMessage(msg.content, msg.time);
+                }
+            });
+            // تمرير إلى الأسفل بعد تحميل التاريخ
+            setTimeout(scrollToBottom, 100);    
+        });
+
+        // استقبال نتائج الرتب
+        socket.on('rank success', (message) => {
+            showNotification(message, 'success');
+        });
+
+        socket.on('rank error', (error) => {
+            showNotification(error, 'error');
+        });
+
+        socket.on('show ranks', (message) => {
+            addSystemMessage(message.content, message.time);
+        });
+
+        // استقبال أخطاء الرسائل
+        socket.on('message error', (error) => {
+            showNotification(error, 'error');
+        });
+
+        // استقبال أحداث الصور
+        socket.on('avatar updated', (data) => {
+            showNotification(`تم تحديث الصورة الشخصية لـ ${data.username}`, 'success');
+            updateAvatarPreview();
+        });
+
+        socket.on('avatar error', (error) => {
+            showNotification(error, 'error');
+        });
+
+        socket.on('avatar data', (data) => {
+            if (data.avatarUrl) {
+                document.getElementById('currentAvatarPreview').src = data.avatarUrl;
+            }
+        });
+
+        socket.on('user avatar updated', (data) => {
+            updateOnlineUsersAvatars(data.username, data.avatarUrl);
+        });
+
+        // استقبال نتائج إدارة المستخدمين
+        socket.on('management success', (message) => {
+            showNotification(message, 'success');
+        });
+
+        socket.on('management error', (error) => {
+            showNotification(error, 'error');
+        });
+
+        socket.on('user status', (message) => {
+            addSystemMessage(message.content, message.time);
+        });
+
+        // استقبال حالات الحظر
+        socket.on('banned from room', (data) => {
+            showNotification(`تم حظرك من غرفة ${data.room}. السبب: ${data.reason}`, 'error');
+            goBack();
+        });
+
+        socket.on('banned from site', (data) => {
+            showNotification(`تم حظرك من الموقع بالكامل. السبب: ${data.reason}`, 'error');
+            logout();
+        });
+
+        socket.on('user deleted', () => {
+            showNotification('تم حذف حسابك من قبل الإدارة', 'error');
+            logout();
+        });
+
+        // إظهار/إخفاء قائمة المتصلين للجوال
+        toggleUsersButton.addEventListener('click', toggleUsersList);
+        
+        function toggleUsersList() {
+            onlineUsersPanel.classList.toggle('show');
+            usersOverlay.classList.toggle('show');
+        }
+
+        // عرض الصفحة الرئيسية
+        function showMainPage() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('mainPage').classList.remove('hidden');
+            updateWelcomeMessage();
+            
+            // طلب قائمة الغرف من السيرفر
+            fetch('/api/rooms')
+                .then(response => response.json())
+                .then(data => {
+                    rooms = data;
+                    loadRooms();
+                });
+        }
+
+        // تحديث رسالة الترحيب
+        function updateWelcomeMessage() {
+            const welcomeElement = document.getElementById('welcomeMessage');
+            if (welcomeElement && currentUser) {
+                const rankBadge = currentUser.rank ? `(${ranks[currentUser.rank].icon} ${currentUser.rank})` : '';
+                welcomeElement.innerHTML = `🏠 مرحباً ${currentUser.name} ${rankBadge}`;
+            }
+        }
+
+        // تحميل الغرف
+        function loadRooms() {
+            const roomsContainer = document.getElementById('roomsContainer');
+            roomsContainer.innerHTML = '';
+            
+            rooms.forEach(room => {
+                const roomDiv = document.createElement('div');
+                roomDiv.className = room.protected ? 
+                    'bg-gradient-to-br from-red-900/30 to-orange-900/30 backdrop-blur-lg rounded-2xl p-6 hover:from-red-800/40 hover:to-orange-800/40 transition-all duration-300 relative group border-2 border-red-500/50' :
+                    'bg-white/10 backdrop-blur-lg rounded-2xl p-6 hover:bg-white/20 transition-all duration-300 relative group';
+                
+                roomDiv.innerHTML = `
+                    <div class="cursor-pointer" onclick="${room.protected ? `openProtectedChat(${room.id}, '${room.name}', '${room.icon}')` : `openChat(${room.id}, '${room.name}', '${room.icon}')`}">
+                        <div class="text-4xl mb-4 text-center">${room.icon}</div>
+                        <h3 class="text-xl font-semibold text-white text-center mb-2">${room.name}</h3>
+                        <p class="text-blue-200 text-center text-sm">${room.description}</p>
+                        <div class="mt-4 text-center">
+                            <span class="${room.protected ? 'bg-red-600' : 'bg-gray-500'} text-white px-3 py-1 rounded-full text-xs">
+                                ${room.protected ? '🔒 محمية' : 'انقر للدخول'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                
+                roomsContainer.appendChild(roomDiv);
+            });
+        }
+
+        // فتح غرفة الدردشة
+        function openChat(roomId, roomName, icon) {
+            currentRoom = { id: roomId, name: roomName, icon: icon };
+            
+            // حفظ الغرفة الحالية
+            localStorage.setItem('currentRoom', JSON.stringify(currentRoom));
+            
+            document.getElementById('mainPage').classList.add('hidden');
+            document.getElementById('chatPage').classList.remove('hidden');
+            document.getElementById('chatTitle').textContent = roomName;
+            document.getElementById('chatIcon').textContent = icon;
+            
+            // إظهار/إخفاء لوحات الإدارة بناءً على نوع الغرفة
+            const rankPanel = document.getElementById('rankManagementPanel');
+            const userPanel = document.getElementById('userManagementPanel');
+            const avatarPanel = document.getElementById('avatarManagementPanel');
+            const messageInputContainer = document.getElementById('messageInputContainer');
+            
+            if (roomName === 'غرفة الإدارة') {
+                rankPanel.classList.remove('hidden');
+                userPanel.classList.remove('hidden');
+                avatarPanel.classList.add('hidden');
+                messageInputContainer.classList.remove('hidden');
+            } else if (roomName === 'غرفة تخصيص المظهر') {
+                rankPanel.classList.add('hidden');
+                userPanel.classList.add('hidden');
+                avatarPanel.classList.remove('hidden');
+                messageInputContainer.classList.add('hidden');
+                updateAvatarPreview();
+            } else {
+                rankPanel.classList.add('hidden');
+                userPanel.classList.add('hidden');
+                avatarPanel.classList.add('hidden');
+                messageInputContainer.classList.remove('hidden');
+            }
+            
+            // الانضمام للغرفة
+            socket.emit('join room', { roomId, user: currentUser });
+        }
+
+        // فتح غرفة محمية بكلمة سر
+        function openProtectedChat(roomId, roomName, icon) {
+            let password = '';
+            
+            if (roomName === 'غرفة الإدارة') {
+                password = prompt('أدخل كلمة سر غرفة الإدارة:');
+                if (password !== 'admin123') {
+                    showNotification('كلمة السر غير صحيحة!', 'error');
+                    return;
+                }
+            } else if (roomName === 'غرفة تخصيص المظهر') {
+                password = prompt('أدخل كلمة سر غرفة تخصيص المظهر:');
+                if (password !== 'a') {
+                    showNotification('كلمة السر غير صحيحة!', 'error');
+                    return;
+                }
+            }
+            
+            openChat(roomId, roomName, icon);
+        }
+
+        // العودة إلى الصفحة الرئيسية
+        function goBack() {
+            if (currentRoom) {
+                socket.emit('leave room', { roomId: currentRoom.id, user: currentUser });
+                localStorage.removeItem('currentRoom');
+            }
+            document.getElementById('chatPage').classList.add('hidden');
+            document.getElementById('mainPage').classList.remove('hidden');
+            document.getElementById('messagesContainer').innerHTML = '';
+            currentRoom = null;
+        }
+
+        // تسجيل الخروج
+        function logout() {
+            if (currentRoom) {
+                socket.emit('leave room', { roomId: currentRoom.id, user: currentUser });
+            }
+            
+            // حذف الجلسة المحفوظة
+            localStorage.removeItem('userSession');
+            localStorage.removeItem('currentRoom');
+            
+            currentUser = null;
+            currentRoom = null;
+            document.getElementById('mainPage').classList.add('hidden');
+            document.getElementById('chatPage').classList.add('hidden');
+            document.getElementById('loginPage').classList.remove('hidden');
+        }
+
+        // إرسال رسالة
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+           
+            if (message && currentUser && currentRoom) {
+                socket.emit('send message', { 
+                    roomId: currentRoom.id, 
+                    message, 
+                    user: currentUser 
+                });
+                input.value = '';
+            }
+        }
+
+        // التعامل مع الضغط على مفتاح Enter
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // إضافة رسالة إلى الدردشة
+        function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl) {
+            const container = document.getElementById('messagesContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message flex ${isOwn ? 'justify-end' : 'justify-start'}`;
+           
+            let rankBadge = '';
+           
+            if (userRank) {
+                const rankInfo = ranks[userRank];
+                rankBadge = `
+                    <div class="inline-flex items-center space-x-1 space-x-reverse bg-gradient-to-r ${rankInfo.color} px-2 py-1 rounded-full text-xs font-bold text-white shadow-lg mb-1">
+                        <span>${rankInfo.icon}</span>
+                        <span>${userRank}</span>
+                    </div>
+                `;
+            }
+
+            if (avatarUrl) {
+                messageDiv.innerHTML = `
+                    <div class="max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
+                        isOwn
+                            ? 'bg-blue-600 text-white ml-4'
+                            : 'bg-white/20 text-white mr-4'
+                    }">
+                        <div class="flex items-center space-x-3 space-x-reverse mb-2">
+                            <img src="${avatarUrl}" class="w-8 h-8 rounded-full object-cover" alt="${user}">
+                            <div>
+                                ${rankBadge}
+                                <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : 'text-blue-200'}">${user}</div>
+                            </div>
+                        </div>
+                        <div class="text-sm leading-relaxed">${message}</div>
+                        <div class="text-xs mt-2 opacity-70">${time}</div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div class="max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
+                        isOwn
+                            ? 'bg-blue-600 text-white ml-4'
+                            : 'bg-white/20 text-white mr-4'
+                    }">
+                        <div class="flex items-center space-x-3 space-x-reverse mb-2">
+                            <div class="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white">
+                                ${user.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                ${rankBadge}
+                                <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : 'text-blue-200'}">${user}</div>
+                            </div>
+                        </div>
+                        <div class="text-sm leading-relaxed">${message}</div>
+                        <div class="text-xs mt-2 opacity-70">${time}</div>
+                    </div>
+                `;
+            }
+           
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // إضافة رسالة نظام
+        function addSystemMessage(message, time) {
+            const container = document.getElementById('messagesContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message flex justify-center';
+           
+            messageDiv.innerHTML = `
+                <div class="max-w-md px-4 py-3 rounded-2xl bg-gradient-to-r from-yellow-600/80 to-orange-600/80 text-white text-center border border-yellow-500/50">
+                    <div class="text-sm leading-relaxed">${message}</div>
+                    <div class="text-xs mt-2 opacity-70">${time}</div>
+                </div>
+            `;
+           
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // تحديث قائمة المستخدمين المتصلين
+        function updateOnlineUsersList(users) {
+            const onlineUsersList = document.getElementById('onlineUsersList');
+            const onlineUsersCount = document.getElementById('onlineUsersCount');
+            
+            if (!onlineUsersList || !onlineUsersCount) return;
+            
+            onlineUsersCount.textContent = users.length;
+            onlineUsersList.innerHTML = '';
+            
+            users.forEach(user => {
+                const userRank = user.rank;
+                let rankBadge = '';
+                
+                if (userRank) {
+                    const rankInfo = ranks[userRank];
+                    rankBadge = `
+                        <div class="inline-flex items-center space-x-1 space-x-reverse bg-gradient-to-r ${rankInfo.color} px-2 py-1 rounded-full text-xs font-bold text-white">
+                            <span>${rankInfo.icon}</span>
+                            <span>${userRank}</span>
+                        </div>
+                    `;
+                }
+
+                if (user.avatar) {
+                    const userDiv = document.createElement('div');
+                    userDiv.className = 'flex items-center space-x-3 space-x-reverse bg-white/5 rounded-lg p-3';
+                    userDiv.innerHTML = `
+                        <img src="${user.avatar}" class="w-10 h-10 rounded-full object-cover border-2 border-blue-500/50" alt="${user.name}">
+                        <div class="flex-1 min-w-0">
+                            <div class="text-white font-semibold truncate">${user.name}</div>
+                            ${rankBadge}
+                        </div>
+                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                    `;
+                    onlineUsersList.appendChild(userDiv);
+                } else {
+                    const userDiv = document.createElement('div');
+                    userDiv.className = 'flex items-center space-x-3 space-x-reverse bg-white/5 rounded-lg p-3';
+                    userDiv.innerHTML = `
+                        <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white border-2 border-blue-500/50">
+                            ${user.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-white font-semibold truncate">${user.name}</div>
+                            ${rankBadge}
+                        </div>
+                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                    `;
+                    onlineUsersList.appendChild(userDiv);
+                }
+            });
+            
+            document.getElementById('onlineUsersPanel').classList.remove('hidden');
+        }
+
+        // دوال إدارة الرتب
+        function assignRank() {
+            const username = document.getElementById('rankUserName').value.trim();
+            const selectedRank = document.getElementById('rankSelect').value;
+            
+            if (!username || !selectedRank) {
+                showNotification('يرجى إدخال اسم المستخدم واختيار الرتبة', 'error');
+                return;
+            }
+            
+            socket.emit('assign rank', { 
+                username, 
+                rank: selectedRank, 
+                currentUser: { ...currentUser, roomId: currentRoom.id } 
+            });
+        }
+
+        function removeRank() {
+            const username = document.getElementById('rankUserName').value.trim();
+            
+            if (!username) {
+                showNotification('يرجى إدخال اسم المستخدم', 'error');
+                return;
+            }
+            
+            socket.emit('remove rank', { 
+                username, 
+                currentUser: { ...currentUser, roomId: currentRoom.id } 
+            });
+        }
+
+        function showAllRanks() {
+            socket.emit('show all ranks', { 
+                currentUser: { ...currentUser, roomId: currentRoom.id } 
+            });
+        }
+
+        // دوال إدارة الصور
+        function selectAvatar(avatarKey) {
+            if (!currentUser) return;
+            
+            const avatarUrl = defaultAvatars[avatarKey];
+            socket.emit('update avatar', {
+                username: currentUser.name,
+                avatarUrl: avatarUrl,
+                currentUser: { ...currentUser, roomId: currentRoom.id }
+            });
+        }
+
+        function handleAvatarUpload() {
+            if (!currentUser) return;
+            
+            const fileInput = document.getElementById('avatarUpload');
+            const file = fileInput.files[0];
+            
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                showNotification('يرجى اختيار ملف صورة فقط', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                socket.emit('update avatar', {
+                    username: currentUser.name,
+                    avatarUrl: e.target.result,
+                    currentUser: { ...currentUser, roomId: currentRoom.id }
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function resetAvatar() {
+            if (!currentUser) return;
+            
+            const defaultAvatar = currentUser.gender === 'female' ? defaultAvatars.girl1 : defaultAvatars.boy1;
+            socket.emit('update avatar', {
+                username: currentUser.name,
+                avatarUrl: defaultAvatar,
+                currentUser: { ...currentUser, roomId: currentRoom.id }
+            });
+        }
+
+        function updateAvatarPreview() {
+            if (!currentUser) return;
+            socket.emit('get avatar', currentUser.name);
+        }
+
+        function updateOnlineUsersAvatars(username, avatarUrl) {
+            const userElements = document.querySelectorAll('#onlineUsersList .flex.items-center');
+            userElements.forEach(element => {
+                const userNameElement = element.querySelector('.font-semibold');
+                if (userNameElement && userNameElement.textContent === username) {
+                    const imgElement = element.querySelector('img');
+                    if (imgElement) {
+                        imgElement.src = avatarUrl;
+                    } else {
+                        const divElement = element.querySelector('.rounded-full');
+                        if (divElement) {
+                            divElement.innerHTML = `<img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover" alt="${username}">`;
+                        }
+                    }
+                }
+            });
+        }
+
+        // دوال إدارة المستخدمين
+        function toggleManagementFields() {
+            const action = document.getElementById('userActionSelect').value;
+            const durationField = document.getElementById('durationField');
+            const reasonField = document.getElementById('reasonField');
+            
+            durationField.classList.add('hidden');
+            reasonField.classList.add('hidden');
+            
+            if (action === 'mute') {
+                durationField.classList.remove('hidden');
+            } else if (['banFromRoom', 'banFromSite'].includes(action)) {
+                reasonField.classList.remove('hidden');
+            }
+        }
+
+        function clearManagementFields() {
+            document.getElementById('managedUserName').value = '';
+            document.getElementById('userActionSelect').value = '';
+            document.getElementById('muteDuration').value = '';
+            document.getElementById('banReason').value = '';
+            document.getElementById('durationField').classList.add('hidden');
+            document.getElementById('reasonField').classList.add('hidden');
+        }
+
+        function manageUser() {
+            const username = document.getElementById('managedUserName').value.trim();
+            const action = document.getElementById('userActionSelect').value;
+            
+            if (!username) {
+                showNotification('يرجى إدخال اسم المستخدم', 'error');
+                return;
+            }
+            
+            if (!action) {
+                showNotification('يرجى اختيار الإجراء', 'error');
+                return;
+            }
+            
+            if (action === 'mute') {
+                const duration = document.getElementById('muteDuration').value;
+                if (!duration || duration < 1) {
+                    showNotification('يرجى إدخال مدة كتم صحيحة', 'error');
+                    return;
+                }
+                
+                socket.emit('mute user', {
+                    username,
+                    duration,
+                    currentUser: { ...currentUser, roomId: currentRoom.id }
+                });
+            } else if (action === 'unmute') {
+                socket.emit('unmute user', {
+                    username,
+                    currentUser: { ...currentUser, roomId: currentRoom.id }
+                });
+            } else if (action === 'banFromRoom') {
+                const reason = document.getElementById('banReason').value;
+                socket.emit('ban from room', {
+                    username,
+                    reason,
+                    currentUser: { ...currentUser, roomId: currentRoom.id }
+                });
+            } else if (action === 'unbanFromRoom') {
+                socket.emit('unban from room', {
+                    username,
+                    currentUser: { ...currentUser, roomId: currentRoom.id }
+                });
+            } else if (action === 'banFromSite') {
+                const reason = document.getElementById('banReason').value;
+                socket.emit('ban from site', {
+                    username,
+                    reason,
+                    currentUser: { ...currentUser, roomId: currentRoom.id }
+                });
+            } else if (action === 'unbanFromSite') {
+                socket.emit('unban from site', {
+                    username,
+                    currentUser: { ...currentUser, roomId: currentRoom.id }
+                });
+            } else if (action === 'deleteUser') {
+                if (confirm(`هل أنت متأكد من حذف المستخدم ${username}؟ هذا الإجراء لا يمكن التراجع عنه.`)) {
+                    socket.emit('delete user', {
+                        username,
+                        currentUser: { ...currentUser, roomId: currentRoom.id }
+                    });
+                }
+            } else if (action === 'showStatus') {
+                socket.emit('get user status', {
+                    username,
+                    currentUser: { ...currentUser, roomId: currentRoom.id }
+                });
+            }
+        }
+
+        // وظيفة لعرض الإشعارات
+        function showNotification(message, type = 'info') {
+            const notificationsContainer = document.getElementById('globalNotifications');
+            const notification = document.createElement('div');
+            
+            let bgColor = 'bg-blue-600';
+            if (type === 'error') bgColor = 'bg-red-600';
+            if (type === 'success') bgColor = 'bg-green-600';
+            if (type === 'warning') bgColor = 'bg-yellow-600';
+            
+            notification.className = `${bgColor} text-white p-4 rounded-lg shadow-lg notification`;
+            notification.innerHTML = `
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <span class="text-lg">${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}</span>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            notificationsContainer.appendChild(notification);
+            
+            // إزالة الإشعار تلقائياً بعد 5 ثوانٍ
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+        
+        // وظيفة لتمرير المحادثة إلى أحدث رسالة
+        function scrollToBottom() {
+            const container = document.getElementById('messagesContainer');
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+    </script>
 </body>
 </html>
