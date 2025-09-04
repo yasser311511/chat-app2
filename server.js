@@ -42,32 +42,70 @@ let userSessions = {};
 // تحميل البيانات من الملفات
 function loadData() {
   try {
-    if (fs.existsSync('./data/users.json')) {
-      users = JSON.parse(fs.readFileSync('./data/users.json', 'utf8'));
-    }
-    if (fs.existsSync('./data/ranks.json')) {
-      userRanks = JSON.parse(fs.readFileSync('./data/ranks.json', 'utf8'));
-    }
-    if (fs.existsSync('./data/management.json')) {
-      userManagement = JSON.parse(fs.readFileSync('./data/management.json', 'utf8'));
-    }
-    if (fs.existsSync('./data/avatars.json')) {
-      userAvatars = JSON.parse(fs.readFileSync('./data/avatars.json', 'utf8'));
-    }
-    if (fs.existsSync('./data/sessions.json')) {
-      userSessions = JSON.parse(fs.readFileSync('./data/sessions.json', 'utf8'));
-    }
-  } catch (e) {
-    console.log('إنشاء ملفات بيانات جديدة...');
     if (!fs.existsSync('./data')) {
       fs.mkdirSync('./data');
     }
+    
+    if (fs.existsSync('./data/users.json')) {
+      const usersData = fs.readFileSync('./data/users.json', 'utf8');
+      if (usersData.trim()) {
+        users = JSON.parse(usersData);
+      }
+    }
+    
+    if (fs.existsSync('./data/ranks.json')) {
+      const ranksData = fs.readFileSync('./data/ranks.json', 'utf8');
+      if (ranksData.trim()) {
+        userRanks = JSON.parse(ranksData);
+      }
+    }
+    
+    if (fs.existsSync('./data/management.json')) {
+      const managementData = fs.readFileSync('./data/management.json', 'utf8');
+      if (managementData.trim()) {
+        userManagement = JSON.parse(managementData);
+      }
+    }
+    
+    if (fs.existsSync('./data/avatars.json')) {
+      const avatarsData = fs.readFileSync('./data/avatars.json', 'utf8');
+      if (avatarsData.trim()) {
+        userAvatars = JSON.parse(avatarsData);
+      }
+    }
+    
+    if (fs.existsSync('./data/sessions.json')) {
+      const sessionsData = fs.readFileSync('./data/sessions.json', 'utf8');
+      if (sessionsData.trim()) {
+        userSessions = JSON.parse(sessionsData);
+      }
+    }
+    
+    // التأكد من وجود حساب صاحب الموقع في بيانات المستخدمين
+    if (!users[SITE_OWNER.username]) {
+      users[SITE_OWNER.username] = {
+        password: SITE_OWNER.password,
+        gender: 'male'
+      };
+      userRanks[SITE_OWNER.username] = SITE_OWNER.rank;
+      saveData();
+    }
+  } catch (e) {
+    console.log('خطأ في تحميل البيانات، إنشاء ملفات جديدة...', e);
+    if (!fs.existsSync('./data')) {
+      fs.mkdirSync('./data');
+    }
+    saveData();
   }
 }
 
 // حفظ البيانات إلى الملفات
 function saveData() {
   try {
+    if (!fs.existsSync('./data')) {
+      fs.mkdirSync('./data');
+    }
+    
     fs.writeFileSync('./data/users.json', JSON.stringify(users, null, 2));
     fs.writeFileSync('./data/ranks.json', JSON.stringify(userRanks, null, 2));
     fs.writeFileSync('./data/management.json', JSON.stringify(userManagement, null, 2));
@@ -114,11 +152,13 @@ function canManageUsers(user, roomName) {
 function canSendMessage(username, roomName) {
   if (userManagement.bannedFromSite[username]) return false;
   if (userManagement.bannedFromRoom[roomName] && userManagement.bannedFromRoom[roomName][username]) return false;
-  if (userManagement.mutedUsers[roomName] && userManagement.mutedUsers[roomName][username]) {
-    const muteInfo = userManagement.mutedUsers[roomName][username];
+  
+  // الكتم أصبح عاماً على جميع الغرف
+  if (userManagement.mutedUsers[username]) {
+    const muteInfo = userManagement.mutedUsers[username];
     if (new Date() < new Date(muteInfo.expiresAt)) return false;
     // إذا انتهت مدة الكتم، قم بإزالته
-    delete userManagement.mutedUsers[roomName][username];
+    delete userManagement.mutedUsers[username];
     saveData();
   }
   return true;
@@ -155,33 +195,46 @@ io.on('connection', (socket) => {
 
   // حدث تسجيل الدخول
   socket.on('user login', (userData) => {
+    // التحقق من صاحب الموقع أولاً
     if (userData.username === SITE_OWNER.username && userData.password === SITE_OWNER.password) {
-      const sessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
-      userSessions[sessionId] = { username: userData.username, password: userData.password };
-      saveData();
-      
-      socket.emit('login success', {
-        name: userData.username,
-        rank: SITE_OWNER.rank,
-        isSiteOwner: true,
-        socketId: socket.id,
-        sessionId: sessionId
-      });
-    } else if (users[userData.username] && users[userData.username].password === userData.password) {
-      const sessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
-      userSessions[sessionId] = { username: userData.username, password: userData.password };
-      saveData();
-      
-      socket.emit('login success', {
-        name: userData.username,
-        rank: userRanks[userData.username] || null,
-        isSiteOwner: false,
-        gender: users[userData.username].gender,
-        socketId: socket.id,
-        sessionId: sessionId
-      });
+        const sessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
+        userSessions[sessionId] = { username: userData.username, password: userData.password };
+        saveData();
+        
+        socket.emit('login success', {
+            name: userData.username,
+            rank: SITE_OWNER.rank,
+            isSiteOwner: true,
+            socketId: socket.id,
+            sessionId: sessionId
+        });
+    } 
+    // ثم التحقق من المستخدمين العاديين
+    else if (users[userData.username] && users[userData.username].password === userData.password) {
+        const sessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
+        userSessions[sessionId] = { username: userData.username, password: userData.password };
+        saveData();
+        
+        socket.emit('login success', {
+            name: userData.username,
+            rank: userRanks[userData.username] || null,
+            isSiteOwner: false,
+            gender: users[userData.username].gender,
+            socketId: socket.id,
+            sessionId: sessionId
+        });
     } else {
-      socket.emit('login error', 'اسم المستخدم أو كلمة السر غير صحيحة!');
+        socket.emit('login error', 'اسم المستخدم أو كلمة السر غير صحيحة!');
+    }
+  });
+
+  socket.on('update session', (sessionData) => {
+    if (userSessions[sessionData.sessionId]) {
+        userSessions[sessionData.sessionId] = {
+            username: sessionData.username,
+            password: sessionData.password
+        };
+        saveData();
     }
   });
 
@@ -469,14 +522,10 @@ io.on('connection', (socket) => {
       return;
     }
     
-    if (!userManagement.mutedUsers[room.name]) {
-      userManagement.mutedUsers[room.name] = {};
-    }
-    
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + parseInt(duration));
     
-    userManagement.mutedUsers[room.name][username] = {
+    userManagement.mutedUsers[username] = {
       mutedBy: currentUser.name,
       expiresAt: expiresAt.toISOString()
     };
@@ -485,14 +534,16 @@ io.on('connection', (socket) => {
     
     const notificationMessage = {
       type: 'system',
-      content: `🔇 تم كتم المستخدم ${username} لمدة ${duration} دقيقة من قبل ${currentUser.name}`,
+      content: `🔇 تم كتم المستخدم ${username} لمدة ${duration} دقيقة من قبل ${currentUser.name} (في جميع الغرف)`,
       time: new Date().toLocaleTimeString('ar-SA')
     };
     
-    io.to(room.id).emit('new message', notificationMessage);
-    messages[room.id].push(notificationMessage);
+    io.emit('new message', notificationMessage);
+    Object.keys(messages).forEach(roomId => {
+      messages[roomId].push(notificationMessage);
+    });
     
-    socket.emit('management success', `تم كتم المستخدم ${username} بنجاح`);
+    socket.emit('management success', `تم كتم المستخدم ${username} في جميع الغرف بنجاح`);
   });
 
   socket.on('unmute user', (data) => {
@@ -505,20 +556,22 @@ io.on('connection', (socket) => {
       return;
     }
     
-    if (userManagement.mutedUsers[room.name] && userManagement.mutedUsers[room.name][username]) {
-      delete userManagement.mutedUsers[room.name][username];
+    if (userManagement.mutedUsers[username]) {
+      delete userManagement.mutedUsers[username];
       saveData();
       
       const notificationMessage = {
         type: 'system',
-        content: `🔊 تم إلغاء كتم المستخدم ${username} من قبل ${currentUser.name}`,
+        content: `🔊 تم إلغاء كتم المستخدم ${username} من قبل ${currentUser.name} (في جميع الغرف)`,
         time: new Date().toLocaleTimeString('ar-SA')
       };
       
-      io.to(room.id).emit('new message', notificationMessage);
-      messages[room.id].push(notificationMessage);
+      io.emit('new message', notificationMessage);
+      Object.keys(messages).forEach(roomId => {
+        messages[roomId].push(notificationMessage);
+      });
       
-      socket.emit('management success', `تم إلغاء كتم المستخدم ${username} بنجاح`);
+      socket.emit('management success', `تم إلغاء كتم المستخدم ${username} في جميع الغرف بنجاح`);
     } else {
       socket.emit('management error', 'المستخدم غير مكتوم');
     }
@@ -778,19 +831,13 @@ io.on('connection', (socket) => {
       status += `🔓 غير محظور من أي غرفة\n\n`;
     }
     
-    // حالة الكتم
-    const roomMutes = Object.keys(userManagement.mutedUsers)
-      .filter(roomName => userManagement.mutedUsers[roomName][username])
-      .map(roomName => {
-        const muteInfo = userManagement.mutedUsers[roomName][username];
-        const expiresAt = new Date(muteInfo.expiresAt);
-        const timeLeft = Math.max(0, expiresAt - new Date());
-        const minutesLeft = Math.ceil(timeLeft / (1000 * 60));
-        return `🔇 مكتوم في ${roomName} (لمدة ${minutesLeft} دقيقة متبقية, بواسطة: ${muteInfo.mutedBy})`;
-      });
-    
-    if (roomMutes.length > 0) {
-      status += `🔇 حالة الكتم:\n${roomMutes.join('\n')}\n\n`;
+    // حالة الكتم (الآن عام على جميع الغرف)
+    if (userManagement.mutedUsers[username]) {
+      const muteInfo = userManagement.mutedUsers[username];
+      const expiresAt = new Date(muteInfo.expiresAt);
+      const timeLeft = Math.max(0, expiresAt - new Date());
+      const minutesLeft = Math.ceil(timeLeft / (1000 * 60));
+      status += `🔇 مكتوم في جميع الغرف (لمدة ${minutesLeft} دقيقة متبقية, بواسطة: ${muteInfo.mutedBy})\n\n`;
     } else {
       status += `🔊 غير مكتوم في أي غرفة\n\n`;
     }
