@@ -38,6 +38,9 @@ let userManagement = {
 };
 let userAvatars = {};
 let userSessions = {};
+let privateMessages = {}; // تخزين الرسائل الخاصة
+let userFriends = {}; // تخزين قوائم الأصدقاء
+let friendRequests = {}; // تخزين طلبات الصداقة
 
 // تحميل البيانات من الملفات
 function loadData() {
@@ -81,6 +84,27 @@ function loadData() {
       }
     }
     
+    if (fs.existsSync('./data/private_messages.json')) {
+      const privateMessagesData = fs.readFileSync('./data/private_messages.json', 'utf8');
+      if (privateMessagesData.trim()) {
+        privateMessages = JSON.parse(privateMessagesData);
+      }
+    }
+    
+    if (fs.existsSync('./data/friends.json')) {
+      const friendsData = fs.readFileSync('./data/friends.json', 'utf8');
+      if (friendsData.trim()) {
+        userFriends = JSON.parse(friendsData);
+      }
+    }
+    
+    if (fs.existsSync('./data/friend_requests.json')) {
+      const friendRequestsData = fs.readFileSync('./data/friend_requests.json', 'utf8');
+      if (friendRequestsData.trim()) {
+        friendRequests = JSON.parse(friendRequestsData);
+      }
+    }
+    
     // التأكد من وجود حساب صاحب الموقع في بيانات المستخدمين
     if (!users[SITE_OWNER.username]) {
       users[SITE_OWNER.username] = {
@@ -111,6 +135,9 @@ function saveData() {
     fs.writeFileSync('./data/management.json', JSON.stringify(userManagement, null, 2));
     fs.writeFileSync('./data/avatars.json', JSON.stringify(userAvatars, null, 2));
     fs.writeFileSync('./data/sessions.json', JSON.stringify(userSessions, null, 2));
+    fs.writeFileSync('./data/private_messages.json', JSON.stringify(privateMessages, null, 2));
+    fs.writeFileSync('./data/friends.json', JSON.stringify(userFriends, null, 2));
+    fs.writeFileSync('./data/friend_requests.json', JSON.stringify(friendRequests, null, 2));
   } catch (e) {
     console.error('خطأ في حفظ البيانات:', e);
   }
@@ -310,14 +337,18 @@ io.on('connection', (socket) => {
       time: new Date().toLocaleTimeString('ar-SA')
     };
     
-    // إضافة الرسالة للسجل
+    // إضافة الرسالة للسجل (الرسائل الجديدة فقط)
     if (!messages[roomId]) messages[roomId] = [];
+    // الاحتفاظ فقط بـ 50 رسالة حديثة
+    if (messages[roomId].length > 50) {
+      messages[roomId] = messages[roomId].slice(-50);
+    }
     messages[roomId].push(welcomeMessage);
     
     // إرسال الرسالة للغرفة
     io.to(roomId).emit('new message', welcomeMessage);
     
-    // إرسال تاريخ المحادثة للمستخدم الجديد
+    // إرسال تاريخ المحادثة للمستخدم الجديد (الرسائل الحديثة فقط)
     socket.emit('chat history', messages[roomId] || []);
   });
   
@@ -341,6 +372,10 @@ io.on('connection', (socket) => {
     };
     
     if (!messages[roomId]) messages[roomId] = [];
+    // الاحتفاظ فقط بـ 50 رسالة حديثة
+    if (messages[roomId].length > 50) {
+      messages[roomId] = messages[roomId].slice(-50);
+    }
     messages[roomId].push(newMessage);
     
     io.to(roomId).emit('new message', newMessage);
@@ -522,6 +557,12 @@ io.on('connection', (socket) => {
       return;
     }
     
+    // منع كتم صاحب الموقع
+    if (username === SITE_OWNER.username) {
+      socket.emit('management error', 'لا يمكن كتم صاحب الموقع');
+      return;
+    }
+    
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + parseInt(duration));
     
@@ -584,6 +625,12 @@ io.on('connection', (socket) => {
     
     if (!room || !canManageUsers(currentUser, room.name)) {
       socket.emit('management error', 'ليس لديك صلاحية لإدارة المستخدمين');
+      return;
+    }
+    
+    // منع حظر صاحب الموقع
+    if (username === SITE_OWNER.username) {
+      socket.emit('management error', 'لا يمكن حظر صاحب الموقع');
       return;
     }
     
@@ -662,6 +709,12 @@ io.on('connection', (socket) => {
       return;
     }
     
+    // منع حظر صاحب الموقع
+    if (username === SITE_OWNER.username) {
+      socket.emit('management error', 'لا يمكن حظر صاحب الموقع');
+      return;
+    }
+    
     userManagement.bannedFromSite[username] = {
       bannedBy: currentUser.name,
       reason: reason || 'غير محدد',
@@ -733,6 +786,12 @@ io.on('connection', (socket) => {
     
     if (!room || !canManageUsers(currentUser, room.name)) {
       socket.emit('management error', 'ليس لديك صلاحية لإدارة المستخدمين');
+      return;
+    }
+    
+    // منع حذف صاحب الموقع
+    if (username === SITE_OWNER.username) {
+      socket.emit('management error', 'لا يمكن حذف صاحب الموقع');
       return;
     }
     
@@ -849,6 +908,10 @@ io.on('connection', (socket) => {
       status += `👤 بدون رتبة\n`;
     }
     
+    // حالة الاتصال
+    const isOnline = Object.values(onlineUsers).some(user => user.name === username);
+    status += `📱 حالة الاتصال: ${isOnline ? '🟢 متصل' : '🔴 غير متصل'}\n`;
+    
     const systemMessage = {
       type: 'system',
       content: status,
@@ -905,6 +968,193 @@ io.on('connection', (socket) => {
 
   socket.on('get avatar', (username) => {
     socket.emit('avatar data', { username, avatarUrl: userAvatars[username] || null });
+  });
+
+  // أحداث الرسائل الخاصة
+  socket.on('get user profile', (data) => {
+    const { username } = data;
+    const isOnline = Object.values(onlineUsers).some(user => user.name === username);
+    const userRank = userRanks[username] || null;
+    const avatar = userAvatars[username] || null;
+    const userData = users[username];
+    
+    socket.emit('user profile data', {
+      username,
+      isOnline,
+      rank: userRank,
+      avatar,
+      gender: userData ? userData.gender : null
+    });
+  });
+
+  socket.on('send private message', (data) => {
+    const { toUser, message, fromUser } = data;
+    
+    // حفظ الرسالة الخاصة
+    const conversationId = [fromUser, toUser].sort().join('_');
+    if (!privateMessages[conversationId]) {
+      privateMessages[conversationId] = [];
+    }
+    
+    const privateMessage = {
+      from: fromUser,
+      to: toUser,
+      content: message,
+      time: new Date().toLocaleTimeString('ar-SA'),
+      timestamp: new Date().getTime()
+    };
+    
+    privateMessages[conversationId].push(privateMessage);
+    saveData();
+    
+    // إرسال الرسالة للمرسل
+    socket.emit('private message sent', privateMessage);
+    
+    // إرسال الرسالة للمستلم إذا كان متصلاً
+    const recipientSocketId = Object.keys(onlineUsers).find(
+      socketId => onlineUsers[socketId].name === toUser
+    );
+    
+    if (recipientSocketId) {
+      io.to(recipientSocketId).emit('new private message', privateMessage);
+    }
+  });
+
+  socket.on('get private messages', (data) => {
+    const { otherUser, currentUser } = data;
+    const conversationId = [currentUser, otherUser].sort().join('_');
+    const messages = privateMessages[conversationId] || [];
+    
+    socket.emit('private messages history', messages);
+  });
+
+  // أحداث نظام الصداقات
+  socket.on('send friend request', (data) => {
+    const { fromUser, toUser } = data;
+    
+    if (!friendRequests[toUser]) {
+      friendRequests[toUser] = [];
+    }
+    
+    // تجنب إرسال طلب صداقة مكرر
+    if (!friendRequests[toUser].includes(fromUser)) {
+      friendRequests[toUser].push(fromUser);
+      saveData();
+      
+      // إرسال إشعار للمستلم إذا كان متصلاً
+      const recipientSocketId = Object.keys(onlineUsers).find(
+        socketId => onlineUsers[socketId].name === toUser
+      );
+      
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit('new friend request', { fromUser });
+      }
+      
+      socket.emit('friend request sent', `تم إرسال طلب صداقة إلى ${toUser}`);
+    } else {
+      socket.emit('friend request error', 'لقد أرسلت طلب صداقة مسبقاً لهذا المستخدم');
+    }
+  });
+
+  socket.on('accept friend request', (data) => {
+    const { fromUser, toUser } = data;
+    
+    if (friendRequests[toUser] && friendRequests[toUser].includes(fromUser)) {
+      // إضافة الصديق إلى قائمة الأصدقاء
+      if (!userFriends[fromUser]) {
+        userFriends[fromUser] = [];
+      }
+      if (!userFriends[toUser]) {
+        userFriends[toUser] = [];
+      }
+      
+      if (!userFriends[fromUser].includes(toUser)) {
+        userFriends[fromUser].push(toUser);
+      }
+      if (!userFriends[toUser].includes(fromUser)) {
+        userFriends[toUser].push(fromUser);
+      }
+      
+      // إزالة طلب الصداقة
+      friendRequests[toUser] = friendRequests[toUser].filter(user => user !== fromUser);
+      saveData();
+      
+      // إرسال إشعار للمرسل
+      const senderSocketId = Object.keys(onlineUsers).find(
+        socketId => onlineUsers[socketId].name === fromUser
+      );
+      
+      if (senderSocketId) {
+        io.to(senderSocketId).emit('friend request accepted', { byUser: toUser });
+      }
+      
+      socket.emit('friend request processed', `أنت الآن صديق مع ${fromUser}`);
+    } else {
+      socket.emit('friend request error', 'طلب الصداقة غير موجود');
+    }
+  });
+
+  socket.on('reject friend request', (data) => {
+    const { fromUser, toUser } = data;
+    
+    if (friendRequests[toUser] && friendRequests[toUser].includes(fromUser)) {
+      // إزالة طلب الصداقة
+      friendRequests[toUser] = friendRequests[toUser].filter(user => user !== fromUser);
+      saveData();
+      
+      socket.emit('friend request processed', 'تم رفض طلب الصداقة');
+    } else {
+      socket.emit('friend request error', 'طلب الصداقة غير موجود');
+    }
+  });
+
+  socket.on('remove friend', (data) => {
+    const { username, friendToRemove } = data;
+    
+    if (userFriends[username] && userFriends[username].includes(friendToRemove)) {
+      userFriends[username] = userFriends[username].filter(friend => friend !== friendToRemove);
+      
+      if (userFriends[friendToRemove] && userFriends[friendToRemove].includes(username)) {
+        userFriends[friendToRemove] = userFriends[friendToRemove].filter(friend => friend !== username);
+      }
+      
+      saveData();
+      
+      socket.emit('friend removed', `تم إزالة ${friendToRemove} من قائمة أصدقائك`);
+      
+      // إرسال إشعار للطرف الآخر إذا كان متصلاً
+      const friendSocketId = Object.keys(onlineUsers).find(
+        socketId => onlineUsers[socketId].name === friendToRemove
+      );
+      
+      if (friendSocketId) {
+        io.to(friendSocketId).emit('friend removed you', { byUser: username });
+      }
+    } else {
+      socket.emit('friend error', 'هذا المستخدم ليس في قائمة أصدقائك');
+    }
+  });
+
+  socket.on('get friend requests', (username) => {
+    const requests = friendRequests[username] || [];
+    socket.emit('friend requests list', requests);
+  });
+
+  socket.on('get friends list', (username) => {
+    const friends = userFriends[username] || [];
+    socket.emit('friends list', friends);
+  });
+
+  socket.on('search users', (data) => {
+    const { query, currentUser } = data;
+    const results = Object.keys(users)
+      .filter(username => 
+        username.toLowerCase().includes(query.toLowerCase()) && 
+        username !== currentUser
+      )
+      .slice(0, 10); // الحد الأقصى للنتائج
+    
+    socket.emit('search results', results);
   });
   
   socket.on('disconnect', () => {

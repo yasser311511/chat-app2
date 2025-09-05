@@ -134,6 +134,166 @@
                 display: block;
             }
         }
+
+        /* نمط نافذة الملف الشخصي */
+        .profile-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .profile-modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .profile-content {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        
+        .profile-modal.show .profile-content {
+            transform: scale(1);
+        }
+        
+        /* نمط نافذة المحادثة الخاصة */
+        .private-chat-modal {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 350px;
+            height: 450px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transform: translateY(100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .private-chat-modal.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .private-chat-header {
+            background: rgba(30, 41, 59, 0.8);
+            padding: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .private-chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        
+        .private-chat-input {
+            padding: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* تنسيقات جديدة للرأس والصفحة الرئيسية */
+        .main-header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 2rem;
+        }
+        
+        .user-profile-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .user-profile-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #EF4444;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        /* تنسيقات قائمة الأصدقاء */
+        .friends-sidebar {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            width: 300px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            right: 0;
+            z-index: 40;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+        
+        .friends-sidebar.show {
+            transform: translateX(0);
+        }
+        
+        .friends-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+        }
+        
+        .friends-overlay.show {
+            display: block;
+        }
+        
+        .friend-item {
+            transition: all 0.3s ease;
+        }
+        
+        .friend-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen">
@@ -226,29 +386,67 @@
             <div class="mt-6 bg-blue-900/30 rounded-lg p-3">
                 <p class="text-xs text-blue-200 text-center">
                      حافظو على المرح والمتعة !💡
+                     ممنوع السب والشتم !💡
+                     ممنوع تكوين العلاقات هنا !💡
+                     ممنوع الاساء للمستخدمين !💡
+                    <br>🛑 اي شخص يخالف القوانين يحظر من الموقع !
                 </p>
             </div>
         </div>
     </div>
 
     <!-- الصفحة الرئيسية -->
-    <div id="mainPage" class="hidden container mx-auto px-4 py-8">
-        <div class="text-center mb-12">
-            <div class="flex justify-between items-center mb-6">
-                <div></div>
-                <h1 id="welcomeMessage" class="text-5xl font-bold text-white">🏠 غرف المحادثة</h1>
-                <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse">
+    <div id="mainPage" class="hidden min-h-screen">
+        <!-- رأس الصفحة الرئيسية -->
+        <header class="main-header flex justify-between items-center">
+            <div></div> <!-- عنصر فارغ للمساحة اليسرى -->
+            
+            <h1 id="welcomeMessage" class="text-2xl font-bold text-white">🏠 غرف المحادثة</h1>
+            
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <!-- زر الإشعارات والرسائل -->
+                <div class="relative">
+                    <button id="messagesButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                        </svg>
+                        <span id="messagesBadge" class="notification-badge hidden">0</span>
+                    </button>
+                </div>
+                
+                <!-- زر قائمة الأصدقاء -->
+                <button id="friendsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                </button>
+                
+                <!-- زر الملف الشخصي -->
+                <button id="profileButton" class="user-profile-btn flex items-center space-x-2 space-x-reverse bg-white/10 hover:bg-white/20 rounded-full pl-3 pr-2 py-1 transition-colors">
+                    <span class="text-white text-sm font-medium" id="headerUsername"></span>
+                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
+                        <span id="headerAvatarInitial"></span>
+                    </div>
+                </button>
+                
+                <!-- زر الخروج -->
+                <button onclick="logout()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse text-sm">
                     <span>خروج</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 01-3-3h4a3 3 0 013 3v1"></path>
                     </svg>
                 </button>
             </div>
-            <p class="text-xl text-blue-200">اختر غرفة المحادثة التي تريد الانضمام إليها</p>
-        </div>
+        </header>
        
-        <div id="roomsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
-            <!-- الغرف سيتم تحميلها ديناميكياً -->
+        <div class="container mx-auto px-4 py-8">
+            <div class="text-center mb-12">
+                <p class="text-xl text-blue-200">اختر غرفة المحادثة التي تريد الانضمام إليها</p>
+            </div>
+           
+            <div id="roomsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+                <!-- الغرف سيتم تحميلها ديناميكياً -->
+            </div>
         </div>
     </div>
 
@@ -541,6 +739,146 @@
         </div>
     </div>
 
+    <!-- نافذة الملف الشخصي -->
+    <div id="profileModal" class="profile-modal">
+        <div class="profile-content">
+            <div class="text-center mb-6">
+                <button onclick="closeProfileModal()" class="absolute top-4 left-4 text-white hover:text-blue-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+                <img id="profileAvatar" src="" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-blue-500/50">
+                <h2 id="profileUsername" class="text-2xl font-bold text-white"></h2>
+                <div id="profileRank" class="inline-block mt-2 px-3 py-1 rounded-full text-sm font-semibold text-white"></div>
+                <div id="profileStatus" class="mt-2 flex items-center justify-center space-x-2">
+                    <span class="w-3 h-3 rounded-full"></span>
+                    <span class="text-sm text-blue-200"></span>
+                </div>
+            </div>
+            
+            <div class="text-center space-y-3">
+                <button id="privateChatButton" onclick="startPrivateChat()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse mx-auto">
+                    <span>محادثة خاصة</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                </button>
+                
+                <button id="addFriendButton" onclick="sendFriendRequest()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse mx-auto">
+                    <span>إضافة صديق</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة المحادثة الخاصة -->
+    <div id="privateChatModal" class="private-chat-modal">
+        <div class="private-chat-header">
+            <div class="flex items-center space-x-3 space-x-reverse">
+                <img id="privateChatAvatar" src="" class="w-8 h-8 rounded-full object-cover" onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=guest'">
+                <div>
+                    <h3 id="privateChatUsername" class="text-white font-semibold"></h3>
+                    <p id="privateChatStatus" class="text-xs text-blue-200 flex items-center space-x-1 space-x-reverse">
+                        <span class="w-2 h-2 rounded-full"></span>
+                        <span></span>
+                    </p>
+                </div>
+            </div>
+            <button onclick="closePrivateChat()" class="text-white hover:text-blue-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <div id="privateChatMessages" class="private-chat-messages custom-scrollbar">
+            <!-- الرسائل الخاصة ستظهر هنا -->
+        </div>
+        
+        <div class="private-chat-input">
+            <div class="flex space-x-3 space-x-reverse">
+                <input
+                    type="text"
+                    id="privateMessageInput"
+                    placeholder="اكتب رسالتك هنا..."
+                    class="flex-1 bg-white/20 border border-white/30 rounded-full px-4 py-2 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm"
+                    onkeypress="handlePrivateKeyPress(event)"
+                >
+                <button
+                    onclick="sendPrivateMessage()"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse text-sm"
+                >
+                    <span>إرسال</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- قائمة الأصدقاء -->
+    <div id="friendsSidebar" class="friends-sidebar">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-white">👥 قائمة الأصدقاء</h2>
+            <button onclick="closeFriendsSidebar()" class="text-white hover:text-blue-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- بحث عن مستخدمين -->
+        <div class="mb-6">
+            <div class="relative">
+                <input
+                    type="text"
+                    id="userSearchInput"
+                    placeholder="ابحث عن مستخدمين..."
+                    class="w-full bg-white/20 border border-white/30 rounded-full px-4 py-2 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm"
+                >
+                <button onclick="searchUsers()" class="absolute left-2 top-1/2 transform -translate-y-1/2 text-blue-200 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="searchResults" class="mt-3 hidden bg-white/10 rounded-lg p-3 max-h-40 overflow-y-auto">
+                <!-- نتائج البحث ستظهر هنا -->
+            </div>
+        </div>
+        
+        <!-- طلبات الصداقة -->
+        <div class="mb-6">
+            <h3 class="text-white font-semibold mb-3 flex items-center space-x-2 space-x-reverse">
+                <span>📩</span>
+                <span>طلبات الصداقة</span>
+                <span id="friendRequestsCount" class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">0</span>
+            </h3>
+            <div id="friendRequestsList" class="space-y-2">
+                <!-- طلبات الصداقة ستظهر هنا -->
+            </div>
+        </div>
+        
+        <!-- قائمة الأصدقاء -->
+        <div>
+            <h3 class="text-white font-semibold mb-3 flex items-center space-x-2 space-x-reverse">
+                <span>👥</span>
+                <span>أصدقائي</span>
+                <span id="friendsCount" class="bg-green-600 text-white text-xs px-2 py-1 rounded-full">0</span>
+            </h3>
+            <div id="friendsList" class="space-y-2">
+                <!-- قائمة الأصدقاء ستظهر هنا -->
+            </div>
+        </div>
+    </div>
+    
+    <div id="friendsOverlay" class="friends-overlay" onclick="closeFriendsSidebar()"></div>
+
     <!-- منطقة الإشعارات العامة -->
     <div id="globalNotifications" class="fixed top-4 right-4 z-50 space-y-3 max-w-sm"></div>
 
@@ -551,6 +889,9 @@
         let currentRoom = null;
         let rooms = [];
         let sessionChecked = false;
+        let privateChatTarget = null;
+        let friendRequests = [];
+        let friendsList = [];
 
         // نظام الرتب
         const ranks = {
@@ -582,6 +923,9 @@
         const onlineUsersPanel = document.getElementById('onlineUsersPanel');
         const usersOverlay = document.getElementById('usersOverlay');
         const loadingSpinner = document.getElementById('loadingSpinner');
+        const profileButton = document.getElementById('profileButton');
+        const messagesButton = document.getElementById('messagesButton');
+        const friendsButton = document.getElementById('friendsButton');
 
         // تحويل بين نماذج التسجيل والدخول
         loginTab.addEventListener('click', () => {
@@ -600,6 +944,20 @@
             registerTab.classList.remove('text-blue-200');
             loginTab.classList.add('text-blue-200');
             loginTab.classList.remove('bg-blue-600', 'text-white');
+        });
+
+        // أحداث الأزرار الجديدة
+        profileButton.addEventListener('click', () => {
+            showUserProfileModal(currentUser.name);
+        });
+
+        messagesButton.addEventListener('click', () => {
+            // افتح نافذة المحادثات الخاصة أو قائمة الرسائل
+            openFriendsSidebar();
+        });
+
+        friendsButton.addEventListener('click', () => {
+            openFriendsSidebar();
         });
 
         // إظهار وإخفاء سبينر التحميل
@@ -629,8 +987,13 @@
         // استقبال نتائج التحقق من الجلسة
         socket.on('session valid', (userData) => {
             currentUser = userData;
+            updateHeaderUserInfo();
             showNotification(`مرحباً بعودتك ${userData.name}! 😊`, 'success');
             showMainPage();
+            
+            // تحميل طلبات الصداقة وقائمة الأصدقاء
+            socket.emit('get friend requests', currentUser.name);
+            socket.emit('get friends list', currentUser.name);
             
             // الانضمام إلى الغرفة المحفوظة إذا كانت موجودة
             const savedRoom = localStorage.getItem('currentRoom');
@@ -650,6 +1013,26 @@
             localStorage.removeItem('currentRoom');
             sessionChecked = true;
             hideLoading();
+        });
+
+        // تحديث معلومات المستخدم في الرأس
+        function updateHeaderUserInfo() {
+            if (currentUser) {
+                document.getElementById('headerUsername').textContent = currentUser.name;
+                document.getElementById('headerAvatarInitial').textContent = currentUser.name.charAt(0).toUpperCase();
+                
+                // تحديث الصورة إذا كانت موجودة
+                socket.emit('get avatar', currentUser.name);
+            }
+        }
+
+        socket.on('avatar data', (data) => {
+            if (data.username === currentUser.name && data.avatarUrl) {
+                const headerAvatar = document.querySelector('#profileButton .w-8.h-8');
+                if (headerAvatar) {
+                    headerAvatar.innerHTML = `<img src="${data.avatarUrl}" class="w-8 h-8 rounded-full object-cover" alt="${data.username}">`;
+                }
+            }
         });
 
         // معالجة تسجيل الدخول
@@ -704,8 +1087,14 @@
                 }));
             }
             
+            updateHeaderUserInfo();
             showNotification(`مرحباً ${userData.name}! 😊`, 'success');
             showMainPage();
+            
+            // تحميل طلبات الصداقة وقائمة الأصدقاء
+            socket.emit('get friend requests', currentUser.name);
+            socket.emit('get friends list', currentUser.name);
+            
             hideLoading();
         });
 
@@ -724,8 +1113,14 @@
                 sessionId: userData.sessionId
             }));
             
+            updateHeaderUserInfo();
             showNotification(`تم إنشاء حسابك بنجاح! 😊`, 'success');
             showMainPage();
+            
+            // تحميل طلبات الصداقة وقائمة الأصدقاء
+            socket.emit('get friend requests', currentUser.name);
+            socket.emit('get friends list', currentUser.name);
+            
             hideLoading();
         });
 
@@ -800,6 +1195,7 @@
         socket.on('avatar updated', (data) => {
             showNotification(`تم تحديث الصورة الشخصية لـ ${data.username}`, 'success');
             updateAvatarPreview();
+            updateHeaderUserInfo();
         });
 
         socket.on('avatar error', (error) => {
@@ -845,12 +1241,295 @@
             logout();
         });
 
+        // استقبال بيانات الملف الشخصي
+        socket.on('user profile data', (data) => {
+            showUserProfile(data);
+        });
+
+        // استقبال رسائل خاصة
+        socket.on('private message sent', (message) => {
+            addPrivateMessageToChat(message, true);
+        });
+
+        socket.on('new private message', (message) => {
+            if (privateChatTarget && message.from === privateChatTarget) {
+                addPrivateMessageToChat(message, false);
+            } else {
+                showNotification(`رسالة خاصة جديدة من ${message.from}`, 'info');
+                updateMessagesBadge();
+            }
+        });
+
+        socket.on('private messages history', (messages) => {
+            const container = document.getElementById('privateChatMessages');
+            container.innerHTML = '';
+            
+            messages.forEach(msg => {
+                addPrivateMessageToChat(msg, msg.from === currentUser.name);
+            });
+            
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 100);
+        });
+
+        // استقبال أحداث نظام الصداقات
+        socket.on('new friend request', (data) => {
+            showNotification(`طلب صداقة جديد من ${data.fromUser}`, 'info');
+            updateFriendRequests();
+            updateMessagesBadge();
+        });
+
+        socket.on('friend request sent', (message) => {
+            showNotification(message, 'success');
+        });
+
+        socket.on('friend request error', (error) => {
+            showNotification(error, 'error');
+        });
+
+        socket.on('friend request accepted', (data) => {
+            showNotification(`قبل ${data.byUser} طلب الصداقة`, 'success');
+            updateFriendsList();
+        });
+
+        socket.on('friend request processed', (message) => {
+            showNotification(message, 'success');
+            updateFriendRequests();
+        });
+
+        socket.on('friend removed', (message) => {
+            showNotification(message, 'success');
+            updateFriendsList();
+        });
+
+        socket.on('friend removed you', (data) => {
+            showNotification(`أزالك ${data.byUser} من قائمة الأصدقاء`, 'info');
+            updateFriendsList();
+        });
+
+        socket.on('friend error', (error) => {
+            showNotification(error, 'error');
+        });
+
+        socket.on('friend requests list', (requests) => {
+            friendRequests = requests;
+            updateFriendRequests();
+            updateMessagesBadge();
+        });
+
+        socket.on('friends list', (friends) => {
+            friendsList = friends;
+            updateFriendsList();
+        });
+
+        socket.on('search results', (results) => {
+            displaySearchResults(results);
+        });
+
         // إظهار/إخفاء قائمة المتصلين للجوال
         toggleUsersButton.addEventListener('click', toggleUsersList);
         
         function toggleUsersList() {
             onlineUsersPanel.classList.toggle('show');
             usersOverlay.classList.toggle('show');
+        }
+
+        // فتح وإغلاق قائمة الأصدقاء
+        function openFriendsSidebar() {
+            document.getElementById('friendsSidebar').classList.add('show');
+            document.getElementById('friendsOverlay').classList.add('show');
+        }
+
+        function closeFriendsSidebar() {
+            document.getElementById('friendsSidebar').classList.remove('show');
+            document.getElementById('friendsOverlay').classList.remove('show');
+        }
+
+        // تحديث طلبات الصداقة
+        function updateFriendRequests() {
+            const container = document.getElementById('friendRequestsList');
+            const countElement = document.getElementById('friendRequestsCount');
+            
+            if (!container || !countElement) return;
+            
+            container.innerHTML = '';
+            countElement.textContent = friendRequests.length;
+            
+            if (friendRequests.length === 0) {
+                container.innerHTML = '<p class="text-blue-200 text-sm text-center">لا توجد طلبات صداقة</p>';
+                return;
+            }
+            
+            friendRequests.forEach(username => {
+                const requestDiv = document.createElement('div');
+                requestDiv.className = 'flex items-center justify-between bg-white/5 rounded-lg p-3 friend-item';
+                requestDiv.innerHTML = `
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <div class="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white">
+                            ${username.charAt(0).toUpperCase()}
+                        </div>
+                        <span class="text-white font-medium">${username}</span>
+                    </div>
+                    <div class="flex space-x-2 space-x-reverse">
+                        <button onclick="acceptFriendRequest('${username}')" class="text-green-500 hover:text-green-300">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                        </button>
+                        <button onclick="rejectFriendRequest('${username}')" class="text-red-500 hover:text-red-300">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(requestDiv);
+            });
+        }
+
+        // تحديث قائمة الأصدقاء
+        function updateFriendsList() {
+            const container = document.getElementById('friendsList');
+            const countElement = document.getElementById('friendsCount');
+            
+            if (!container || !countElement) return;
+            
+            container.innerHTML = '';
+            countElement.textContent = friendsList.length;
+            
+            if (friendsList.length === 0) {
+                container.innerHTML = '<p class="text-blue-200 text-sm text-center">لا يوجد أصدقاء حتى الآن</p>';
+                return;
+            }
+            
+            friendsList.forEach(username => {
+                const friendDiv = document.createElement('div');
+                friendDiv.className = 'flex items-center justify-between bg-white/5 rounded-lg p-3 friend-item';
+                friendDiv.innerHTML = `
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <div class="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white">
+                            ${username.charAt(0).toUpperCase()}
+                        </div>
+                        <span class="text-white font-medium">${username}</span>
+                    </div>
+                    <div class="flex space-x-2 space-x-reverse">
+                        <button onclick="showUserProfileModal('${username}')" class="text-blue-500 hover:text-blue-300">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="removeFriend('${username}')" class="text-red-500 hover:text-red-300">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(friendDiv);
+            });
+        }
+
+        // تحديث شارة الرسائل
+        function updateMessagesBadge() {
+            const badge = document.getElementById('messagesBadge');
+            const totalNotifications = friendRequests.length;
+            
+            if (badge) {
+                if (totalNotifications > 0) {
+                    badge.textContent = totalNotifications;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+        }
+
+        // البحث عن مستخدمين
+        function searchUsers() {
+            const query = document.getElementById('userSearchInput').value.trim();
+            
+            if (query.length < 2) {
+                showNotification('يرجى إدخال至少 حرفين للبحث', 'error');
+                return;
+            }
+            
+            socket.emit('search users', {
+                query: query,
+                currentUser: currentUser.name
+            });
+        }
+
+        function displaySearchResults(results) {
+            const container = document.getElementById('searchResults');
+            
+            if (!container) return;
+            
+            container.innerHTML = '';
+            container.classList.remove('hidden');
+            
+            if (results.length === 0) {
+                container.innerHTML = '<p class="text-blue-200 text-sm text-center">لا توجد نتائج</p>';
+                return;
+            }
+            
+            results.forEach(username => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'flex items-center justify-between py-2';
+                resultDiv.innerHTML = `
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <div class="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white">
+                            ${username.charAt(0).toUpperCase()}
+                        </div>
+                        <span class="text-white font-medium">${username}</span>
+                    </div>
+                    <button onclick="showUserProfileModal('${username}')" class="text-blue-500 hover:text-blue-300 text-sm">
+                        عرض الملف
+                    </button>
+                `;
+                container.appendChild(resultDiv);
+            });
+        }
+
+        // إرسال طلب صداقة
+        function sendFriendRequest() {
+            const profileUsername = document.getElementById('profileUsername').textContent;
+            
+            if (profileUsername === currentUser.name) {
+                showNotification('لا يمكنك إرسال طلب صداقة لنفسك', 'error');
+                return;
+            }
+            
+            socket.emit('send friend request', {
+                fromUser: currentUser.name,
+                toUser: profileUsername
+            });
+        }
+
+        // قبول طلب صداقة
+        function acceptFriendRequest(username) {
+            socket.emit('accept friend request', {
+                fromUser: username,
+                toUser: currentUser.name
+            });
+        }
+
+        // رفض طلب صداقة
+        function rejectFriendRequest(username) {
+            socket.emit('reject friend request', {
+                fromUser: username,
+                toUser: currentUser.name
+            });
+        }
+
+        // إزالة صديق
+        function removeFriend(username) {
+            if (confirm(`هل تريد بالتأكيد إزالة ${username} من قائمة أصدقائك؟`)) {
+                socket.emit('remove friend', {
+                    username: currentUser.name,
+                    friendToRemove: username
+                });
+            }
         }
 
         // عرض الصفحة الرئيسية
@@ -918,6 +1597,9 @@
             document.getElementById('chatTitle').textContent = roomName;
             document.getElementById('chatIcon').textContent = icon;
             
+            // إخفاء زر الملف الشخصي في رأس المحادثة
+            document.getElementById('profileButton').classList.add('hidden');
+            
             // إظهار/إخفاء لوحات الإدارة بناءً على نوع الغرفة
             const rankPanel = document.getElementById('rankManagementPanel');
             const userPanel = document.getElementById('userManagementPanel');
@@ -976,6 +1658,10 @@
             document.getElementById('chatPage').classList.add('hidden');
             document.getElementById('mainPage').classList.remove('hidden');
             document.getElementById('messagesContainer').innerHTML = '';
+            
+            // إعادة إظهار زر الملف الشخصي في الرأس
+            document.getElementById('profileButton').classList.remove('hidden');
+            
             currentRoom = null;
         }
 
@@ -1044,10 +1730,10 @@
                             : 'bg-white/20 text-white mr-4'
                     }">
                         <div class="flex items-center space-x-3 space-x-reverse mb-2">
-                            <img src="${avatarUrl}" class="w-8 h-8 rounded-full object-cover" alt="${user}">
+                            <img src="${avatarUrl}" class="w-8 h-8 rounded-full object-cover" alt="${user}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">
                             <div>
                                 ${rankBadge}
-                                <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : 'text-blue-200'}">${user}</div>
+                                <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : 'text-blue-200'}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
                             </div>
                         </div>
                         <div class="text-sm leading-relaxed">${message}</div>
@@ -1062,12 +1748,12 @@
                             : 'bg-white/20 text-white mr-4'
                     }">
                         <div class="flex items-center space-x-3 space-x-reverse mb-2">
-                            <div class="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white">
+                            <div class="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white" onclick="showUserProfileModal('${user}')" style="cursor:pointer">
                                 ${user.charAt(0).toUpperCase()}
                             </div>
                             <div>
                                 ${rankBadge}
-                                <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : 'text-blue-200'}">${user}</div>
+                                <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : 'text-blue-200'}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
                             </div>
                         </div>
                         <div class="text-sm leading-relaxed">${message}</div>
@@ -1137,9 +1823,9 @@
                     const userDiv = document.createElement('div');
                     userDiv.className = 'flex items-center space-x-3 space-x-reverse bg-white/5 rounded-lg p-3';
                     userDiv.innerHTML = `
-                        <img src="${user.avatar}" class="w-10 h-10 rounded-full object-cover border-2 border-blue-500/50" alt="${user.name}">
+                        <img src="${user.avatar}" class="w-10 h-10 rounded-full object-cover border-2 border-blue-500/50" alt="${user.name}" onclick="showUserProfileModal('${user.name}')" style="cursor:pointer">
                         <div class="flex-1 min-w-0">
-                            <div class="text-white font-semibold truncate">${user.name}</div>
+                            <div class="text-white font-semibold truncate" onclick="showUserProfileModal('${user.name}')" style="cursor:pointer">${user.name}</div>
                             ${rankBadge}
                         </div>
                         <span class="w-2 h-2 bg-green-500 rounded-full"></span>
@@ -1149,11 +1835,11 @@
                     const userDiv = document.createElement('div');
                     userDiv.className = 'flex items-center space-x-3 space-x-reverse bg-white/5 rounded-lg p-3';
                     userDiv.innerHTML = `
-                        <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white border-2 border-blue-500/50">
+                        <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white border-2 border-blue-500/50" onclick="showUserProfileModal('${user.name}')" style="cursor:pointer">
                             ${user.name.charAt(0).toUpperCase()}
                         </div>
                         <div class="flex-1 min-w-0">
-                            <div class="text-white font-semibold truncate">${user.name}</div>
+                            <div class="text-white font-semibold truncate" onclick="showUserProfileModal('${user.name}')" style="cursor:pointer">${user.name}</div>
                             ${rankBadge}
                         </div>
                         <span class="w-2 h-2 bg-green-500 rounded-full"></span>
@@ -1365,6 +2051,174 @@
                     currentUser: { ...currentUser, roomId: currentRoom.id }
                 });
             }
+        }
+
+        // دوال الملف الشخصي والمحادثة الخاصة
+        function showUserProfileModal(username) {
+            if (!currentUser) return;
+            
+            socket.emit('get user profile', { username });
+        }
+
+        function showUserProfile(profileData) {
+            const modal = document.getElementById('profileModal');
+            const avatar = document.getElementById('profileAvatar');
+            const usernameElem = document.getElementById('profileUsername');
+            const rankElem = document.getElementById('profileRank');
+            const statusElem = document.getElementById('profileStatus');
+            const statusDot = statusElem.querySelector('.w-3');
+            const statusText = statusElem.querySelector('.text-sm');
+            const privateChatButton = document.getElementById('privateChatButton');
+            const addFriendButton = document.getElementById('addFriendButton');
+            
+            // تعبئة البيانات
+            avatar.src = profileData.avatar || (profileData.gender === 'female' ? defaultAvatars.girl1 : defaultAvatars.boy1);
+            avatar.onerror = function() {
+                this.src = profileData.gender === 'female' ? defaultAvatars.girl1 : defaultAvatars.boy1;
+            };
+            usernameElem.textContent = profileData.username;
+            
+            if (profileData.rank) {
+                const rankInfo = ranks[profileData.rank];
+                rankElem.textContent = `${rankInfo.icon} ${profileData.rank}`;
+                rankElem.className = `inline-block mt-2 px-3 py-1 rounded-full text-sm font-semibold text-white bg-gradient-to-r ${rankInfo.color}`;
+                rankElem.style.display = 'inline-block';
+            } else {
+                rankElem.style.display = 'none';
+            }
+            
+            if (profileData.isOnline) {
+                statusDot.className = 'w-3 h-3 rounded-full bg-green-500';
+                statusText.textContent = '🟢 متصل الآن';
+            } else {
+                statusDot.className = 'w-3 h-3 rounded-full bg-red-500';
+                statusText.textContent = '🔴 غير متصل';
+            }
+            
+            // إظهار زر المحادثة الخاصة فقط إذا لم يكن المستخدم نفسه
+            if (profileData.username !== currentUser.name) {
+                privateChatButton.style.display = 'flex';
+                privateChatButton.setAttribute('data-username', profileData.username);
+                
+                // إظهار زر إضافة صديق فقط إذا لم يكن المستخدم نفسه
+                addFriendButton.style.display = 'flex';
+                addFriendButton.setAttribute('data-username', profileData.username);
+                
+                // التحقق إذا كان المستخدم صديقاً بالفعل
+                if (friendsList.includes(profileData.username)) {
+                    addFriendButton.innerHTML = `
+                        <span>صديق</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    `;
+                    addFriendButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    addFriendButton.classList.add('bg-gray-600', 'hover:bg-gray-700');
+                    addFriendButton.disabled = true;
+                } else {
+                    addFriendButton.innerHTML = `
+                        <span>إضافة صديق</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                        </svg>
+                    `;
+                    addFriendButton.classList.remove('bg-gray-600', 'hover:bg-gray-700');
+                    addFriendButton.classList.add('bg-green-600', 'hover:bg-green-700');
+                    addFriendButton.disabled = false;
+                }
+            } else {
+                privateChatButton.style.display = 'none';
+                addFriendButton.style.display = 'none';
+            }
+            
+            modal.classList.add('show');
+        }
+
+        function closeProfileModal() {
+            document.getElementById('profileModal').classList.remove('show');
+        }
+
+        function startPrivateChat() {
+            const privateChatButton = document.getElementById('privateChatButton');
+            const username = privateChatButton.getAttribute('data-username');
+            
+            if (!username) return;
+            
+            closeProfileModal();
+            openPrivateChat(username);
+        }
+
+        function openPrivateChat(username) {
+            privateChatTarget = username;
+            const modal = document.getElementById('privateChatModal');
+            const avatar = document.getElementById('privateChatAvatar');
+            const usernameElem = document.getElementById('privateChatUsername');
+            const statusElem = document.getElementById('privateChatStatus');
+            const statusDot = statusElem.querySelector('.w-2');
+            const statusText = statusElem.querySelector('span:last-child');
+            
+            // الحصول على بيانات المستخدم لعرضها
+            socket.emit('get user profile', { username });
+            
+            // تعبئة البيانات الأولية
+            usernameElem.textContent = username;
+            
+            // إظهار النافذة
+            modal.classList.add('show');
+            
+            // تحميل سجل المحادثة
+            socket.emit('get private messages', {
+                otherUser: username,
+                currentUser: currentUser.name
+            });
+        }
+
+        function closePrivateChat() {
+            document.getElementById('privateChatModal').classList.remove('show');
+            privateChatTarget = null;
+        }
+
+        function sendPrivateMessage() {
+            if (!privateChatTarget) return;
+            
+            const input = document.getElementById('privateMessageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            socket.emit('send private message', {
+                toUser: privateChatTarget,
+                message: message,
+                fromUser: currentUser.name
+            });
+            
+            input.value = '';
+        }
+
+        function handlePrivateKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendPrivateMessage();
+            }
+        }
+
+        function addPrivateMessageToChat(message, isOwn) {
+            const container = document.getElementById('privateChatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `mb-3 flex ${isOwn ? 'justify-end' : 'justify-start'}`;
+            
+            messageDiv.innerHTML = `
+                <div class="max-w-xs px-3 py-2 rounded-xl ${
+                    isOwn
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white/20 text-white'
+                }">
+                    <div class="text-sm">${message.content}</div>
+                    <div class="text-xs opacity-70 mt-1">${message.time}</div>
+                </div>
+            `;
+            
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
         }
 
         // وظيفة لعرض الإشعارات
