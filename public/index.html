@@ -136,26 +136,32 @@
         }
 
         /* نمط نافذة الملف الشخصي */
-        .profile-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-        }
-        
-        .profile-modal.show {
-            opacity: 1;
-            visibility: visible;
-        }
+       .private-chat-modal {
+    position: fixed;
+    bottom: 100px;
+    right: 20px;
+    width: 350px;
+    height: 450px;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    z-index: 999;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    transform: translateY(100%);
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none; /* هذا السطر مهم لمنع التفاعل عندما يكون مخفيًا */
+}
+
+.private-chat-modal.show {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto; /* السماح بالتفاعل عندما يكون ظاهرًا */
+}
         
         .profile-content {
             background: rgba(15, 23, 42, 0.95);
@@ -719,12 +725,13 @@
                
                 <div id="messageInputContainer" class="flex space-x-4 space-x-reverse">
                     <input
-                        type="text"
-                        id="messageInput"
-                        placeholder="اكتب رسالتك هنا..."
-                        class="flex-1 bg-white/20 border border-white/30 rounded-full px-6 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                        onkeypress="handleKeyPress(event)"
-                    >
+                    type="text"
+                    id="messageInput"
+                    placeholder="اكتب رسالتك هنا..."
+                    class="flex-1 bg-white/20 border border-white/30 rounded-full px-6 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    onkeypress="handleKeyPress(event)"
+                    style="text-align: start; direction: rtl; padding-left: 20px; position: relative; z-index: 10;"
+                >                      
                     <button
                         onclick="sendMessage()"
                         class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse"
@@ -2254,6 +2261,7 @@
                 container.scrollTop = container.scrollHeight;
             }
         }
+        
     </script>
 </body>
 </html>

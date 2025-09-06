@@ -1,8 +1,76 @@
+require('dotenv').config();
+const bcrypt = require('bcrypt');
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
-const fs = require('fs');
+const { Sequelize, DataTypes } = require('sequelize');
+
+// إنشاء اتصال بقاعدة البيانات
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: 'postgres',
+  protocol: 'postgres',
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    }
+  },
+  logging: false
+});
+
+// تعريف نماذج قاعدة البيانات
+const User = sequelize.define('User', {
+  username: { type: DataTypes.STRING, primaryKey: true },
+  password: { type: DataTypes.STRING, allowNull: false },
+  gender: { type: DataTypes.STRING, allowNull: false }
+});
+
+const UserRank = sequelize.define('UserRank', {
+  username: { type: DataTypes.STRING, primaryKey: true },
+  rank: { type: DataTypes.STRING, allowNull: false }
+});
+
+const UserManagement = sequelize.define('UserManagement', {
+  username: { type: DataTypes.STRING, allowNull: false },
+  type: { type: DataTypes.STRING, allowNull: false },
+  roomName: { type: DataTypes.STRING, allowNull: true },
+  mutedBy: { type: DataTypes.STRING, allowNull: true },
+  bannedBy: { type: DataTypes.STRING, allowNull: true },
+  reason: { type: DataTypes.TEXT, allowNull: true },
+  expiresAt: { type: DataTypes.DATE, allowNull: true },
+  bannedAt: { type: DataTypes.DATE, allowNull: true }
+});
+
+const UserAvatar = sequelize.define('UserAvatar', {
+  username: { type: DataTypes.STRING, primaryKey: true },
+  avatarUrl: { type: DataTypes.TEXT, allowNull: false }
+});
+
+const UserSession = sequelize.define('UserSession', {
+  sessionId: { type: DataTypes.STRING, primaryKey: true },
+  username: { type: DataTypes.STRING, allowNull: false },
+  password: { type: DataTypes.STRING, allowNull: false }
+});
+
+const PrivateMessage = sequelize.define('PrivateMessage', {
+  conversationId: { type: DataTypes.STRING, allowNull: false },
+  fromUser: { type: DataTypes.STRING, allowNull: false },
+  toUser: { type: DataTypes.STRING, allowNull: false },
+  content: { type: DataTypes.TEXT, allowNull: false },
+  time: { type: DataTypes.STRING, allowNull: false },
+  timestamp: { type: DataTypes.BIGINT, allowNull: false }
+});
+
+const UserFriend = sequelize.define('UserFriend', {
+  username: { type: DataTypes.STRING, allowNull: false },
+  friendUsername: { type: DataTypes.STRING, allowNull: false }
+});
+
+const FriendRequest = sequelize.define('FriendRequest', {
+  fromUser: { type: DataTypes.STRING, allowNull: false },
+  toUser: { type: DataTypes.STRING, allowNull: false }
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -24,11 +92,10 @@ const ranks = {
 // المستخدم الخاص
 const SITE_OWNER = {
   username: "Walid dz 31",
-  password: "walidwalid321",
   rank: "صاحب الموقع"
 };
 
-// تخزين البيانات
+// تخزين البيانات في الذاكرة
 let users = {};
 let userRanks = {};
 let userManagement = {
@@ -38,108 +105,361 @@ let userManagement = {
 };
 let userAvatars = {};
 let userSessions = {};
-let privateMessages = {}; // تخزين الرسائل الخاصة
-let userFriends = {}; // تخزين قوائم الأصدقاء
-let friendRequests = {}; // تخزين طلبات الصداقة
+let privateMessages = {};
+let userFriends = {};
+let friendRequests = {};
 
-// تحميل البيانات من الملفات
-function loadData() {
+// تحميل البيانات من قاعدة البيانات
+async function loadData() {
   try {
-    if (!fs.existsSync('./data')) {
-      fs.mkdirSync('./data');
-    }
+    await sequelize.authenticate();
+    console.log('تم الاتصال بقاعدة البيانات بنجاح!');
     
-    if (fs.existsSync('./data/users.json')) {
-      const usersData = fs.readFileSync('./data/users.json', 'utf8');
-      if (usersData.trim()) {
-        users = JSON.parse(usersData);
+    await sequelize.sync();
+    
+    // تحميل المستخدمين
+    const usersData = await User.findAll();
+    usersData.forEach(user => {
+      users[user.username] = {
+        password: user.password,
+        gender: user.gender
+      };
+    });
+    
+    // تحميل الرتب
+    const ranksData = await UserRank.findAll();
+    ranksData.forEach(rank => {
+      userRanks[rank.username] = rank.rank;
+    });
+    
+    // تحميل إدارة المستخدمين
+    const mutedUsers = await UserManagement.findAll({ where: { type: 'mute' } });
+    mutedUsers.forEach(mute => {
+      userManagement.mutedUsers[mute.username] = {
+        mutedBy: mute.mutedBy,
+        expiresAt: mute.expiresAt
+      };
+    });
+    
+    const roomBans = await UserManagement.findAll({ where: { type: 'room_ban' } });
+    roomBans.forEach(ban => {
+      if (!userManagement.bannedFromRoom[ban.roomName]) {
+        userManagement.bannedFromRoom[ban.roomName] = {};
       }
-    }
+      userManagement.bannedFromRoom[ban.roomName][ban.username] = {
+        bannedBy: ban.bannedBy,
+        reason: ban.reason,
+        bannedAt: ban.bannedAt
+      };
+    });
     
-    if (fs.existsSync('./data/ranks.json')) {
-      const ranksData = fs.readFileSync('./data/ranks.json', 'utf8');
-      if (ranksData.trim()) {
-        userRanks = JSON.parse(ranksData);
+    const siteBans = await UserManagement.findAll({ where: { type: 'site_ban' } });
+    siteBans.forEach(ban => {
+      userManagement.bannedFromSite[ban.username] = {
+        bannedBy: ban.bannedBy,
+        reason: ban.reason,
+        bannedAt: ban.bannedAt
+      };
+    });
+    
+    // تحميل الصور
+    const avatarsData = await UserAvatar.findAll();
+    avatarsData.forEach(avatar => {
+      userAvatars[avatar.username] = avatar.avatarUrl;
+    });
+    
+    // تحميل الجلسات
+    const sessionsData = await UserSession.findAll();
+    sessionsData.forEach(session => {
+      userSessions[session.sessionId] = {
+        username: session.username,
+        password: session.password
+      };
+    });
+    
+    // تحميل الأصدقاء
+    const friendsData = await UserFriend.findAll();
+    friendsData.forEach(friend => {
+      if (!userFriends[friend.username]) {
+        userFriends[friend.username] = [];
       }
-    }
+      userFriends[friend.username].push(friend.friendUsername);
+    });
     
-    if (fs.existsSync('./data/management.json')) {
-      const managementData = fs.readFileSync('./data/management.json', 'utf8');
-      if (managementData.trim()) {
-        userManagement = JSON.parse(managementData);
+    // تحميل طلبات الصداقة
+    const requestsData = await FriendRequest.findAll();
+    requestsData.forEach(request => {
+      if (!friendRequests[request.toUser]) {
+        friendRequests[request.toUser] = [];
       }
-    }
+      friendRequests[request.toUser].push(request.fromUser);
+    });
     
-    if (fs.existsSync('./data/avatars.json')) {
-      const avatarsData = fs.readFileSync('./data/avatars.json', 'utf8');
-      if (avatarsData.trim()) {
-        userAvatars = JSON.parse(avatarsData);
-      }
-    }
-    
-    if (fs.existsSync('./data/sessions.json')) {
-      const sessionsData = fs.readFileSync('./data/sessions.json', 'utf8');
-      if (sessionsData.trim()) {
-        userSessions = JSON.parse(sessionsData);
-      }
-    }
-    
-    if (fs.existsSync('./data/private_messages.json')) {
-      const privateMessagesData = fs.readFileSync('./data/private_messages.json', 'utf8');
-      if (privateMessagesData.trim()) {
-        privateMessages = JSON.parse(privateMessagesData);
-      }
-    }
-    
-    if (fs.existsSync('./data/friends.json')) {
-      const friendsData = fs.readFileSync('./data/friends.json', 'utf8');
-      if (friendsData.trim()) {
-        userFriends = JSON.parse(friendsData);
-      }
-    }
-    
-    if (fs.existsSync('./data/friend_requests.json')) {
-      const friendRequestsData = fs.readFileSync('./data/friend_requests.json', 'utf8');
-      if (friendRequestsData.trim()) {
-        friendRequests = JSON.parse(friendRequestsData);
-      }
-    }
-    
-    // التأكد من وجود حساب صاحب الموقع في بيانات المستخدمين
+    // التأكد من وجود حساب صاحب الموقع
     if (!users[SITE_OWNER.username]) {
+      await User.create({
+        username: SITE_OWNER.username,
+        password: SITE_OWNER.password,
+        gender: 'male'
+      });
+      
+      await UserRank.create({
+        username: SITE_OWNER.username,
+        rank: SITE_OWNER.rank
+      });
+      
       users[SITE_OWNER.username] = {
         password: SITE_OWNER.password,
         gender: 'male'
       };
+      
       userRanks[SITE_OWNER.username] = SITE_OWNER.rank;
-      saveData();
     }
-  } catch (e) {
-    console.log('خطأ في تحميل البيانات، إنشاء ملفات جديدة...', e);
-    if (!fs.existsSync('./data')) {
-      fs.mkdirSync('./data');
-    }
-    saveData();
+    
+    console.log('تم تحميل البيانات من قاعدة البيانات بنجاح!');
+  } catch (error) {
+    console.log('خطأ في تحميل البيانات:', error);
   }
 }
 
-// حفظ البيانات إلى الملفات
-function saveData() {
+// دوال الحفظ في قاعدة البيانات
+async function saveUser(username, userData) {
   try {
-    if (!fs.existsSync('./data')) {
-      fs.mkdirSync('./data');
-    }
+    const [user, created] = await User.findOrCreate({
+      where: { username },
+      defaults: {
+        password: userData.password,
+        gender: userData.gender
+      }
+    });
     
-    fs.writeFileSync('./data/users.json', JSON.stringify(users, null, 2));
-    fs.writeFileSync('./data/ranks.json', JSON.stringify(userRanks, null, 2));
-    fs.writeFileSync('./data/management.json', JSON.stringify(userManagement, null, 2));
-    fs.writeFileSync('./data/avatars.json', JSON.stringify(userAvatars, null, 2));
-    fs.writeFileSync('./data/sessions.json', JSON.stringify(userSessions, null, 2));
-    fs.writeFileSync('./data/private_messages.json', JSON.stringify(privateMessages, null, 2));
-    fs.writeFileSync('./data/friends.json', JSON.stringify(userFriends, null, 2));
-    fs.writeFileSync('./data/friend_requests.json', JSON.stringify(friendRequests, null, 2));
-  } catch (e) {
-    console.error('خطأ في حفظ البيانات:', e);
+    if (!created) {
+      await user.update({
+        password: userData.password,
+        gender: userData.gender
+      });
+    }
+  } catch (error) {
+    console.error('خطأ في حفظ المستخدم:', error);
+  }
+}
+
+async function saveUserRank(username, rank) {
+  try {
+    const [userRank, created] = await UserRank.findOrCreate({
+      where: { username },
+      defaults: { rank }
+    });
+    
+    if (!created) {
+      await userRank.update({ rank });
+    }
+  } catch (error) {
+    console.error('خطأ في حفظ رتبة المستخدم:', error);
+  }
+}
+
+async function removeUserRank(username) {
+  try {
+    await UserRank.destroy({ where: { username } });
+  } catch (error) {
+    console.error('خطأ في إزالة رتبة المستخدم:', error);
+  }
+}
+
+async function saveUserAvatar(username, avatarUrl) {
+  try {
+    const [avatar, created] = await UserAvatar.findOrCreate({
+      where: { username },
+      defaults: { avatarUrl }
+    });
+    
+    if (!created) {
+      await avatar.update({ avatarUrl });
+    }
+  } catch (error) {
+    console.error('خطأ في حفظ صورة المستخدم:', error);
+  }
+}
+
+async function saveUserSession(sessionId, username, password) {
+  try {
+    await UserSession.create({
+      sessionId,
+      username,
+      password
+    });
+  } catch (error) {
+    console.error('خطأ في حفظ جلسة المستخدم:', error);
+  }
+}
+
+async function removeUserSession(sessionId) {
+  try {
+    await UserSession.destroy({ where: { sessionId } });
+  } catch (error) {
+    console.error('خطأ في إزالة جلسة المستخدم:', error);
+  }
+}
+
+async function savePrivateMessage(conversationId, fromUser, toUser, content, time, timestamp) {
+  try {
+    await PrivateMessage.create({
+      conversationId,
+      fromUser,
+      toUser,
+      content,
+      time,
+      timestamp
+    });
+  } catch (error) {
+    console.error('خطأ في حفظ الرسالة الخاصة:', error);
+  }
+}
+
+async function saveFriendRequest(fromUser, toUser) {
+  try {
+    await FriendRequest.create({
+      fromUser,
+      toUser
+    });
+  } catch (error) {
+    console.error('خطأ في حفظ طلب الصداقة:', error);
+  }
+}
+
+async function removeFriendRequest(fromUser, toUser) {
+  try {
+    await FriendRequest.destroy({
+      where: {
+        fromUser,
+        toUser
+      }
+    });
+  } catch (error) {
+    console.error('خطأ في إزالة طلب الصداقة:', error);
+  }
+}
+
+async function saveUserFriend(username, friendUsername) {
+  try {
+    await UserFriend.create({
+      username,
+      friendUsername
+    });
+  } catch (error) {
+    console.error('خطأ في حفظ الصداقة:', error);
+  }
+}
+
+async function removeUserFriend(username, friendUsername) {
+  try {
+    await UserFriend.destroy({
+      where: {
+        username,
+        friendUsername
+      }
+    });
+  } catch (error) {
+    console.error('خطأ في إزالة الصداقة:', error);
+  }
+}
+
+async function saveMuteUser(username, mutedBy, expiresAt) {
+  try {
+    await UserManagement.create({
+      username,
+      type: 'mute',
+      mutedBy,
+      expiresAt
+    });
+  } catch (error) {
+    console.error('خطأ في حفظ كتم المستخدم:', error);
+  }
+}
+
+async function removeMuteUser(username) {
+  try {
+    await UserManagement.destroy({
+      where: {
+        username,
+        type: 'mute'
+      }
+    });
+  } catch (error) {
+    console.error('خطأ في إزالة كتم المستخدم:', error);
+  }
+}
+
+async function saveRoomBan(username, roomName, bannedBy, reason) {
+  try {
+    await UserManagement.create({
+      username,
+      type: 'room_ban',
+      roomName,
+      bannedBy,
+      reason,
+      bannedAt: new Date()
+    });
+  } catch (error) {
+    console.error('خطأ في حفظ حظر الغرفة:', error);
+  }
+}
+
+async function removeRoomBan(username, roomName) {
+  try {
+    await UserManagement.destroy({
+      where: {
+        username,
+        type: 'room_ban',
+        roomName
+      }
+    });
+  } catch (error) {
+    console.error('خطأ في إزالة حظر الغرفة:', error);
+  }
+}
+
+async function saveSiteBan(username, bannedBy, reason) {
+  try {
+    await UserManagement.create({
+      username,
+      type: 'site_ban',
+      bannedBy,
+      reason,
+      bannedAt: new Date()
+    });
+  } catch (error) {
+    console.error('خطأ في حفظ حظر الموقع:', error);
+  }
+}
+
+async function removeSiteBan(username) {
+  try {
+    await UserManagement.destroy({
+      where: {
+        username,
+        type: 'site_ban'
+      }
+    });
+  } catch (error) {
+    console.error('خطأ في إزالة حظر الموقع:', error);
+  }
+}
+
+async function removeUser(username) {
+  try {
+    await User.destroy({ where: { username } });
+    await UserRank.destroy({ where: { username } });
+    await UserAvatar.destroy({ where: { username } });
+    await UserSession.destroy({ where: { username } });
+    await UserManagement.destroy({ where: { username } });
+    await UserFriend.destroy({ where: { username } });
+    await UserFriend.destroy({ where: { friendUsername: username } });
+    await FriendRequest.destroy({ where: { fromUser: username } });
+    await FriendRequest.destroy({ where: { toUser: username } });
+  } catch (error) {
+    console.error('خطأ في حذف المستخدم:', error);
   }
 }
 
@@ -180,13 +500,11 @@ function canSendMessage(username, roomName) {
   if (userManagement.bannedFromSite[username]) return false;
   if (userManagement.bannedFromRoom[roomName] && userManagement.bannedFromRoom[roomName][username]) return false;
   
-  // الكتم أصبح عاماً على جميع الغرف
   if (userManagement.mutedUsers[username]) {
     const muteInfo = userManagement.mutedUsers[username];
     if (new Date() < new Date(muteInfo.expiresAt)) return false;
-    // إذا انتهت مدة الكتم، قم بإزالته
     delete userManagement.mutedUsers[username];
-    saveData();
+    removeMuteUser(username);
   }
   return true;
 }
@@ -203,7 +521,7 @@ io.on('connection', (socket) => {
   console.log('مستخدم جديد متصل:', socket.id);
 
   // التحقق من الجلسة المحفوظة
-  socket.on('check session', (sessionId) => {
+  socket.on('check session', async (sessionId) => {
     if (userSessions[sessionId]) {
       const userData = userSessions[sessionId];
       if (users[userData.username] && users[userData.username].password === userData.password) {
@@ -221,75 +539,92 @@ io.on('connection', (socket) => {
   });
 
   // حدث تسجيل الدخول
-  socket.on('user login', (userData) => {
-    // التحقق من صاحب الموقع أولاً
-    if (userData.username === SITE_OWNER.username && userData.password === SITE_OWNER.password) {
-        const sessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
-        userSessions[sessionId] = { username: userData.username, password: userData.password };
-        saveData();
+  socket.on('user login', async (userData) => {
+  // التحقق من صاحب الموقع أولاً
+  if (userData.username === SITE_OWNER.username) {
+    try {
+      // البحث عن مستخدم صاحب الموقع في قاعدة البيانات
+      const ownerUser = await User.findOne({ where: { username: SITE_OWNER.username } });
+      
+      if (ownerUser) {
+        const isPasswordValid = await bcrypt.compare(userData.password, ownerUser.password);
         
-        socket.emit('login success', {
+        if (isPasswordValid) {
+          const sessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
+          userSessions[sessionId] = { 
+            username: userData.username, 
+            password: ownerUser.password 
+          };
+          
+          await saveUserSession(sessionId, userData.username, ownerUser.password);
+          
+          socket.emit('login success', {
             name: userData.username,
             rank: SITE_OWNER.rank,
             isSiteOwner: true,
             socketId: socket.id,
             sessionId: sessionId
-        });
-    } 
-    // ثم التحقق من المستخدمين العاديين
-    else if (users[userData.username] && users[userData.username].password === userData.password) {
-        const sessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
-        userSessions[sessionId] = { username: userData.username, password: userData.password };
-        saveData();
-        
-        socket.emit('login success', {
-            name: userData.username,
-            rank: userRanks[userData.username] || null,
-            isSiteOwner: false,
-            gender: users[userData.username].gender,
-            socketId: socket.id,
-            sessionId: sessionId
-        });
-    } else {
-        socket.emit('login error', 'اسم المستخدم أو كلمة السر غير صحيحة!');
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error('خطأ في التحقق من صاحب الموقع:', error);
     }
-  });
-
-  socket.on('update session', (sessionData) => {
-    if (userSessions[sessionData.sessionId]) {
-        userSessions[sessionData.sessionId] = {
-            username: sessionData.username,
-            password: sessionData.password
-        };
-        saveData();
-    }
-  });
-
-  // حدث إنشاء حساب
-  socket.on('user register', (userData) => {
-    if (users[userData.username]) {
-      socket.emit('register error', 'اسم المستخدم موجود مسبقاً!');
+  }
+  // ثم التحقق من المستخدمين العاديين
+  else if (users[userData.username]) {
+    const isPasswordValid = await bcrypt.compare(userData.password, users[userData.username].password);
+    if (isPasswordValid) {
+      const sessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
+      userSessions[sessionId] = { username: userData.username, password: users[userData.username].password };
+      await saveUserSession(sessionId, userData.username, users[userData.username].password);
+      
+      socket.emit('login success', {
+        name: userData.username,
+        rank: userRanks[userData.username] || null,
+        isSiteOwner: false,
+        gender: users[userData.username].gender,
+        socketId: socket.id,
+        sessionId: sessionId
+      });
       return;
     }
-    
-    users[userData.username] = {
-      password: userData.password,
-      gender: userData.gender
-    };
-    
-    const sessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
-    userSessions[sessionId] = { username: userData.username, password: userData.password };
-    saveData();
-    
-    socket.emit('register success', {
-      name: userData.username,
-      rank: null,
-      isSiteOwner: false,
-      gender: userData.gender,
-      socketId: socket.id,
-      sessionId: sessionId
-    });
+  }
+  
+  socket.emit('login error', 'اسم المستخدم أو كلمة السر غير صحيحة!');
+});
+
+  // حدث إنشاء حساب
+  socket.on('user register', async (userData) => {
+  if (users[userData.username]) {
+    socket.emit('register error', 'اسم المستخدم موجود مسبقاً!');
+    return;
+  }
+  
+  // تشفير كلمة السر
+  const hashedPassword = await bcrypt.hash(userData.password, 10);
+  
+  users[userData.username] = {
+    password: hashedPassword, // حفظ كلمة السر المشفرة
+    gender: userData.gender
+  };
+  
+  await saveUser(userData.username, users[userData.username]);
+  
+  const sessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
+  userSessions[sessionId] = { username: userData.username, password: hashedPassword };
+  await saveUserSession(sessionId, userData.username, hashedPassword);
+  
+  socket.emit('register success', {
+    name: userData.username,
+    rank: null,
+    isSiteOwner: false,
+    gender: userData.gender,
+    socketId: socket.id,
+    sessionId: sessionId
   });
+});
 
   socket.on('join room', (data) => {
     const { roomId, user } = data;
@@ -339,7 +674,6 @@ io.on('connection', (socket) => {
     
     // إضافة الرسالة للسجل (الرسائل الجديدة فقط)
     if (!messages[roomId]) messages[roomId] = [];
-    // الاحتفاظ فقط بـ 50 رسالة حديثة
     if (messages[roomId].length > 50) {
       messages[roomId] = messages[roomId].slice(-50);
     }
@@ -372,7 +706,6 @@ io.on('connection', (socket) => {
     };
     
     if (!messages[roomId]) messages[roomId] = [];
-    // الاحتفاظ فقط بـ 50 رسالة حديثة
     if (messages[roomId].length > 50) {
       messages[roomId] = messages[roomId].slice(-50);
     }
@@ -406,7 +739,7 @@ io.on('connection', (socket) => {
   });
 
   // حدث إدارة الرتب
-  socket.on('assign rank', (data) => {
+  socket.on('assign rank', async (data) => {
     const { username, rank, currentUser } = data;
     const userRoomId = onlineUsers[socket.id]?.roomId;
     const room = rooms.find(r => r.id === userRoomId);
@@ -417,7 +750,7 @@ io.on('connection', (socket) => {
     }
     
     userRanks[username] = rank;
-    saveData();
+    await saveUserRank(username, rank);
     
     // تحديث الرتبة للمستخدمين المتصلين
     Object.keys(onlineUsers).forEach(socketId => {
@@ -458,7 +791,7 @@ io.on('connection', (socket) => {
     socket.emit('rank success', `تم منح الرتبة ${rank} للمستخدم ${username} بنجاح`);
   });
 
-  socket.on('remove rank', (data) => {
+  socket.on('remove rank', async (data) => {
     const { username, currentUser } = data;
     const userRoomId = onlineUsers[socket.id]?.roomId;
     const room = rooms.find(r => r.id === userRoomId);
@@ -471,7 +804,7 @@ io.on('connection', (socket) => {
     if (userRanks[username]) {
       const oldRank = userRanks[username];
       delete userRanks[username];
-      saveData();
+      await removeUserRank(username);
       
       // تحديث الرتبة للمستخدمين المتصلين
       Object.keys(onlineUsers).forEach(socketId => {
@@ -547,7 +880,7 @@ io.on('connection', (socket) => {
   });
 
   // أحداث إدارة المستخدمين
-  socket.on('mute user', (data) => {
+  socket.on('mute user', async (data) => {
     const { username, duration, currentUser } = data;
     const userRoomId = onlineUsers[socket.id]?.roomId;
     const room = rooms.find(r => r.id === userRoomId);
@@ -571,7 +904,7 @@ io.on('connection', (socket) => {
       expiresAt: expiresAt.toISOString()
     };
     
-    saveData();
+    await saveMuteUser(username, currentUser.name, expiresAt);
     
     const notificationMessage = {
       type: 'system',
@@ -587,7 +920,7 @@ io.on('connection', (socket) => {
     socket.emit('management success', `تم كتم المستخدم ${username} في جميع الغرف بنجاح`);
   });
 
-  socket.on('unmute user', (data) => {
+  socket.on('unmute user', async (data) => {
     const { username, currentUser } = data;
     const userRoomId = onlineUsers[socket.id]?.roomId;
     const room = rooms.find(r => r.id === userRoomId);
@@ -599,7 +932,7 @@ io.on('connection', (socket) => {
     
     if (userManagement.mutedUsers[username]) {
       delete userManagement.mutedUsers[username];
-      saveData();
+      await removeMuteUser(username);
       
       const notificationMessage = {
         type: 'system',
@@ -618,7 +951,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('ban from room', (data) => {
+  socket.on('ban from room', async (data) => {
     const { username, reason, currentUser } = data;
     const userRoomId = onlineUsers[socket.id]?.roomId;
     const room = rooms.find(r => r.id === userRoomId);
@@ -644,7 +977,7 @@ io.on('connection', (socket) => {
       bannedAt: new Date().toISOString()
     };
     
-    saveData();
+    await saveRoomBan(username, room.name, currentUser.name, reason || 'غير محدد');
     
     // طرد المستخدم المحظور من الغرفة إذا كان متصلاً
     const bannedUserSocket = Object.keys(onlineUsers).find(
@@ -670,7 +1003,7 @@ io.on('connection', (socket) => {
     socket.emit('management success', `تم حظر المستخدم ${username} من الغرفة بنجاح`);
   });
 
-  socket.on('unban from room', (data) => {
+  socket.on('unban from room', async (data) => {
     const { username, currentUser } = data;
     const userRoomId = onlineUsers[socket.id]?.roomId;
     const room = rooms.find(r => r.id === userRoomId);
@@ -682,7 +1015,7 @@ io.on('connection', (socket) => {
     
     if (userManagement.bannedFromRoom[room.name] && userManagement.bannedFromRoom[room.name][username]) {
       delete userManagement.bannedFromRoom[room.name][username];
-      saveData();
+      await removeRoomBan(username, room.name);
       
       const notificationMessage = {
         type: 'system',
@@ -699,7 +1032,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('ban from site', (data) => {
+  socket.on('ban from site', async (data) => {
     const { username, reason, currentUser } = data;
     const userRoomId = onlineUsers[socket.id]?.roomId;
     const room = rooms.find(r => r.id === userRoomId);
@@ -721,7 +1054,7 @@ io.on('connection', (socket) => {
       bannedAt: new Date().toISOString()
     };
     
-    saveData();
+    await saveSiteBan(username, currentUser.name, reason || 'غير محدد');
     
     // طرد المستخدم المحظور من الموقع إذا كان متصلاً
     const bannedUserSocket = Object.keys(onlineUsers).find(
@@ -748,7 +1081,7 @@ io.on('connection', (socket) => {
     socket.emit('management success', `تم حظر المستخدم ${username} من الموقع بنجاح`);
   });
 
-  socket.on('unban from site', (data) => {
+  socket.on('unban from site', async (data) => {
     const { username, currentUser } = data;
     const userRoomId = onlineUsers[socket.id]?.roomId;
     const room = rooms.find(r => r.id === userRoomId);
@@ -760,7 +1093,7 @@ io.on('connection', (socket) => {
     
     if (userManagement.bannedFromSite[username]) {
       delete userManagement.bannedFromSite[username];
-      saveData();
+      await removeSiteBan(username);
       
       const notificationMessage = {
         type: 'system',
@@ -779,7 +1112,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('delete user', (data) => {
+  socket.on('delete user', async (data) => {
     const { username, currentUser } = data;
     const userRoomId = onlineUsers[socket.id]?.roomId;
     const room = rooms.find(r => r.id === userRoomId);
@@ -825,7 +1158,7 @@ io.on('connection', (socket) => {
         }
       });
       
-      saveData();
+      await removeUser(username);
       
       // طرد المستخدم المحذوف إذا كان متصلاً
       const deletedUserSocket = Object.keys(onlineUsers).find(
@@ -922,7 +1255,7 @@ io.on('connection', (socket) => {
   });
 
   // حدث إدارة الصور
-  socket.on('update avatar', (data) => {
+  socket.on('update avatar', async (data) => {
     const { username, avatarUrl, currentUser } = data;
     const userRoomId = onlineUsers[socket.id]?.roomId;
     const room = rooms.find(r => r.id === userRoomId);
@@ -938,7 +1271,7 @@ io.on('connection', (socket) => {
     }
     
     userAvatars[username] = avatarUrl;
-    saveData();
+    await saveUserAvatar(username, avatarUrl);
     
     // تحديث الصورة للمستخدمين المتصلين
     Object.keys(onlineUsers).forEach(socketId => {
@@ -987,7 +1320,7 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('send private message', (data) => {
+  socket.on('send private message', async (data) => {
     const { toUser, message, fromUser } = data;
     
     // حفظ الرسالة الخاصة
@@ -1005,7 +1338,7 @@ io.on('connection', (socket) => {
     };
     
     privateMessages[conversationId].push(privateMessage);
-    saveData();
+    await savePrivateMessage(conversationId, fromUser, toUser, message, privateMessage.time, privateMessage.timestamp);
     
     // إرسال الرسالة للمرسل
     socket.emit('private message sent', privateMessage);
@@ -1029,7 +1362,7 @@ io.on('connection', (socket) => {
   });
 
   // أحداث نظام الصداقات
-  socket.on('send friend request', (data) => {
+  socket.on('send friend request', async (data) => {
     const { fromUser, toUser } = data;
     
     if (!friendRequests[toUser]) {
@@ -1039,7 +1372,7 @@ io.on('connection', (socket) => {
     // تجنب إرسال طلب صداقة مكرر
     if (!friendRequests[toUser].includes(fromUser)) {
       friendRequests[toUser].push(fromUser);
-      saveData();
+      await saveFriendRequest(fromUser, toUser);
       
       // إرسال إشعار للمستلم إذا كان متصلاً
       const recipientSocketId = Object.keys(onlineUsers).find(
@@ -1056,7 +1389,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('accept friend request', (data) => {
+  socket.on('accept friend request', async (data) => {
     const { fromUser, toUser } = data;
     
     if (friendRequests[toUser] && friendRequests[toUser].includes(fromUser)) {
@@ -1070,14 +1403,16 @@ io.on('connection', (socket) => {
       
       if (!userFriends[fromUser].includes(toUser)) {
         userFriends[fromUser].push(toUser);
+        await saveUserFriend(fromUser, toUser);
       }
       if (!userFriends[toUser].includes(fromUser)) {
         userFriends[toUser].push(fromUser);
+        await saveUserFriend(toUser, fromUser);
       }
       
       // إزالة طلب الصداقة
       friendRequests[toUser] = friendRequests[toUser].filter(user => user !== fromUser);
-      saveData();
+      await removeFriendRequest(fromUser, toUser);
       
       // إرسال إشعار للمرسل
       const senderSocketId = Object.keys(onlineUsers).find(
@@ -1094,13 +1429,13 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('reject friend request', (data) => {
+  socket.on('reject friend request', async (data) => {
     const { fromUser, toUser } = data;
     
     if (friendRequests[toUser] && friendRequests[toUser].includes(fromUser)) {
       // إزالة طلب الصداقة
       friendRequests[toUser] = friendRequests[toUser].filter(user => user !== fromUser);
-      saveData();
+      await removeFriendRequest(fromUser, toUser);
       
       socket.emit('friend request processed', 'تم رفض طلب الصداقة');
     } else {
@@ -1108,19 +1443,17 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('remove friend', (data) => {
+  socket.on('remove friend', async (data) => {
     const { username, friendToRemove } = data;
     
     if (userFriends[username] && userFriends[username].includes(friendToRemove)) {
       userFriends[username] = userFriends[username].filter(friend => friend !== friendToRemove);
+      await removeUserFriend(username, friendToRemove);
       
       if (userFriends[friendToRemove] && userFriends[friendToRemove].includes(username)) {
         userFriends[friendToRemove] = userFriends[friendToRemove].filter(friend => friend !== username);
+        await removeUserFriend(friendToRemove, username);
       }
-      
-      saveData();
-      
-      socket.emit('friend removed', `تم إزالة ${friendToRemove} من قائمة أصدقائك`);
       
       // إرسال إشعار للطرف الآخر إذا كان متصلاً
       const friendSocketId = Object.keys(onlineUsers).find(
@@ -1130,6 +1463,8 @@ io.on('connection', (socket) => {
       if (friendSocketId) {
         io.to(friendSocketId).emit('friend removed you', { byUser: username });
       }
+      
+      socket.emit('friend removed', `تم إزالة ${friendToRemove} من قائمة أصدقائك`);
     } else {
       socket.emit('friend error', 'هذا المستخدم ليس في قائمة أصدقائك');
     }
