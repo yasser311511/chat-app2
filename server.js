@@ -194,6 +194,23 @@ async function loadData() {
       }
       friendRequests[request.toUser].push(request.fromUser);
     });
+    // تحميل الرسائل الخاصة
+    const privateMessagesData = await PrivateMessage.findAll({
+      order: [['timestamp', 'ASC']]
+    });
+    privateMessagesData.forEach(msg => {
+      const conversationId = msg.conversationId;
+      if (!privateMessages[conversationId]) {
+        privateMessages[conversationId] = [];
+      }
+      privateMessages[conversationId].push({
+        from: msg.fromUser,
+        to: msg.toUser,
+        content: msg.content,
+        time: msg.time,
+        timestamp: msg.timestamp
+      });
+    });
     
     // التأكد من وجود حساب صاحب الموقع
     if (!users[SITE_OWNER.username]) {
