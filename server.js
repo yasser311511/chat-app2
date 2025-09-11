@@ -1508,6 +1508,85 @@ io.on('connection', (socket) => {
     
     socket.emit('search results', results);
   });
+  // بعد أحداث الصداقات، أضف أحداث الرسم:
+let drawingElements = {}; // تخزين عناصر الرسم لكل غرفة
+
+// أحداث الرسم التعاوني
+socket.on('drawing start', (data) => {
+    const { roomId, x, y, color, tool, sessionId } = data;
+    if (roomId === 1) { // فقط للغرفة العامة
+        if (!drawingElements[roomId]) {
+            drawingElements[roomId] = [];
+        }
+        // إضافة نقطة البداية
+        drawingElements[roomId].push({ 
+            type: 'start', 
+            x, y, color, tool, 
+            sessionId,
+            socketId: socket.id 
+        });
+        // إرسال لجميع المستخدمين في الغرفة
+        socket.to(roomId).emit('drawing start', { 
+            x, y, color, tool, 
+            sessionId,
+            socketId: socket.id 
+        });
+    }
+});
+
+socket.on('drawing', (data) => {
+    const { roomId, x, y, color, tool, sessionId, lastX, lastY } = data;
+    if (roomId === 1) {
+        // إضافة نقطة الرسم
+        drawingElements[roomId].push({ 
+            type: 'draw', 
+            x, y, color, tool, 
+            sessionId,
+            socketId: socket.id 
+        });
+        // إرسال لجميع المستخدمين في الغرفة
+        socket.to(roomId).emit('drawing data', { 
+            x, y, color, tool, 
+            sessionId,
+            
+            socketId: socket.id 
+        });
+    }
+});
+
+socket.on('drawing end', (data) => {
+    const { roomId, sessionId } = data;
+    if (roomId === 1) {
+        // إضافة نقطة النهاية
+        drawingElements[roomId].push({ 
+            type: 'end', 
+            sessionId,
+            socketId: socket.id 
+        });
+        // إرسال لجميع المستخدمين في الغرفة
+        socket.to(roomId).emit('drawing end', { 
+            sessionId,
+            socketId: socket.id 
+        });
+    }
+});
+
+socket.on('clear drawing', (data) => {
+    const { roomId } = data;
+    if (roomId === 1) {
+        drawingElements[roomId] = []; // مسح جميع العناصر
+        // إعلام الجميع بمسح اللوحة
+        io.to(roomId).emit('drawing cleared');
+    }
+});
+
+socket.on('get drawing history', (data) => {
+    const { roomId } = data;
+    if (roomId === 1) {
+        // إرسال تاريخ الرسم للمستخدم الجديد
+        socket.emit('drawing history', drawingElements[roomId] || []);
+    }
+});
   
   socket.on('disconnect', () => {
     const user = onlineUsers[socket.id];
