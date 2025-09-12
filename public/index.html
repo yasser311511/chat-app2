@@ -785,6 +785,19 @@
                     <span class="w-3 h-3 rounded-full"></span>
                     <span class="text-sm text-blue-200"></span>
                 </div>
+                <!-- في نافذة الملف الشخصي، بعد حالة الاتصال -->
+<div class="mt-4 text-center">
+  <div class="inline-flex items-center space-x-2 bg-white/10 rounded-full px-4 py-2">
+    <span class="text-yellow-400">⭐</span>
+    <span class="text-white font-semibold" id="profilePoints">0</span>
+    <span class="text-blue-200">النقاط</span>
+  </div>
+  <div class="mt-2 inline-flex items-center space-x-2 bg-white/10 rounded-full px-4 py-2">
+    <span class="text-green-400">📈</span>
+    <span class="text-white font-semibold" id="profileLevel">1</span>
+    <span class="text-blue-200">المستوى</span>
+  </div>
+</div>
             </div>
             
             <div class="text-center space-y-3">
@@ -2100,6 +2113,8 @@
             const statusText = statusElem.querySelector('.text-sm');
             const privateChatButton = document.getElementById('privateChatButton');
             const addFriendButton = document.getElementById('addFriendButton');
+            document.getElementById('profilePoints').textContent = profileData.points;
+            document.getElementById('profileLevel').textContent = profileData.level;
             
             // تعبئة البيانات
             avatar.src = profileData.avatar || (profileData.gender === 'female' ? defaultAvatars.girl1 : defaultAvatars.boy1);
@@ -2284,6 +2299,12 @@
                 container.scrollTop = container.scrollHeight;
             }
         }
+        // استقبال حدث الترقية
+socket.on('level up', (data) => {
+  showNotification(`🎉 لقد ارتقت إلى المستوى ${data.level}! استمر في المحادثة لترتقي أكثر!`, 'success');
+});
+
+
         
     </script>
 </body>

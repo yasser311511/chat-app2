@@ -71,6 +71,11 @@ const FriendRequest = sequelize.define('FriendRequest', {
   fromUser: { type: DataTypes.STRING, allowNull: false },
   toUser: { type: DataTypes.STRING, allowNull: false }
 });
+const UserPoints = sequelize.define('UserPoints', {
+  username: { type: DataTypes.STRING, primaryKey: true },
+  points: { type: DataTypes.INTEGER, defaultValue: 0 },
+  level: { type: DataTypes.INTEGER, defaultValue: 1 }
+});
 
 const app = express();
 const server = http.createServer(app);
@@ -108,6 +113,8 @@ let userSessions = {};
 let privateMessages = {};
 let userFriends = {};
 let friendRequests = {};
+let userPoints = {};
+
 
 // تحميل البيانات من قاعدة البيانات
 async function loadData() {
@@ -184,6 +191,14 @@ async function loadData() {
         userFriends[friend.username] = [];
       }
       userFriends[friend.username].push(friend.friendUsername);
+    });
+
+    const pointsData = await UserPoints.findAll();
+    pointsData.forEach(point => {
+    userPoints[point.username] = {
+    points: point.points,
+    level: point.level
+    };
     });
     
     // تحميل طلبات الصداقة
@@ -368,6 +383,21 @@ async function saveUserFriend(username, friendUsername) {
     console.error('خطأ في حفظ الصداقة:', error);
   }
 }
+async function saveUserPoints(username, points, level) {
+  try {
+    const [userPoint, created] = await UserPoints.findOrCreate({
+      where: { username },
+      defaults: { points, level }
+    });
+    
+    if (!created) {
+      await userPoint.update({ points, level });
+    }
+  } catch (error) {
+    console.error('خطأ في حفظ نقاط المستخدم:', error);
+  }
+}
+
 
 async function removeUserFriend(username, friendUsername) {
   try {
@@ -703,7 +733,7 @@ io.on('connection', (socket) => {
     socket.emit('chat history', messages[roomId] || []);
   });
   
-  socket.on('send message', (data) => {
+  socket.on('send message', async (data) => {
     const { roomId, message, user } = data;
     const room = rooms.find(r => r.id === roomId);
     
@@ -711,6 +741,35 @@ io.on('connection', (socket) => {
       socket.emit('message error', 'لا يمكنك إرسال الرسائل الآن. قد تكون مكتوماً أو محظوراً.');
       return;
     }
+    if (!userPoints[user.name]) {
+  userPoints[user.name] = { points: 0, level: 1 };
+  await saveUserPoints(user.name, 0, 1);
+}
+
+// زيادة النقاط فقط إذا كانت الرسالة في غرفة وليست خاصة
+userPoints[user.name].points += 1;
+
+// التحقق من ترقية المستوى
+const currentLevel = userPoints[user.name].level;
+const pointsNeededForNextLevel = currentLevel * 100;
+if (userPoints[user.name].points >= pointsNeededForNextLevel) {
+  userPoints[user.name].level += 1;
+  
+  // إرسال إشعار ترقية للمستخدم وللغرفة
+  const levelUpMessage = {
+    type: 'system',
+    content: `🎉 تهانينا! ${user.name} ارتقى إلى المستوى ${userPoints[user.name].level}! 🎉`,
+    time: new Date().toLocaleTimeString('ar-SA')
+  };
+  io.to(roomId).emit('new message', levelUpMessage);
+  messages[roomId].push(levelUpMessage);
+  
+  // إرسال إشعار خاص للمستخدم
+  socket.emit('level up', { level: userPoints[user.name].level });
+}
+
+// حفظ النقاط والمستوى في قاعدة البيانات
+await saveUserPoints(user.name, userPoints[user.name].points, userPoints[user.name].level);
     
     const newMessage = {
       type: 'user',
@@ -1328,13 +1387,19 @@ io.on('connection', (socket) => {
     const avatar = userAvatars[username] || null;
     const userData = users[username];
     
-    socket.emit('user profile data', {
-      username,
-      isOnline,
-      rank: userRank,
-      avatar,
-      gender: userData ? userData.gender : null
-    });
+    // في حدث get user profile
+const pointsData = userPoints[username] || { points: 0, level: 1 };
+
+  socket.emit('user profile data', {
+    username,
+    isOnline,
+    rank: userRank,
+    avatar,
+    gender: userData ? userData.gender : null,
+    points: pointsData.points,
+    level: pointsData.level
+  });
+    
   });
 
   socket.on('send private message', async (data) => {
