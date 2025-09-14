@@ -566,6 +566,14 @@ loadData();
 // إعداد Socket.io
 io.on('connection', (socket) => {
   console.log('مستخدم جديد متصل:', socket.id);
+  
+  // إرسال بيانات الصور عند الطلب
+socket.on('get user avatars', () => {
+    socket.emit('user avatars data', userAvatars);
+});
+
+// إرسال بيانات الصور تلقائياً عند الاتصال
+socket.emit('user avatars data', userAvatars);
 
   // التحقق من الجلسة المحفوظة
   socket.on('check session', async (sessionId) => {
@@ -1603,6 +1611,7 @@ const pointsData = userPoints[username] || { points: 0, level: 1 };
     console.log('مستخدم انقطع:', socket.id);
   });
 });
+
 
 // API للحصول على الغرف
 app.get('/api/rooms', (req, res) => {
