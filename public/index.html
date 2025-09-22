@@ -321,6 +321,21 @@
         .friend-item:hover {
             background: rgba(255, 255, 255, 0.1);
         }
+
+        /* إضافة هذه الأنماط في قسم style */
+.bg-option {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.bg-option:hover {
+    transform: scale(1.05);
+}
+
+.bg-option.selected > div {
+    border-color: #3B82F6 !important;
+}
     </style>
 </head>
 <body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen">
@@ -433,7 +448,32 @@
     <i class="fas fa-gamepad"></i>
     <span> لعبة XO </span>
 </a>
+<!-- زر المنشورات في الصفحة الرئيسية -->
+<div class="relative">
+    <button id="postsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <span id="postsBadge" class="notification-badge hidden">0</span>
+    </button>
+</div>
+
+<!-- زر المنشورات في واجهة المحادثة -->
+<div class="relative">
+    <button id="chatPostsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <span id="chatPostsBadge" class="notification-badge hidden">0</span>
+    </button>
+</div>
             <div class="flex items-center space-x-4 space-x-reverse">
+               <!-- في رأس الصفحة الرئيسية - داخل <div class="flex items-center space-x-4 space-x-reverse"> -->
+<button id="changeBackgroundBtn" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors hidden">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+    </svg>
+</button>
                 <!-- زر الإشعارات والرسائل -->
                 <div class="relative">
     <button id="messagesButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
@@ -500,6 +540,12 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-2 space-x-reverse">
+                    <!-- في رأس صفحة المحادثة - داخل <div class="flex items-center space-x-2 space-x-reverse"> -->
+<button id="chatChangeBackgroundBtn" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors hidden">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+    </svg>
+</button>
                     <!-- أضف هذا الزر -->
     <div class="relative">
         <button id="chatMessagesButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
@@ -934,7 +980,135 @@
 
     <!-- منطقة الإشعارات العامة -->
     <div id="globalNotifications" class="fixed top-4 right-4 z-50 space-y-3 max-w-sm"></div>
+<!-- نافذة المنشورات -->
+<div id="postsSidebar" class="friends-sidebar">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-white">📝 المنشورات</h2>
+        <button onclick="closePostsSidebar()" class="text-white hover:text-blue-200">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
+    
+    <!-- منطقة إنشاء منشور جديد -->
+    <div class="mb-6 bg-white/10 rounded-xl p-4">
+        <h3 class="text-white font-semibold mb-3">إنشاء منشور جديد</h3>
+        <textarea 
+            id="newPostContent" 
+            placeholder="ماذا تريد أن تنشر؟" 
+            class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-2 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm mb-3"
+            rows="3"
+        ></textarea>
+        <button 
+            onclick="createNewPost()" 
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+        >
+            نشر
+        </button>
+    </div>
+    
+    <!-- قائمة المنشورات -->
+    <div id="postsList" class="space-y-4">
+        <!-- المنشورات سيتم تحميلها هنا -->
+    </div>
+</div>
 
+<div id="postsOverlay" class="friends-overlay" onclick="closePostsSidebar()"></div>
+
+<!-- قبل نهاية body -->
+<!-- نافذة تغيير خلفية الموقع -->
+<div id="backgroundModal" class="profile-modal">
+    <div class="profile-content">
+        <div class="text-center mb-6">
+            <button onclick="closeBackgroundModal()" class="absolute top-4 left-4 text-white hover:text-blue-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+            <h2 class="text-2xl font-bold text-white mb-4">🎨 تغيير خلفية الموقع</h2>
+            <p class="text-blue-200 text-sm">سيتم تطبيق التغيير على جميع المستخدمين</p>
+        </div>
+        
+        <div class="space-y-4">
+            <!-- خيارات التدرجات اللونية -->
+            <div>
+                <h3 class="text-white font-semibold mb-3">تدرجات لونية</h3>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-option" onclick="selectBackground('gradient', 'from-purple-900 via-blue-900 to-indigo-900')">
+                        <div class="w-full h-16 rounded-lg bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 border-2 border-transparent"></div>
+                        <p class="text-white text-xs mt-1">افتراضي</p>
+                    </div>
+                    <div class="bg-option" onclick="selectBackground('gradient', 'from-green-900 via-blue-900 to-purple-900')">
+                        <div class="w-full h-16 rounded-lg bg-gradient-to-br from-green-900 via-blue-900 to-purple-900 border-2 border-transparent"></div>
+                        <p class="text-white text-xs mt-1">أخضر-أزرق</p>
+                    </div>
+                    <div class="bg-option" onclick="selectBackground('gradient', 'from-pink-900 via-red-900 to-orange-900')">
+                        <div class="w-full h-16 rounded-lg bg-gradient-to-br from-pink-900 via-red-900 to-orange-900 border-2 border-transparent"></div>
+                        <p class="text-white text-xs mt-1">وردي-برتقالي</p>
+                    </div>
+                    <div class="bg-option" onclick="selectBackground('gradient', 'from-teal-900 via-cyan-900 to-blue-900')">
+                        <div class="w-full h-16 rounded-lg bg-gradient-to-br from-teal-900 via-cyan-900 to-blue-900 border-2 border-transparent"></div>
+                        <p class="text-white text-xs mt-1">تركواز-أزرق</p>
+                    </div>
+                    <div class="bg-option" onclick="selectBackground('gradient', 'from-yellow-900 via-orange-900 to-red-900')">
+                        <div class="w-full h-16 rounded-lg bg-gradient-to-br from-yellow-900 via-orange-900 to-red-900 border-2 border-transparent"></div>
+                        <p class="text-white text-xs mt-1">أصفر-أحمر</p>
+                    </div>
+                    <div class="bg-option" onclick="selectBackground('gradient', 'from-indigo-900 via-purple-900 to-pink-900')">
+                        <div class="w-full h-16 rounded-lg bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 border-2 border-transparent"></div>
+                        <p class="text-white text-xs mt-1">بنفسجي-وردي</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- رفع صورة خلفية مخصصة -->
+            <div>
+                <h3 class="text-white font-semibold mb-3">صورة مخصصة</h3>
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <input
+                        type="file"
+                        id="backgroundUpload"
+                        accept="image/*"
+                        class="hidden"
+                        onchange="handleBackgroundUpload()"
+                    >
+                    <label for="backgroundUpload" class="flex-1 bg-white/20 border border-white/30 rounded-lg px-4 py-2 text-white text-center cursor-pointer hover:bg-white/30">
+                        اختر صورة
+                    </label>
+                </div>
+            </div>
+            
+            <!-- رابط صورة خارجية -->
+            <div>
+                <h3 class="text-white font-semibold mb-3">رابط صورة</h3>
+                <div class="flex space-x-3 space-x-reverse">
+                    <input
+                        type="text"
+                        id="backgroundUrl"
+                        placeholder="أدخل رابط الصورة..."
+                        class="flex-1 bg-white/20 border border-white/30 rounded-lg px-4 py-2 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    >
+                    <button
+                        onclick="applyUrlBackground()"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
+                    >
+                        تطبيق
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-6 text-center">
+            <button
+                onclick="saveBackground()"
+                class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-semibold transition-colors"
+            >
+                حفظ الخلفية
+            </button>
+        </div>
+    </div>
+</div>
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
@@ -2529,7 +2703,400 @@ function updateChatMessagesBadge() {
 document.getElementById('chatMessagesButton')?.addEventListener('click', () => {
     openFriendsSidebar();
 });
+// دوال إدارة المنشورات
+function openPostsSidebar() {
+    document.getElementById('postsSidebar').classList.add('show');
+    document.getElementById('postsOverlay').classList.add('show');
+    loadPosts();
+}
+
+function closePostsSidebar() {
+    document.getElementById('postsSidebar').classList.remove('show');
+    document.getElementById('postsOverlay').classList.remove('show');
+}
+
+function createNewPost() {
+    const content = document.getElementById('newPostContent').value.trim();
+    
+    if (!content) {
+        showNotification('يرجى كتابة محتوى للمنشور', 'error');
+        return;
+    }
+    
+    socket.emit('create post', {
+        content: content,
+        username: currentUser.name
+    });
+    
+    document.getElementById('newPostContent').value = '';
+}
+
+function loadPosts() {
+    socket.emit('get posts');
+}
+
+function displayPosts(posts) {
+    const container = document.getElementById('postsList');
+    container.innerHTML = '';
+    
+    if (posts.length === 0) {
+        container.innerHTML = '<p class="text-blue-200 text-sm text-center">لا توجد منشورات بعد</p>';
+        return;
+    }
+    
+    posts.forEach(post => {
+        const postDiv = document.createElement('div');
+        postDiv.className = 'bg-white/10 rounded-xl p-4';
         
+        // حساب وقت النشر
+        const postTime = new Date(post.timestamp);
+        const timeAgo = getTimeAgo(postTime);
+        
+        postDiv.innerHTML = `
+            <div class="flex items-center space-x-3 space-x-reverse mb-3">
+                <div class="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white">
+                    ${post.username.charAt(0).toUpperCase()}
+                </div>
+                <div class="flex-1">
+                    <div class="text-white font-semibold">${post.username}</div>
+                    <div class="text-xs text-blue-200">${timeAgo}</div>
+                </div>
+            </div>
+            <div class="text-white text-sm mb-4">${post.content}</div>
+            <div class="flex items-center justify-between border-t border-white/10 pt-3">
+                <div class="flex space-x-4 space-x-reverse">
+                    <button onclick="likePost(${post.id})" class="flex items-center space-x-1 space-x-reverse text-blue-200 hover:text-white">
+                        <svg class="w-4 h-4" fill="${post.likes && post.likes.includes(currentUser.name) ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905a3.61 3.61 0 01-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
+                        </svg>
+                        <span>${post.likes ? post.likes.length : 0}</span>
+                    </button>
+                    <button onclick="toggleComments(${post.id})" class="flex items-center space-x-1 space-x-reverse text-blue-200 hover:text-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                        </svg>
+                        <span>${post.comments ? post.comments.length : 0}</span>
+                    </button>
+                </div>
+            </div>
+            <div id="comments-${post.id}" class="hidden mt-4">
+                <div class="space-y-3 mb-3">
+                    ${post.comments ? post.comments.map(comment => `
+                        <div class="bg-white/5 rounded-lg p-3">
+                            <div class="flex items-center space-x-2 space-x-reverse mb-1">
+                                <div class="text-white font-medium text-sm">${comment.username}</div>
+                                <div class="text-xs text-blue-200">${new Date(comment.timestamp).toLocaleTimeString('ar-SA')}</div>
+                            </div>
+                            <div class="text-white text-sm">${comment.content}</div>
+                        </div>
+                    `).join('') : ''}
+                </div>
+                <div class="flex space-x-2 space-x-reverse">
+                    <input 
+                        type="text" 
+                        id="comment-${post.id}" 
+                        placeholder="اكتب تعليقك..." 
+                        class="flex-1 bg-white/20 border border-white/30 rounded-lg px-3 py-1 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                    >
+                    <button 
+                        onclick="addComment(${post.id})" 
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-sm"
+                    >
+                        إرسال
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(postDiv);
+    });
+}
+
+function likePost(postId) {
+    socket.emit('like post', {
+        postId: postId,
+        username: currentUser.name
+    });
+}
+
+function toggleComments(postId) {
+    const commentsSection = document.getElementById(`comments-${postId}`);
+    commentsSection.classList.toggle('hidden');
+}
+
+function addComment(postId) {
+    const commentInput = document.getElementById(`comment-${postId}`);
+    const content = commentInput.value.trim();
+    
+    if (!content) {
+        showNotification('يرجى كتابة تعليق', 'error');
+        return;
+    }
+    
+    socket.emit('add comment', {
+        postId: postId,
+        username: currentUser.name,
+        content: content
+    });
+    
+    commentInput.value = '';
+}
+
+function getTimeAgo(date) {
+    const now = new Date();
+    const diff = now - date;
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+    const days = Math.floor(diff / 86400000);
+    
+    if (days > 0) return `منذ ${days} يوم`;
+    if (hours > 0) return `منذ ${hours} ساعة`;
+    if (minutes > 0) return `منذ ${minutes} دقيقة`;
+    return 'الآن';
+}
+
+// أحداث السوكيت للمنشورات
+socket.on('posts data', (posts) => {
+    displayPosts(posts);
+});
+
+socket.on('new post', (post) => {
+    showNotification(`منشور جديد من ${post.username}`, 'info');
+    loadPosts(); // إعادة تحميل المنشورات
+});
+
+socket.on('post liked', (data) => {
+    loadPosts(); // إعادة تحميل المنشورات
+});
+
+socket.on('comment added', (data) => {
+    loadPosts(); // إعادة تحميل المنشورات
+});
+// إضافة مستمعي الأحداث للأزرار الجديدة
+document.getElementById('postsButton').addEventListener('click', openPostsSidebar);
+document.getElementById('chatPostsButton').addEventListener('click', openPostsSidebar);
+        
+        // إضافة هذه الدوال في قسم JavaScript
+
+// دوال إدارة خلفية الموقع
+function showBackgroundModal() {
+    document.getElementById('backgroundModal').classList.add('show');
+}
+
+function closeBackgroundModal() {
+    document.getElementById('backgroundModal').classList.remove('show');
+}
+
+function selectBackground(type, value) {
+    // إزالة التحديد من جميع الخيارات
+    document.querySelectorAll('.bg-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    // إضافة التحديد للخيار المحدد
+    event.currentTarget.classList.add('selected');
+    
+    // حفظ الخلفية المختارة مؤقتاً
+    window.tempBackground = {
+        type: type,
+        value: value
+    };
+}
+
+function handleBackgroundUpload() {
+    const fileInput = document.getElementById('backgroundUpload');
+    const file = fileInput.files[0];
+    
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+        showNotification('يرجى اختيار ملف صورة فقط', 'error');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // حفظ الخلفية المختارة مؤقتاً
+        window.tempBackground = {
+            type: 'image',
+            value: e.target.result
+        };
+        
+        showNotification('تم تحميل الصورة بنجاح، اضغط حفظ للتطبيق', 'success');
+    };
+    reader.readAsDataURL(file);
+}
+
+function applyUrlBackground() {
+    const url = document.getElementById('backgroundUrl').value.trim();
+    
+    if (!url) {
+        showNotification('يرجى إدخال رابط الصورة', 'error');
+        return;
+    }
+    
+    // التحقق من أن الرابط يشير إلى صورة
+    if (!url.match(/\.(jpeg|jpg|gif|png|webp|svg)(\?.*)?$/i)) {
+        showNotification('يرجى إدخال رابط صورة صالح', 'error');
+        return;
+    }
+    
+    // حفظ الخلفية المختارة مؤقتاً
+    window.tempBackground = {
+        type: 'image',
+        value: url
+    };
+    showNotification('تم تحميل الرابط بنجاح، اضغط حفظ للتطبيق', 'success');
+}
+
+function saveBackground() {
+    if (!window.tempBackground) {
+        showNotification('يرجى اختيار خلفية أولاً', 'error');
+        return;
+    }
+    
+    // إرسال الخلفية إلى السيرفر
+    socket.emit('update site background', {
+        backgroundType: window.tempBackground.type,
+        backgroundValue: window.tempBackground.value,
+        currentUser: currentUser
+    });
+    
+    // إغلاق النافذة
+    closeBackgroundModal();
+}
+
+function applyBackground(backgroundData) {
+    const body = document.body;
+    
+    console.log('تطبيق الخلفية:', backgroundData);
+    
+    if (!backgroundData) {
+        // استخدام الخلفية الافتراضية إذا لم توجد بيانات
+        backgroundData = {
+            type: 'gradient',
+            value: 'from-purple-900 via-blue-900 to-indigo-900'
+        };
+    }
+    
+    // إزالة جميع فئات الخلفية الموجودة
+    const gradientClasses = [
+        'from-purple-900', 'via-blue-900', 'to-indigo-900',
+        'from-green-900', 'to-purple-900',
+        'from-pink-900', 'via-red-900', 'to-orange-900',
+        'from-teal-900', 'via-cyan-900', 'to-blue-900',
+        'from-yellow-900', 'via-orange-900', 'to-red-900',
+        'from-indigo-900', 'via-purple-900', 'to-pink-900'
+    ];
+    
+    gradientClasses.forEach(className => {
+        body.classList.remove(className);
+    });
+    
+    // إزالة خلفية الصورة إذا كانت موجودة
+    body.style.backgroundImage = '';
+    body.style.backgroundSize = '';
+    body.style.backgroundRepeat = '';
+    body.style.backgroundAttachment = '';
+    body.style.backgroundPosition = '';
+    
+    // إزالة الطبقة الشفافة إذا كانت موجودة
+    const existingOverlay = document.getElementById('background-overlay');
+    if (existingOverlay) {
+        existingOverlay.remove();
+    }
+    
+    // تطبيق الخلفية الجديدة
+    if (backgroundData.type === 'image') {
+        // إذا كانت صورة
+        body.style.backgroundImage = `url('${backgroundData.value}')`;
+        body.style.backgroundSize = 'cover';
+        body.style.backgroundRepeat = 'no-repeat';
+        body.style.backgroundAttachment = 'fixed';
+        body.style.backgroundPosition = 'center';
+        
+        // إضافة طبقة شفافة فوق الخلفية لتحسين قراءة النص
+        const overlay = document.createElement('div');
+        overlay.id = 'background-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: -1;
+            pointer-events: none;
+        `;
+        body.appendChild(overlay);
+        
+    } else {
+        // إذا كانت تدرج لوني
+        body.classList.add('bg-gradient-to-br');
+        const gradientClasses = backgroundData.value.split(' ');
+        gradientClasses.forEach(className => {
+            body.classList.add(className);
+        });
+    }
+    
+    console.log('تم تطبيق الخلفية بنجاح');
+}
+// إظهار زر تغيير الخلفية فقط لصاحب الموقع
+function toggleBackgroundButton() {
+    const isSiteOwner = currentUser && currentUser.name === "Walid dz 31";
+    
+    const mainBtn = document.getElementById('changeBackgroundBtn');
+    const chatBtn = document.getElementById('chatChangeBackgroundBtn');
+    
+    if (mainBtn) mainBtn.classList.toggle('hidden', !isSiteOwner);
+    if (chatBtn) chatBtn.classList.toggle('hidden', !isSiteOwner);
+}
+
+// استقبال أحداث الخلفية من السيرفر
+socket.on('site background data', (backgroundData) => {
+    console.log('تم استقبال خلفية الموقع:', backgroundData);
+    applyBackground(backgroundData);
+});
+
+socket.on('site background updated', (backgroundData) => {
+    console.log('تم تحديث خلفية الموقع:', backgroundData);
+    applyBackground(backgroundData);
+    showNotification('تم تحديث خلفية الموقع', 'success');
+});
+
+socket.on('background success', (message) => {
+    showNotification(message, 'success');
+});
+
+socket.on('background error', (error) => {
+    showNotification(error, 'error');
+});
+
+// طلب الخلفية عند الاتصال
+socket.on('connect', () => {
+    socket.emit('get site background');
+
+    
+    // إضافة مستمعي الأحداث لأزرار تغيير الخلفية
+    document.getElementById('changeBackgroundBtn')?.addEventListener('click', showBackgroundModal);
+    document.getElementById('chatChangeBackgroundBtn')?.addEventListener('click', showBackgroundModal);
+    
+    // عند تسجيل الدخول، التحقق إذا كان المستخدم صاحب الموقع
+    socket.on('login success', (userData) => {
+        currentUser = userData;
+        toggleBackgroundButton();
+    });
+    
+    socket.on('register success', (userData) => {
+        currentUser = userData;
+        toggleBackgroundButton();
+    });
+    
+    socket.on('session valid', (userData) => {
+        currentUser = userData;
+        toggleBackgroundButton();
+    });
+});
     </script>
 </body>
 </html>

@@ -6,6 +6,7 @@ const socketIo = require('socket.io');
 const path = require('path');
 const { Sequelize, DataTypes } = require('sequelize');
 
+
 // إنشاء اتصال بقاعدة البيانات
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
@@ -76,6 +77,18 @@ const UserPoints = sequelize.define('UserPoints', {
   points: { type: DataTypes.INTEGER, defaultValue: 0 },
   level: { type: DataTypes.INTEGER, defaultValue: 1 }
 });
+// إضافة بعد نماذج قاعدة البيانات الأخرى
+// تعريف نموذج خلفية الموقع
+const SiteBackground = sequelize.define('SiteBackground', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  backgroundType: { type: DataTypes.STRING, allowNull: false },
+  backgroundValue: { type: DataTypes.TEXT, allowNull: false },
+  setBy: { type: DataTypes.STRING, allowNull: false },
+  createdAt: { type: DataTypes.DATE, defaultValue: Sequelize.NOW },
+  updatedAt: { type: DataTypes.DATE, defaultValue: Sequelize.NOW }
+});
+
+
 
 const app = express();
 const server = http.createServer(app);
@@ -99,6 +112,27 @@ const SITE_OWNER = {
   username: "Walid dz 31",
   rank: "صاحب الموقع"
 };
+const Post = sequelize.define('Post', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    username: { type: DataTypes.STRING, allowNull: false },
+    content: { type: DataTypes.TEXT, allowNull: false },
+    timestamp: { type: DataTypes.BIGINT, allowNull: false }
+});
+
+const PostLike = sequelize.define('PostLike', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    postId: { type: DataTypes.INTEGER, allowNull: false },
+    username: { type: DataTypes.STRING, allowNull: false },
+    timestamp: { type: DataTypes.BIGINT, allowNull: false }
+});
+
+const PostComment = sequelize.define('PostComment', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    postId: { type: DataTypes.INTEGER, allowNull: false },
+    username: { type: DataTypes.STRING, allowNull: false },
+    content: { type: DataTypes.TEXT, allowNull: false },
+    timestamp: { type: DataTypes.BIGINT, allowNull: false }
+});
 
 // تخزين البيانات في الذاكرة
 let users = {};
@@ -114,6 +148,13 @@ let privateMessages = {};
 let userFriends = {};
 let friendRequests = {};
 let userPoints = {};
+let posts = {};
+let postLikes = {};
+let postComments = {};
+let globalSiteBackground = {
+  type: 'gradient',
+  value: 'from-purple-900 via-blue-900 to-indigo-900'
+};
 
 
 // تحميل البيانات من قاعدة البيانات
@@ -122,7 +163,8 @@ async function loadData() {
     await sequelize.authenticate();
     console.log('تم الاتصال بقاعدة البيانات بنجاح!');
     
-    await sequelize.sync();
+     // مزامنة النماذج مع قاعدة البيانات (سيقوم بإنشاء الجداول المفقودة)
+    await sequelize.sync({ alter: true }); // alter: true سيضيف الأعمدة المفقودة
     
     // تحميل المستخدمين
     const usersData = await User.findAll();
@@ -226,6 +268,93 @@ async function loadData() {
         timestamp: msg.timestamp
       });
     });
+    // تحميل المنشورات
+const postsData = await Post.findAll({ order: [['timestamp', 'DESC']] });
+postsData.forEach(post => {
+    posts[post.id] = {
+        username: post.username,
+        content: post.content,
+        timestamp: post.timestamp,
+        likes: [],
+        comments: []
+    };
+});
+
+// تحميل الإعجابات
+const likesData = await PostLike.findAll();
+likesData.forEach(like => {
+    if (posts[like.postId]) {
+        posts[like.postId].likes.push(like.username);
+    }
+});
+
+// تحميل التعليقات
+const commentsData = await PostComment.findAll({ order: [['timestamp', 'ASC']] });
+commentsData.forEach(comment => {
+    if (posts[comment.postId]) {
+        posts[comment.postId].comments.push({
+            username: comment.username,
+            content: comment.content,
+            timestamp: comment.timestamp
+        });
+    }
+});
+ // تحميل خلفية الموقع مع معالجة الأخطاء
+    try {
+      const backgroundData = await SiteBackground.findOne({
+        order: [['createdAt', 'DESC']]
+      });
+
+      if (backgroundData) {
+        globalSiteBackground = {
+          type: backgroundData.backgroundType,
+          value: backgroundData.backgroundValue
+        };
+        console.log('تم تحميل خلفية الموقع من قاعدة البيانات');
+      } else {
+        // إذا لم توجد خلفية، ننشئ الخلفية الافتراضية
+        await SiteBackground.create({
+          backgroundType: 'gradient',
+          backgroundValue: 'from-purple-900 via-blue-900 to-indigo-900',
+          setBy: 'System'
+        });
+        globalSiteBackground = {
+          type: 'gradient',
+          value: 'from-purple-900 via-blue-900 to-indigo-900'
+        };
+        console.log('تم إنشاء الخلفية الافتراضية في قاعدة البيانات');
+      }
+    } catch (backgroundError) {
+      console.log('خطأ في تحميل خلفية الموقع، سيتم استخدام الإعدادات الافتراضية:', backgroundError.message);
+      
+      // محاولة إنشاء الجدول يدوياً إذا فشل
+      try {
+        await sequelize.query(`
+          CREATE TABLE IF NOT EXISTS "SiteBackgrounds" (
+            id SERIAL PRIMARY KEY,
+            "backgroundType" VARCHAR(255) NOT NULL,
+            "backgroundValue" TEXT NOT NULL,
+            "setBy" VARCHAR(255) NOT NULL,
+            "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+            "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+          )
+        `);
+        
+        // إدخال الخلفية الافتراضية
+        await sequelize.query(`
+          INSERT INTO "SiteBackgrounds" ("backgroundType", "backgroundValue", "setBy") 
+          VALUES ('gradient', 'from-purple-900 via-blue-900 to-indigo-900', 'System')
+        `);
+        
+        globalSiteBackground = {
+          type: 'gradient',
+          value: 'from-purple-900 via-blue-900 to-indigo-900'
+        };
+        console.log('تم إنشاء جدول خلفية الموقع يدوياً');
+      } catch (createError) {
+        console.log('فشل في إنشاء جدول الخلفية:', createError.message);
+      }
+    }
     
     // التأكد من وجود حساب صاحب الموقع
     if (!users[SITE_OWNER.username]) {
@@ -509,6 +638,56 @@ async function removeUser(username) {
     console.error('خطأ في حذف المستخدم:', error);
   }
 }
+async function savePost(username, content, timestamp) {
+    try {
+        const post = await Post.create({
+            username,
+            content,
+            timestamp
+        });
+        return post.id;
+    } catch (error) {
+        console.error('خطأ في حفظ المنشور:', error);
+    }
+}
+
+async function savePostLike(postId, username, timestamp) {
+    try {
+        await PostLike.create({
+            postId,
+            username,
+            timestamp
+        });
+    } catch (error) {
+        console.error('خطأ في حفظ إعجاب المنشور:', error);
+    }
+}
+
+async function removePostLike(postId, username) {
+    try {
+        await PostLike.destroy({
+            where: {
+                postId,
+                username
+            }
+        });
+    } catch (error) {
+        console.error('خطأ في إزالة إعجاب المنشور:', error);
+    }
+}
+
+async function savePostComment(postId, username, content, timestamp) {
+    try {
+        await PostComment.create({
+            postId,
+            username,
+            content,
+            timestamp
+        });
+    } catch (error) {
+        console.error('خطأ في حفظ تعليق المنشور:', error);
+    }
+}
 
 // الغرف الثابتة
 let rooms = [
@@ -570,6 +749,149 @@ io.on('connection', (socket) => {
   // إرسال بيانات الصور عند الطلب
 socket.on('get user avatars', () => {
     socket.emit('user avatars data', userAvatars);
+    // أحداث المنشورات
+socket.on('create post', async (data) => {
+    const { content, username } = data;
+    const timestamp = Date.now();
+    
+    try {
+        const postId = await savePost(username, content, timestamp);
+        
+        // إضافة إلى الذاكرة
+        posts[postId] = {
+            username,
+            content,
+            timestamp,
+            likes: [],
+            comments: []
+        };
+        
+        // إرسال المنشور الجديد للجميع
+        io.emit('new post', {
+            id: postId,
+            username,
+            content,
+            timestamp,
+            likes: [],
+            comments: []
+        });
+    } catch (error) {
+        console.error('خطأ في إنشاء المنشور:', error);
+    }
+
+});
+socket.on('get posts', () => {
+    // تحويل object إلى array وترتيب حسب الوقت
+    const postsArray = Object.keys(posts).map(id => ({
+        id: parseInt(id),
+        ...posts[id]
+    })).sort((a, b) => b.timestamp - a.timestamp);
+    
+    socket.emit('posts data', postsArray);
+});
+
+socket.on('like post', async (data) => {
+    const { postId, username } = data;
+    
+    if (posts[postId]) {
+        // التحقق إذا كان المستخدم معجب بالفعل
+        const alreadyLiked = posts[postId].likes.includes(username);
+        
+        if (alreadyLiked) {
+            // إزالة الإعجاب
+            await removePostLike(postId, username);
+            posts[postId].likes = posts[postId].likes.filter(u => u !== username);
+        } else {
+            // إضافة إعجاب
+            await savePostLike(postId, username, Date.now());
+            posts[postId].likes.push(username);
+        }
+        
+        // إرسال التحديث للجميع
+        io.emit('post liked', { postId, username });
+    }
+});
+
+socket.on('add comment', async (data) => {
+    const { postId, username, content } = data;
+    const timestamp = Date.now();
+    
+    if (posts[postId]) {
+        await savePostComment(postId, username, content, timestamp);
+        
+        if (!posts[postId].comments) {
+            posts[postId].comments = [];
+        }
+        
+        posts[postId].comments.push({
+            username,
+            content,
+            timestamp
+        });
+        
+        // إرسال التعليق الجديد للجميع
+        io.emit('comment added', { postId, username, content, timestamp });
+    }
+});
+});
+    // حدث الحصول على خلفية الموقع
+socket.on('get site background', () => {
+  socket.emit('site background data', globalSiteBackground);
+});
+
+// حدث تحديث خلفية الموقع (لصاحب الموقع فقط)
+socket.on('update site background', async (data) => {
+  const { backgroundType, backgroundValue, currentUser } = data;
+
+  // التحقق من أن المستخدم هو صاحب الموقع
+  if (currentUser.name !== SITE_OWNER.username) {
+    socket.emit('background error', 'ليس لديك صلاحية لتغيير خلفية الموقع');
+    return;
+  }
+  
+  try {
+    // البحث عن السجل الحالي في قاعدة البيانات
+    const existingBackground = await SiteBackground.findOne({
+      order: [['createdAt', 'DESC']]
+    });
+    
+    if (existingBackground) {
+      // تحديث السجل الحالي
+      await existingBackground.update({
+        backgroundType: backgroundType,
+        backgroundValue: backgroundValue,
+        setBy: currentUser.name,
+        updatedAt: new Date()
+      });
+      console.log('تم تحديث خلفية الموقع في قاعدة البيانات');
+    } else {
+      // إنشاء سجل جديد إذا لم يوجد
+      await SiteBackground.create({
+        backgroundType: backgroundType,
+        backgroundValue: backgroundValue,
+        setBy: currentUser.name
+      });
+      console.log('تم إنشاء خلفية جديدة في قاعدة البيانات');
+    }
+    
+    // تحديث الخلفية في الذاكرة
+    globalSiteBackground = {
+      type: backgroundType,
+      value: backgroundValue
+    };
+    
+    // إرسال الخلفية الجديدة لجميع المستخدمين
+    io.emit('site background updated', globalSiteBackground);
+    
+    socket.emit('background success', 'تم تحديث خلفية الموقع بنجاح');
+    console.log(`تم تحديث خلفية الموقع بواسطة ${currentUser.name}: ${backgroundType} - ${backgroundValue}`);
+ 
+  } catch (error) {
+    console.error('خطأ في تحديث خلفية الموقع:', error);
+    socket.emit('background error', 'حدث خطأ أثناء تحديث الخلفية');
+  }
+  // إرسال الخلفية الحالية للمستخدم الجديد فور الاتصال
+socket.emit('site background data', globalSiteBackground);
 });
 
 // إرسال بيانات الصور تلقائياً عند الاتصال
