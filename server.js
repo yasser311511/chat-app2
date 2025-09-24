@@ -87,6 +87,28 @@ const SiteBackground = sequelize.define('SiteBackground', {
   createdAt: { type: DataTypes.DATE, defaultValue: Sequelize.NOW },
   updatedAt: { type: DataTypes.DATE, defaultValue: Sequelize.NOW }
 });
+const ChatImage = sequelize.define('ChatImage', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  messageId: { type: DataTypes.STRING, allowNull: false },
+  roomId: { type: DataTypes.INTEGER, allowNull: true },
+  conversationId: { type: DataTypes.STRING, allowNull: true },
+  fromUser: { type: DataTypes.STRING, allowNull: false },
+  toUser: { type: DataTypes.STRING, allowNull: true }, // أضف هذا الحقل
+  imageData: { type: DataTypes.TEXT, allowNull: false },
+  timestamp: { type: DataTypes.BIGINT, allowNull: false }
+});
+// مزامنة النماذج مع قاعدة البيانات
+async function syncDatabase() {
+  try {
+    await sequelize.sync({ alter: true });
+    console.log('تم مزامنة قاعدة البيانات بنجاح');
+  } catch (error) {
+    console.error('خطأ في مزامنة قاعدة البيانات:', error);
+  }
+}
+
+// استدعاء التهيئة بعد الاتصال
+syncDatabase();
 
 
 
@@ -155,6 +177,7 @@ let globalSiteBackground = {
   type: 'gradient',
   value: 'from-purple-900 via-blue-900 to-indigo-900'
 };
+let chatImages = {};
 
 
 // تحميل البيانات من قاعدة البيانات
@@ -163,8 +186,40 @@ async function loadData() {
     await sequelize.authenticate();
     console.log('تم الاتصال بقاعدة البيانات بنجاح!');
     
-     // مزامنة النماذج مع قاعدة البيانات (سيقوم بإنشاء الجداول المفقودة)
-    await sequelize.sync({ alter: true }); // alter: true سيضيف الأعمدة المفقودة
+     // مزامنة آمنة للنماذج
+    try {
+      // مزامنة جميع النماذد ما عدا ChatImage
+      await User.sync({ alter: false });
+      await UserRank.sync({ alter: false });
+      await UserManagement.sync({ alter: false });
+      await UserAvatar.sync({ alter: false });
+      await UserSession.sync({ alter: false });
+      await PrivateMessage.sync({ alter: false });
+      await UserFriend.sync({ alter: false });
+      await FriendRequest.sync({ alter: false });
+      await UserPoints.sync({ alter: false });
+      await Post.sync({ alter: false });
+      await PostLike.sync({ alter: false });
+      await PostComment.sync({ alter: false });
+      await SiteBackground.sync({ alter: false });
+      
+      // مزامنة ChatImage بشكل منفصل مع معالجة الأخطاء
+      try {
+        await ChatImage.sync({ alter: false });
+      } catch (chatImageError) {
+        console.log('تحذير في مزامنة ChatImage:', chatImageError.message);
+        // حاول إنشاء الجدول إذا لم يكن موجوداً
+        try {
+          await ChatImage.sync({ force: false });
+        } catch (createError) {
+          console.log('لا يمكن إنشاء جدول ChatImages:', createError.message);
+        }
+      }
+      
+      console.log('تم مزامنة جميع النماذج بنجاح');
+    } catch (syncError) {
+      console.log('تحذير: هناك أخطاء في المزامنة:', syncError.message);
+    }
     
     // تحميل المستخدمين
     const usersData = await User.findAll();
@@ -268,6 +323,66 @@ async function loadData() {
         timestamp: msg.timestamp
       });
     });
+    // ... الكود الحالي ...
+
+    // تحميل الصور من المحادثات
+    const chatImagesData = await ChatImage.findAll({
+      order: [['timestamp', 'ASC']]
+    });
+    
+    chatImagesData.forEach(image => {
+      if (image.roomId) {
+        if (!messages[image.roomId]) messages[image.roomId] = [];
+        
+        // البحث إذا كانت الرسالة موجودة مسبقاً
+        const existingMessageIndex = messages[image.roomId].findIndex(msg => 
+          msg.messageId === image.messageId
+        );
+        
+        if (existingMessageIndex === -1) {
+          messages[image.roomId].push({
+            type: 'image',
+            messageId: image.messageId,
+            user: image.fromUser,
+            imageData: image.imageData,
+            time: new Date(image.timestamp).toLocaleTimeString('ar-SA'),
+            timestamp: image.timestamp
+          });
+        }
+      }
+    });
+    // تحميل الصور من المحادثات الخاصة
+    const privateImagesData = await ChatImage.findAll({
+      where: { conversationId: { [Sequelize.Op.ne]: null } },
+      order: [['timestamp', 'ASC']]
+    });
+    
+    privateImagesData.forEach(image => {
+      const conversationId = image.conversationId;
+      if (!privateMessages[conversationId]) {
+        privateMessages[conversationId] = [];
+      }
+      
+      // البحث إذا كانت الرسالة موجودة مسبقاً
+      const existingMessageIndex = privateMessages[conversationId].findIndex(msg => 
+        msg.messageId === image.messageId
+      );
+      
+      if (existingMessageIndex === -1) {
+        privateMessages[conversationId].push({
+          type: 'image',
+          messageId: image.messageId,
+          from: image.fromUser,
+          to: image.toUser || conversationId.replace(image.fromUser + '_', '').replace('_' + image.fromUser, ''),
+          imageData: image.imageData,
+          time: new Date(image.timestamp).toLocaleTimeString('ar-SA'),
+          timestamp: image.timestamp
+        });
+      }
+    });
+
+    console.log('تم تحميل صور المحادثات الخاصة بنجاح');
+
     // تحميل المنشورات
 const postsData = await Post.findAll({ order: [['timestamp', 'DESC']] });
 postsData.forEach(post => {
@@ -688,6 +803,70 @@ async function savePostComment(postId, username, content, timestamp) {
         console.error('خطأ في حفظ تعليق المنشور:', error);
     }
 }
+// تحسين دالة حفظ الصور في السيرفر
+async function saveChatImage(messageId, roomId, conversationId, fromUser, imageData, timestamp, toUser = null) {
+  try {
+    await ChatImage.create({
+      messageId,
+      roomId,
+      conversationId,
+      fromUser,
+      toUser, // إضافة هذا الحقل
+      imageData,
+      timestamp
+    });
+    
+    // أيضًا تخزين في الذاكرة للوصول السريع
+    if (roomId) {
+      if (!messages[roomId]) messages[roomId] = [];
+      
+      messages[roomId].push({
+        type: 'image',
+        messageId: messageId,
+        user: fromUser,
+        imageData: imageData,
+        time: new Date(timestamp).toLocaleTimeString('ar-SA'),
+        timestamp: timestamp
+      });
+    }
+    
+    if (conversationId) {
+      if (!privateMessages[conversationId]) privateMessages[conversationId] = [];
+      
+      privateMessages[conversationId].push({
+        type: 'image',
+        messageId: messageId,
+        from: fromUser,
+        to: toUser,
+        imageData: imageData,
+        time: new Date(timestamp).toLocaleTimeString('ar-SA'),
+        timestamp: timestamp
+      });
+    }
+  } catch (error) {
+    console.error('خطأ في حفظ صورة المحادثة:', error);
+  }
+}
+// دالة لتنقية ذاكرة الصور وتجنب التكرار
+function optimizeImageStorage() {
+  // تنقية الصور المكررة في الذاكرة
+  Object.keys(messages).forEach(roomId => {
+    const uniqueMessages = [];
+    const messageIds = new Set();
+    
+    messages[roomId].forEach(msg => {
+      if (!messageIds.has(msg.messageId)) {
+        messageIds.add(msg.messageId);
+        uniqueMessages.push(msg);
+      }
+    });
+    
+    messages[roomId] = uniqueMessages;
+  });
+}
+
+// استدعاء التنقية دورياً
+setInterval(optimizeImageStorage, 300000); // كل 5 دقائق
 
 // الغرف الثابتة
 let rooms = [
@@ -914,6 +1093,82 @@ socket.emit('user avatars data', userAvatars);
     }
     socket.emit('session invalid');
   });
+  // حدث إرسال صورة في المحادثة العامة
+socket.on('send image message', async (data) => {
+  const { roomId, imageData, user } = data;
+  const room = rooms.find(r => r.id === roomId);
+  
+  if (!room || !canSendMessage(user.name, room.name)) {
+    socket.emit('message error', 'لا يمكنك إرسال الرسائل الآن. قد تكون مكتوماً أو محظوراً.');
+    return;
+  }
+  
+  const messageId = 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  const timestamp = Date.now();
+  
+  // حفظ الصورة في قاعدة البيانات
+  await saveChatImage(messageId, roomId, null, user.name, imageData, timestamp);
+  
+  const newMessage = {
+    type: 'image',
+    messageId: messageId,
+    user: user.name,
+    imageData: imageData,
+    time: new Date().toLocaleTimeString('ar-SA'),
+    timestamp: timestamp,
+    gender: user.gender,
+    rank: user.rank,
+    avatar: userAvatars[user.name] || null
+  };
+  
+  if (!messages[roomId]) messages[roomId] = [];
+  if (messages[roomId].length > 50) {
+    messages[roomId] = messages[roomId].slice(-50);
+  }
+  messages[roomId].push(newMessage);
+  
+  io.to(roomId).emit('new image message', newMessage);
+});
+
+// حدث إرسال صورة في المحادثة الخاصة
+socket.on('send private image', async (data) => {
+    const { toUser, imageData, fromUser } = data;
+    
+    const messageId = 'private_img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    const timestamp = Date.now();
+    const conversationId = [fromUser, toUser].sort().join('_');
+    
+    // حفظ الصورة في قاعدة البيانات
+    await saveChatImage(messageId, null, conversationId, fromUser, imageData, timestamp, toUser);
+    
+    const privateMessage = {
+        type: 'image',
+        messageId: messageId,
+        from: fromUser,
+        to: toUser,
+        imageData: imageData,
+        time: new Date().toLocaleTimeString('ar-SA'),
+        timestamp: timestamp
+    };
+    
+    // حفظ في الذاكرة أيضاً
+    if (!privateMessages[conversationId]) {
+        privateMessages[conversationId] = [];
+    }
+    privateMessages[conversationId].push(privateMessage);
+    
+    // إرسال الرسالة للمرسل
+    socket.emit('private image sent', privateMessage);
+    
+    // إرسال الرسالة للمستلم إذا كان متصلاً
+    const recipientSocketId = Object.keys(onlineUsers).find(
+        socketId => onlineUsers[socketId].name === toUser
+    );
+    
+    if (recipientSocketId) {
+        io.to(recipientSocketId).emit('new private image', privateMessage);
+    }
+});
 
   // حدث تسجيل الدخول
   socket.on('user login', async (userData) => {
@@ -1003,7 +1258,8 @@ socket.emit('user avatars data', userAvatars);
   });
 });
 
-  socket.on('join room', (data) => {
+  // في حدث join room - البحث عن هذا الجزء واستبداله
+socket.on('join room', (data) => {
     const { roomId, user } = data;
     
     const room = rooms.find(r => r.id === roomId);
@@ -1042,12 +1298,19 @@ socket.emit('user avatars data', userAvatars);
     // إرسال تحديث المستخدمين المتصلين للغرفة
     io.to(roomId).emit('users update', room.users);
     
-    // إرسال رسالة ترحيب
-    const welcomeMessage = {
+    // إرسال رسالة ترحيب - الجزء المعدل
+    let welcomeMessage = {
       type: 'system',
-      content: `🚪 دخل العضو "${user.name}" إلى الغرفة`,
       time: new Date().toLocaleTimeString('ar-SA')
     };
+
+    // تحديد نص الرسالة بناءً على الرتبة
+    if (user.rank) {
+        const rankInfo = ranks[user.rank];
+        welcomeMessage.content = `🚪 دخل ${rankInfo.icon} ${user.rank} ${user.name} إلى الغرفة`;
+    } else {
+        welcomeMessage.content = `🚪 دخل العضو ${user.name} إلى الغرفة`;
+    }
     
     // إضافة الرسالة للسجل (الرسائل الجديدة فقط)
     if (!messages[roomId]) messages[roomId] = [];
@@ -1061,7 +1324,28 @@ socket.emit('user avatars data', userAvatars);
     
     // إرسال تاريخ المحادثة للمستخدم الجديد (الرسائل الحديثة فقط)
     socket.emit('chat history', messages[roomId] || []);
-  });
+    
+    // إرسال تاريخ المحادثة (يشمل الرسائل النصية والصور)
+    const roomMessages = messages[roomId] || [];
+    const formattedMessages = roomMessages.map(msg => {
+      if (msg.type === 'image') {
+        return {
+          type: 'image',
+          messageId: msg.messageId,
+          user: msg.user,
+          imageData: msg.imageData,
+          time: msg.time,
+          timestamp: msg.timestamp,
+          rank: userRanks[msg.user] || null,
+          avatar: userAvatars[msg.user] || null
+        };
+      } else {
+        return msg;
+      }
+    });
+    
+    socket.emit('chat history', formattedMessages);
+});
   
   socket.on('send message', async (data) => {
     const { roomId, message, user } = data;
@@ -1120,7 +1404,8 @@ await saveUserPoints(user.name, userPoints[user.name].points, userPoints[user.na
     io.to(roomId).emit('new message', newMessage);
   });
   
-  socket.on('leave room', (data) => {
+  // أيضًا في حدث leave room - البحث عن هذا الجزء واستبداله
+socket.on('leave room', (data) => {
     const { roomId, user } = data;
     const room = rooms.find(r => r.id === roomId);
     
@@ -1130,11 +1415,19 @@ await saveUserPoints(user.name, userPoints[user.name].points, userPoints[user.na
       io.to(roomId).emit('users update', room.users);
     }
     
-    const leaveMessage = {
+    // رسالة المغادرة - الجزء المعدل
+    let leaveMessage = {
       type: 'system',
-      content: `🚪 غادر العضو "${user.name}" الغرفة`,
       time: new Date().toLocaleTimeString('ar-SA')
     };
+
+    // تحديد نص الرسالة بناءً على الرتبة
+    if (user.rank) {
+        const rankInfo = ranks[user.rank];
+        leaveMessage.content = `🚪 غادر ${rankInfo.icon} ${user.rank} ${user.name} الغرفة`;
+    } else {
+        leaveMessage.content = `🚪 غادر العضو ${user.name} الغرفة`;
+    }
     
     if (messages[roomId]) {
       messages[roomId].push(leaveMessage);
@@ -1142,7 +1435,7 @@ await saveUserPoints(user.name, userPoints[user.name].points, userPoints[user.na
     }
     
     socket.leave(roomId);
-  });
+});
 
   // حدث إدارة الرتب
   socket.on('assign rank', async (data) => {
@@ -1765,13 +2058,43 @@ const pointsData = userPoints[username] || { points: 0, level: 1 };
     }
   });
 
-  socket.on('get private messages', (data) => {
-    const { otherUser, currentUser } = data;
-    const conversationId = [currentUser, otherUser].sort().join('_');
-    const messages = privateMessages[conversationId] || [];
+  // في حدث join room، أضف تحميل الصور للمحادثات الخاصة
+socket.on('get private messages', async (data) => {
+  const { otherUser, currentUser } = data;
+  const conversationId = [currentUser, otherUser].sort().join('_');
+  
+  try {
+    // جلب الرسائل النصية من الذاكرة
+    const textMessages = privateMessages[conversationId] ? 
+      privateMessages[conversationId].filter(msg => msg.type !== 'image') : [];
     
-    socket.emit('private messages history', messages);
-  });
+    // جلب الصور من قاعدة البيانات للمحادثة الخاصة
+    const imagesData = await ChatImage.findAll({
+      where: { conversationId },
+      order: [['timestamp', 'ASC']]
+    });
+    
+    // تحويل الصور إلى شكل مشابه للرسائل النصية
+    const imageMessages = imagesData.map(image => ({
+      type: 'image',
+      messageId: image.messageId,
+      from: image.fromUser,
+      to: image.toUser || (image.fromUser === currentUser ? otherUser : currentUser),
+      imageData: image.imageData,
+      time: new Date(image.timestamp).toLocaleTimeString('ar-SA'),
+      timestamp: image.timestamp
+    }));
+    
+    // دمج الرسائل النصية والصورية وترتيبها حسب الوقت
+    const allMessages = [...textMessages, ...imageMessages].sort((a, b) => a.timestamp - b.timestamp);
+    
+    socket.emit('private messages history', allMessages);
+  } catch (error) {
+    console.error('خطأ في تحميل صور المحادثة الخاصة:', error);
+    // إرسال الرسائل النصية فقط في حالة الخطأ
+    socket.emit('private messages history', privateMessages[conversationId] || []);
+  }
+});
 
   // أحداث نظام الصداقات
   socket.on('send friend request', async (data) => {
@@ -1904,7 +2227,8 @@ const pointsData = userPoints[username] || { points: 0, level: 1 };
     socket.emit('search results', results);
   });
   
-  socket.on('disconnect', () => {
+  // في حدث disconnect - البحث عن هذا الجزء واستبداله
+socket.on('disconnect', () => {
     const user = onlineUsers[socket.id];
     if (user) {
       const roomId = user.roomId;
@@ -1916,11 +2240,19 @@ const pointsData = userPoints[username] || { points: 0, level: 1 };
         io.to(roomId).emit('users update', room.users);
       }
       
-      const leaveMessage = {
+      // رسالة المغادرة - الجزء المعدل
+      let leaveMessage = {
         type: 'system',
-        content: `🚪 غادر العضو "${user.name}" الغرفة`,
         time: new Date().toLocaleTimeString('ar-SA')
       };
+
+      // تحديد نص الرسالة بناءً على الرتبة
+      if (user.rank) {
+          const rankInfo = ranks[user.rank];
+          leaveMessage.content = `🚪 غادر ${rankInfo.icon} ${user.rank} ${user.name} الغرفة`;
+      } else {
+          leaveMessage.content = `🚪 غادر العضو ${user.name} الغرفة`;
+      }
       
       if (messages[roomId]) {
         messages[roomId].push(leaveMessage);
@@ -1931,7 +2263,7 @@ const pointsData = userPoints[username] || { points: 0, level: 1 };
     }
     
     console.log('مستخدم انقطع:', socket.id);
-  });
+});
 });
 
 
