@@ -1,4 +1,3 @@
-User-agent: *
+﻿User-agent: *
 Allow: /
-Disallow: /admin/
 Sitemap: https://walidchating.onrender.com/sitemap.xml
