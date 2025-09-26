@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -175,10 +176,13 @@
         .profile-content {
             background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 2rem;
+            border-radius: 1.25rem; /* 20px */
             width: 90%;
             max-width: 400px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
             border: 1px solid rgba(255, 255, 255, 0.2);
             transform: scale(0.9);
             transition: transform 0.3s ease;
@@ -457,7 +461,7 @@
     </div>
 
     <!-- صفحة تسجيل الدخول -->
-    <div id="loginPage" class="min-h-screen flex items-center justify-center px-4">
+    <div id="loginPage" class="hidden min-h-screen flex items-center justify-center px-4">
         <div class="bg-white/10 backdrop-blur-lg rounded-3xl p-8 max-w-md w-full border border-white/20 shadow-2xl">
             <div class="text-center mb-8">
                 <div class="text-6xl mb-4">💬</div>
@@ -557,8 +561,8 @@
     <i class="fas fa-gamepad"></i>
     <span> لعبة XO </span>
 </a>
-<!-- زر المنشورات في الصفحة الرئيسية -->
-<div class="relative">
+<!-- زر المنشورات في الصفحة الرئيسية - سيتم إخفاؤه -->
+<div class="relative hidden">
     <button id="postsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -567,15 +571,6 @@
     </button>
 </div>
 
-<!-- زر المنشورات في واجهة المحادثة -->
-<div class="relative">
-    <button id="chatPostsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-        </svg>
-        <span id="chatPostsBadge" class="notification-badge hidden">0</span>
-    </button>
-</div>
             <div class="flex items-center space-x-4 space-x-reverse">
                <!-- في رأس الصفحة الرئيسية - داخل <div class="flex items-center space-x-4 space-x-reverse"> -->
 <button id="changeBackgroundBtn" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors hidden">
@@ -583,18 +578,27 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
     </svg>
 </button>
-                <!-- زر الإشعارات والرسائل -->
-                <div class="relative">
+                <!-- زر الإشعارات والرسائل - سيتم إخفاؤه -->
+                <div class="relative hidden">
     <button id="messagesButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
         </svg>
         <span id="messagesBadge" class="notification-badge hidden">0</span>
+        <!-- القائمة المنبثقة للإشعارات -->
+        <div id="notificationsDropdown" class="hidden absolute top-full left-0 mt-2 w-72 bg-slate-800 rounded-lg shadow-lg border border-slate-700 z-50">
+            <div class="p-3 border-b border-slate-700">
+                <h3 class="text-white font-semibold">الإشعارات</h3>
+            </div>
+            <div id="notificationsList" class="p-2 max-h-80 overflow-y-auto custom-scrollbar">
+                <!-- الإشعارات ستظهر هنا -->
+            </div>
+        </div>
     </button>
 </div>
                 
-                <!-- زر قائمة الأصدقاء -->
-                <button id="friendsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+                <!-- زر قائمة الأصدقاء - سيتم إخفاؤه -->
+                <button id="friendsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors hidden">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                     </svg>
@@ -632,7 +636,7 @@
     <!-- صفحة المحادثة -->
     <div id="chatPage" class="hidden min-h-screen flex flex-col">
         <!-- رأس المحادثة -->
-        <div class="bg-white/10 backdrop-blur-lg border-b border-white/20 p-4">
+        <div class="bg-white/10 backdrop-blur-lg border-b border-white/20 p-4 relative z-30">
             <div class="container mx-auto flex items-center justify-between">
                 <div class="flex items-center space-x-4 space-x-reverse">
                     <button onclick="goBack()" class="text-white hover:text-blue-200 transition-colors">
@@ -655,14 +659,42 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
     </svg>
 </button>
-                    <!-- أضف هذا الزر -->
-    <div class="relative">
+                    <!-- زر المنشورات في واجهة المحادثة -->
+<button id="chatPostsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+    </svg>
+    <span id="chatPostsBadge" class="notification-badge hidden">0</span>
+</button>
+                    <!-- زر قائمة المتفاعلين -->
+                    <button id="topUsersButton" onclick="openTopUsersModal()" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="قائمة المتفاعلين">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"></path>
+                        </svg>
+                    </button>
+                    <!-- زر الأصدقاء في واجهة المحادثة -->
+    <button id="chatFriendsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+        </svg>
+    </button>
+                    <!-- زر الإشعارات في واجهة المحادثة -->
+    <div class="relative" id="chatMessagesButtonContainer">
         <button id="chatMessagesButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-            </svg>
-            <span id="chatMessagesBadge" class="notification-badge hidden">0</span>
+            </svg>no
+            <span id="chatMessagesBadge" class="notification-badge hidden"></span>
         </button>
+        <!-- القائمة المنبثقة للإشعارات في المحادثة (تم نقلها هنا) -->
+        <div id="chatNotificationsDropdown" class="hidden absolute top-full left-0 mt-2 w-72 bg-slate-800 rounded-lg shadow-lg border border-slate-700 z-50">
+            <div class="p-3 border-b border-slate-700">
+                <h3 class="text-white font-semibold">الإشعارات</h3>
+            </div>
+            <div id="chatNotificationsList" class="p-2 max-h-80 overflow-y-auto custom-scrollbar">
+                <!-- الإشعارات ستظهر هنا -->
+            </div>
+        </div>
     </div>
                     <button id="toggleUsersButton" class="md:hidden text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -676,7 +708,7 @@
         </div>
 
         <!-- المحتوى الرئيسي -->
-        <div class="main-content">
+        <div class="main-content relative z-10">
             <!-- منطقة الرسائل -->
             <div class="flex-1 overflow-hidden p-4">
                 <div id="messagesContainer" class="container mx-auto max-w-4xl space-y-4 messages-container custom-scrollbar">
@@ -847,6 +879,20 @@
                         </button>
                     </div>
                 </div>
+                <!-- منطقة عرض الرد -->
+                <div id="replyPreview" class="hidden mb-2 bg-white/10 rounded-lg p-2 max-w-4xl mx-auto">
+                    <div class="flex justify-between items-center">
+                        <div class="text-xs text-white overflow-hidden">
+                            <div class="font-semibold">الرد على <span id="replyUsername"></span></div>
+                            <p id="replyContent" class="truncate opacity-70"></p>
+                        </div>
+                        <button onclick="cancelReply()" class="text-white hover:text-red-400 p-1">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
 
                 <!-- لوحة إدارة الصور الشخصية -->
                 <div id="avatarManagementPanel" class="hidden mb-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-4 border border-purple-500/50">
@@ -936,49 +982,75 @@
 
     <!-- نافذة الملف الشخصي -->
     <div id="profileModal" class="profile-modal">
-        <div class="profile-content">
-            <div class="text-center mb-6">
-                <button onclick="closeProfileModal()" class="absolute top-4 left-4 text-white hover:text-blue-200">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
+        <div class="profile-content custom-scrollbar">
+            <!-- رأس الملف الشخصي -->
+            <div class="relative bg-white/5 p-6 text-center">
+                 <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-white hover:text-blue-200 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
-                <img id="profileAvatar" src="" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-blue-500/50">
+                <!-- قائمة الخيارات الإدارية -->
+                <div id="profileMenuContainer" class="absolute top-4 left-4">
+                    <!-- سيتم ملء هذه القائمة ديناميكياً -->
+                </div>
+
+                <img id="profileAvatar" src="" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-blue-500/50 shadow-lg">
                 <h2 id="profileUsername" class="text-2xl font-bold text-white"></h2>
                 <div id="profileRank" class="inline-block mt-2 px-3 py-1 rounded-full text-sm font-semibold text-white"></div>
-                <div id="profileStatus" class="mt-2 flex items-center justify-center space-x-2">
-                    <span class="w-3 h-3 rounded-full"></span>
+                <div id="profileStatus" class="mt-2 flex items-center justify-center space-x-2 space-x-reverse">
+                    <span class="w-2.5 h-2.5 rounded-full"></span>
                     <span class="text-sm text-blue-200"></span>
                 </div>
-                <!-- في نافذة الملف الشخصي، بعد حالة الاتصال -->
-<div class="mt-4 text-center">
-  <div class="inline-flex items-center space-x-2 bg-white/10 rounded-full px-4 py-2">
-    <span class="text-yellow-400">⭐</span>
-    <span class="text-white font-semibold" id="profilePoints">0</span>
-    <span class="text-blue-200">النقاط</span>
-  </div>
-  <div class="mt-2 inline-flex items-center space-x-2 bg-white/10 rounded-full px-4 py-2">
-    <span class="text-green-400">📈</span>
-    <span class="text-white font-semibold" id="profileLevel">1</span>
-    <span class="text-blue-200">المستوى</span>
-  </div>
-</div>
             </div>
-            
-            <div class="text-center space-y-3">
-                <button id="privateChatButton" onclick="startPrivateChat()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse mx-auto">
-                    <span>محادثة خاصة</span>
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-                    </svg>
-                </button>
-                
-                <button id="addFriendButton" onclick="sendFriendRequest()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse mx-auto">
-                    <span>إضافة صديق</span>
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
-                    </svg>
-                </button>
+
+            <!-- محتوى الملف الشخصي القابل للتمرير -->
+            <div class="flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar">
+                <!-- النقاط والمستوى -->
+                <div class="grid grid-cols-2 gap-4 text-center">
+                    <div class="bg-white/5 rounded-lg p-3">
+                        <div class="text-yellow-400 text-2xl">⭐</div>
+                        <div class="text-white font-semibold" id="profilePoints">0</div>
+                        <div class="text-blue-200 text-xs">النقاط</div>
+                    </div>
+                    <div class="bg-white/5 rounded-lg p-3">
+                        <div class="text-green-400 text-2xl">📈</div>
+                        <div class="text-white font-semibold" id="profileLevel">1</div>
+                        <div class="text-blue-200 text-xs">المستوى</div>
+                    </div>
+                </div>
+
+                <!-- أزرار الإجراءات -->
+                <div class="space-y-3">
+                    <button id="privateChatButton" onclick="startPrivateChat()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 space-x-reverse">
+                        <span>محادثة خاصة</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    </button>
+                    
+                    <button id="addFriendButton" onclick="sendFriendRequest()" class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 space-x-reverse">
+                        <span>إضافة صديق</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                    </button>
+                </div>
+
+                <!-- قسم معلوماتي (تم نقله للأسفل) -->
+                <div class="text-center" id="bioSection">
+                    <h3 class="text-lg font-semibold text-white mb-2 border-b border-white/20 pb-2">معلوماتي</h3>
+                    <div id="bioContainer" class="relative text-blue-200 text-sm bg-white/10 rounded-lg p-3 min-h-[80px] whitespace-pre-wrap">
+                        <p id="profileBio" class="text-center"></p>
+                        <textarea id="profileBioInput" class="hidden w-full bg-white/20 border border-white/30 rounded-lg px-4 py-2 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400" rows="4" placeholder="اكتب شيئاً عن نفسك..." oninput="updateBioCharCount()"></textarea>
+                        <div id="bioCharCounter" class="hidden absolute bottom-2 left-3 text-xs text-gray-400">0 / 500</div>
+                    </div>
+                    <div id="editBioButtons" class="mt-3 space-x-2 space-x-reverse">
+                        <button id="editBioButton" onclick="toggleBioEdit(true)" class="hidden bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded-full text-sm font-semibold transition-colors">
+                            تعديل
+                        </button>
+                        <button id="saveBioButton" onclick="saveBio()" class="hidden bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded-full text-sm font-semibold transition-colors">
+                            حفظ
+                        </button>
+                        <button id="cancelBioButton" onclick="toggleBioEdit(false)" class="hidden bg-gray-600 hover:bg-gray-700 text-white px-4 py-1 rounded-full text-sm font-semibold transition-colors">
+                            إلغاء
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1125,6 +1197,47 @@
 
 <div id="postsOverlay" class="friends-overlay" onclick="closePostsSidebar()"></div>
 
+<!-- نافذة قائمة المتفاعلين -->
+<div id="topUsersModal" class="profile-modal">
+    <div class="profile-content custom-scrollbar">
+        <!-- رأس النافذة -->
+        <div class="relative bg-white/5 p-6 text-center">
+             <button onclick="closeTopUsersModal()" class="absolute top-4 right-4 text-white hover:text-blue-200 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-2xl font-bold text-white">🏆 المتفاعلون</h2>
+            <p class="text-blue-200 text-sm">أكثر 10 مستخدمين نشاطاً</p>
+        </div>
+
+        <!-- محتوى القائمة -->
+        <div id="topUsersListContainer" class="flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar">
+            <!-- سيتم ملء القائمة هنا -->
+            <div class="text-center text-blue-200 p-8">
+                <div class="spinner mx-auto"></div>
+                <p class="mt-2">جاري تحميل القائمة...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="topUsersOverlay" class="friends-overlay" onclick="closeTopUsersModal()"></div>
+
+<style>
+    #topUsersModal.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    #topUsersModal.show .profile-content {
+        transform: scale(1);
+    }
+    #topUsersOverlay.show {
+        display: block;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 9999;
+    }
+</style>
+
+
 <!-- قبل نهاية body -->
 <!-- نافذة تغيير خلفية الموقع -->
 <div id="backgroundModal" class="profile-modal">
@@ -1247,7 +1360,40 @@
     });
      // طلب بيانات الصور عند الاتصال
     socket.on('connect', () => {
+        console.log('Socket connected:', socket.id);
         socket.emit('get user avatars');
+        // إذا لم يتم التحقق من الجلسة بعد، اطلب التحقق مرة أخرى
+        const savedSession = localStorage.getItem('userSession');
+        if (savedSession) {
+            try {
+                const sessionData = JSON.parse(savedSession);
+                if (sessionData && sessionData.sessionId) {
+                    socket.emit('check session', sessionData.sessionId);
+                }
+            } catch (e) { /* ignore */ }
+        }
+        // تأكيد أن الجلسة قد تمت معالجتها خلال الاتصال
+        if (!sessionChecked) {
+            // ضع علامة كمنتهية بعد 3 ثواني من الاتصال إذا لم يأت رد
+            setTimeout(() => {
+                if (!sessionChecked) {
+                    console.warn('لم يصل رد التحقق من الجلسة بعد الاتصال. إخفاء شاشة التحميل كحالة افتراضية.');
+                    sessionChecked = true;
+                    hideLoading();
+                }
+            }, 3000);
+        }
+    });
+
+    socket.on('connect_error', (err) => {
+        console.error('خطأ في الاتصال بالـ socket:', err);
+        sessionChecked = true;
+        hideLoading();
+        showNotification('تعذر الاتصال بالسيرفر. تحقق من الشبكة وحاول مرة أخرى.', 'error');
+    });
+
+    socket.on('disconnect', (reason) => {
+        console.warn('تم قطع الاتصال:', reason);
     });
         // تتبع الرسائل غير المقروءة
 let unreadPrivateMessages = {};
@@ -1412,14 +1558,42 @@ function updateUnreadBadges() {
         window.addEventListener('DOMContentLoaded', () => {
             showLoading();
             const savedSession = localStorage.getItem('userSession');
-            const savedRoom = localStorage.getItem('currentRoom');
+
+            const sessionTimeout = setTimeout(() => {
+                if (!sessionChecked) {
+                    console.warn('Session check timed out. Showing login page.');
+                    sessionChecked = true;
+                    hideLoading();
+                    document.getElementById('loginPage').classList.remove('hidden');
+                }
+            }, 5000); // 5 seconds timeout
+
+            const clearSessionTimeout = () => clearTimeout(sessionTimeout);
+            socket.once('session valid', clearSessionTimeout);
+            socket.once('session invalid', clearSessionTimeout);
             
             if (savedSession) {
-                const sessionData = JSON.parse(savedSession);
-                socket.emit('check session', sessionData.sessionId);
+                try {
+                    const sessionData = JSON.parse(savedSession);
+                    if (sessionData && sessionData.sessionId) {
+                        socket.emit('check session', sessionData.sessionId);
+                    } else {
+                        throw new Error('Invalid session data');
+                    }
+                } catch (error) {
+                    console.error('Error with session data:', error);
+                    localStorage.removeItem('userSession');
+                    localStorage.removeItem('currentRoom');
+                    sessionChecked = true;
+                    hideLoading();
+                    document.getElementById('loginPage').classList.remove('hidden');
+                    clearSessionTimeout();
+                }
             } else {
                 sessionChecked = true;
                 hideLoading();
+                document.getElementById('loginPage').classList.remove('hidden');
+                clearSessionTimeout();
             }
         });
 
@@ -1449,10 +1623,16 @@ function updateUnreadBadges() {
         });
 
         socket.on('session invalid', () => {
+            console.log('الجلسة غير صالحة، جاري تنظيف البيانات المحلية...');
             localStorage.removeItem('userSession');
             localStorage.removeItem('currentRoom');
+            localStorage.removeItem('currentUser');
+            currentUser = null;
             sessionChecked = true;
             hideLoading();
+            document.getElementById('mainPage').classList.add('hidden');
+            document.getElementById('chatPage').classList.add('hidden');
+            document.getElementById('loginPage').classList.remove('hidden');
         });
 
         // تحديث معلومات المستخدم في الرأس
@@ -1536,6 +1716,11 @@ function updateUnreadBadges() {
             socket.emit('get friends list', currentUser.name);
             
             hideLoading();
+            // بعد تسجيل الدخول الناجح، تحقق من صلاحيات المستخدم
+            if (currentUser) {
+                toggleBackgroundButton();
+            }
+
         });
 
         socket.on('login error', (error) => {
@@ -1561,6 +1746,10 @@ function updateUnreadBadges() {
             socket.emit('get friend requests', currentUser.name);
             socket.emit('get friends list', currentUser.name);
             
+            // بعد إنشاء الحساب، تحقق من صلاحيات المستخدم
+            if (currentUser) {
+                toggleBackgroundButton();
+            }
             hideLoading();
         });
 
@@ -1582,18 +1771,15 @@ function updateUnreadBadges() {
 
         // استقبال رسائل جديدة
         socket.on('new message', (message) => {
-            if (message.type === 'user') {
-                addMessageToChat(message.user, message.content, message.time, message.user === currentUser.name, message.rank, message.avatar);
+            if (message.type === 'user' || (message.type === 'image' && message.user) || message.replyTo) {
+                addMessageToChat(message.user, message.content, message.time, message.user === currentUser.name, message.rank, message.avatar, message.messageId, message.replyTo);
+            } else if (message.type === 'system') {
+                addSystemMessage(message.content, message.time);
             } else {
                 addSystemMessage(message.content, message.time);
             }
             // تمرير إلى الأسفل عند استقبال رسالة جديدة
             setTimeout(scrollToBottom, 100);
-        });
-
-        // استقبال إشعارات الرتب
-        socket.on('rank notification', (message) => {
-            addSystemMessage(message.content, message.time);
         });
 
         // استقبال تاريخ المحادثة (محدث لدعم الصور)
@@ -1602,10 +1788,14 @@ socket.on('chat history', (messages) => {
     container.innerHTML = '';
     
     messages.forEach(msg => {
+        // إذا لم يوجد messageId، أنشئ واحد حقيقي وفوري
+        if (!msg.messageId) {
+            msg.messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
         if (msg.type === 'user') {
-            addMessageToChat(msg.user, msg.content, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar);
+            addMessageToChat(msg.user, msg.content, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, msg.replyTo);
         } else if (msg.type === 'image') {
-            addImageMessageToChat(msg.user, msg.imageData, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar);
+            addImageMessageToChat(msg.user, msg.imageData, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId);
         } else {
             addSystemMessage(msg.content, msg.time);
         }
@@ -2055,6 +2245,11 @@ friendsList.forEach(username => {
             document.getElementById('mainPage').classList.remove('hidden');
             updateWelcomeMessage();
             
+            // إخفاء الأزرار من رأس الصفحة الرئيسية
+            document.getElementById('postsButton').parentElement.classList.add('hidden');
+            document.getElementById('messagesButton').parentElement.classList.add('hidden');
+            document.getElementById('friendsButton').classList.add('hidden');
+            
             // طلب قائمة الغرف من السيرفر
             fetch('/api/rooms')
                 .then(response => response.json())
@@ -2085,6 +2280,12 @@ friendsList.forEach(username => {
                     'bg-white/10 backdrop-blur-lg rounded-2xl p-6 hover:bg-white/20 transition-all duration-300 relative group';
                 
                 roomDiv.innerHTML = `
+                    <div class="absolute top-4 right-4 bg-blue-600/50 text-white text-xs font-bold px-2.5 py-1 rounded-full flex items-center space-x-1 space-x-reverse backdrop-blur-sm">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                        <span>${room.users.length}</span>
+                    </div>
                     <div class="cursor-pointer" onclick="${room.protected ? `openProtectedChat(${room.id}, '${room.name}', '${room.icon}')` : `openChat(${room.id}, '${room.name}', '${room.icon}')`}">
                         <div class="text-4xl mb-4 text-center">${room.icon}</div>
                         <h3 class="text-xl font-semibold text-white text-center mb-2">${room.name}</h3>
@@ -2114,10 +2315,13 @@ friendsList.forEach(username => {
             document.getElementById('chatTitle').textContent = roomName;
             document.getElementById('chatIcon').textContent = icon;
             
-            // إخفاء زر الملف الشخصي في رأس المحادثة ولكن إبقاء زر الإشعارات مرئياً
-    document.getElementById('profileButton').classList.add('hidden');
-    document.getElementById('messagesButton').classList.remove('hidden');
-    document.getElementById('friendsButton').classList.remove('hidden');
+            // إظهار الأزرار في رأس المحادثة
+            document.getElementById('chatPostsButton').classList.remove('hidden');
+            document.getElementById('chatMessagesButtonContainer').classList.remove('hidden');
+            document.getElementById('chatFriendsButton').classList.remove('hidden');
+            
+            // إخفاء زر الملف الشخصي في رأس المحادثة
+            document.getElementById('profileButton').classList.add('hidden');
             
             // إظهار/إخفاء لوحات الإدارة بناءً على نوع الغرفة
             const rankPanel = document.getElementById('rankManagementPanel');
@@ -2178,6 +2382,11 @@ friendsList.forEach(username => {
     document.getElementById('mainPage').classList.remove('hidden');
     document.getElementById('messagesContainer').innerHTML = '';
     
+    // إخفاء الأزرار في رأس المحادثة عند العودة
+    document.getElementById('chatPostsButton').classList.add('hidden');
+    document.getElementById('chatMessagesButtonContainer').classList.add('hidden');
+    document.getElementById('chatFriendsButton').classList.add('hidden');
+    
     // إعادة إظهار زر الملف الشخصي في الرأس
     document.getElementById('profileButton').classList.remove('hidden');
     
@@ -2185,34 +2394,59 @@ friendsList.forEach(username => {
 }
 
         // تسجيل الخروج
-        function logout() {
-            if (currentRoom) {
-                socket.emit('leave room', { roomId: currentRoom.id, user: currentUser });
-            }
-            
-            // حذف الجلسة المحفوظة
-            localStorage.removeItem('userSession');
-            localStorage.removeItem('currentRoom');
-            
-            currentUser = null;
-            currentRoom = null;
-            document.getElementById('mainPage').classList.add('hidden');
-            document.getElementById('chatPage').classList.add('hidden');
-            document.getElementById('loginPage').classList.remove('hidden');
-        }
+        // ...existing code...
+let manualLogout = false;
+
+function logout() {
+    manualLogout = true;
+    if (currentRoom) {
+        socket.emit('leave room', { roomId: currentRoom.id, user: currentUser });
+    }
+    localStorage.removeItem('userSession');
+    localStorage.removeItem('currentRoom');
+    currentUser = null;
+    currentRoom = null;
+    document.getElementById('mainPage').classList.add('hidden');
+    document.getElementById('chatPage').classList.add('hidden');
+    document.getElementById('loginPage').classList.remove('hidden');
+}
+
+// منع حذف الجلسة عند إغلاق الصفحة إلا إذا كان logout حقيقي
+window.addEventListener('beforeunload', function (e) {
+    if (!manualLogout) {
+        // لا تحذف الجلسة
+        return;
+    }
+    // إذا كان logout حقيقي، احذف الجلسة
+    localStorage.removeItem('userSession');
+    localStorage.removeItem('currentRoom');
+});
+// ...existing code...
 
         // إرسال رسالة
         function sendMessage() {
             const input = document.getElementById('messageInput');
             const message = input.value.trim();
+            const replyPreview = document.getElementById('replyPreview');
+            let replyTo = null;
+
+            if (!replyPreview.classList.contains('hidden')) {
+                replyTo = {
+                    messageId: replyPreview.getAttribute('data-reply-id'),
+                    user: document.getElementById('replyUsername').textContent,
+                    content: document.getElementById('replyContent').textContent
+                };
+            }
            
             if (message && currentUser && currentRoom) {
                 socket.emit('send message', { 
                     roomId: currentRoom.id, 
                     message, 
-                    user: currentUser 
+                    user: currentUser,
+                    replyTo: replyTo
                 });
                 input.value = '';
+                cancelReply(); // إلغاء وضع الرد بعد الإرسال
             }
         }
 
@@ -2224,10 +2458,10 @@ friendsList.forEach(username => {
         }
 
         // إضافة رسالة إلى الدردشة (نسخة مدمجة)
-function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl) {
+function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messageId = null, replyTo = null) {
     const container = document.getElementById('messagesContainer');
     const messageDiv = document.createElement('div');
-    messageDiv.className = `chat-message flex ${isOwn ? 'justify-end' : 'justify-start'}`;
+    messageDiv.setAttribute('data-message-id', messageId);
    
     let rankBadge = '';
    
@@ -2240,10 +2474,53 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl) {
             </div>
         `;
     }
+    // زر الحذف: يظهر دائماً للاختبار
+    // --- تعديل: فصل الأزرار عن القائمة ---
+    let directActions = '';
+    let menuBtn = '';
+    if (messageId && user) { // التأكد من وجود المستخدم لتجنب الأخطاء
+        const isMessageOwner = user === currentUser.name;
+        const canDelete = 
+            (currentUser.name === "Walid dz 31") || // صاحب الموقع
+            (isMessageOwner && currentUser.rank); // المستخدم يملك رسالته ولديه رتبة
+
+        // زر الرد يظهر للجميع
+        directActions = `
+            <button class="text-gray-400 hover:text-blue-400" title="رد" onclick="startReply('${messageId}', '${user}', '${message.replace(/'/g, "\\'")}')">↪️</button>
+        `;
+
+        // إضافة زر الحذف فقط إذا كان مسموحاً
+        if (canDelete) {
+            directActions += `<button class="text-red-400 hover:text-red-600" title="حذف" onclick="deleteRoomMessage('${messageId}')">🗑️</button>`;
+        }
+
+        menuBtn = `
+        <div class=\"relative inline-block ml-2\">
+            <button class=\"menu-btn text-gray-400 hover:text-blue-500 text-xl font-bold\" title=\"خيارات إضافية\" data-message-id=\"${messageId}\" data-user=\"${user}\" data-content=\"${message.replace(/'/g, "\\'")}\">⋮</button>
+            <div class=\"message-menu hidden absolute left-0 z-50 bg-slate-800 text-white rounded shadow-lg mt-2 min-w-[160px] text-sm border border-slate-700\">
+                <button class=\"block w-full text-right px-4 py-2 hover:bg-slate-700\" data-action=\"mute\">🔇 كتم المستخدم</button>
+                <button class=\"block w-full text-right px-4 py-2 hover:bg-slate-700\" data-action=\"unmute\">🔊 إلغاء كتم المستخدم</button>
+                <button class=\"block w-full text-right px-4 py-2 hover:bg-slate-700\" data-action=\"banRoom\">🚫 حظر من الغرفة</button>
+                <button class=\"block w-full text-right px-4 py-2 hover:bg-slate-700\" data-action=\"unbanRoom\">✅ إلغاء حظر الغرفة</button>
+            </div>
+        </div>
+        `;
+    }
+
+    let replyHtml = '';
+    if (replyTo) {
+        replyHtml = `
+            <a href="#${replyTo.messageId}" onclick="scrollToMessage('${replyTo.messageId}')" class="block bg-black/20 p-2 rounded-lg mb-2 text-xs border-l-2 border-blue-400">
+                <div class="font-semibold text-blue-300">رد على ${replyTo.user}</div>
+                <p class="opacity-80 truncate">${replyTo.content}</p>
+            </a>
+        `;
+    }
+
 
     if (avatarUrl) {
         messageDiv.innerHTML = `
-            <div class="max-w-xs lg:max-w-md px-3 py-2 rounded-2xl ${
+            <div class="max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
                 isOwn
                     ? 'bg-blue-600 text-white ml-3'
                     : 'bg-white/20 text-white mr-3'
@@ -2254,14 +2531,19 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl) {
                         ${rankBadge}
                         <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : 'text-blue-200'}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
                     </div>
+                    <div class="flex items-center space-x-2 space-x-reverse mr-auto">
+                        ${directActions}
+                        ${menuBtn}
+                    </div>
                 </div>
+                ${replyHtml}
                 <div class="text-sm leading-relaxed">${message}</div>
                 <div class="text-xs mt-1 opacity-70">${time}</div>
             </div>
         `;
     } else {
         messageDiv.innerHTML = `
-            <div class="max-w-xs lg:max-w-md px-3 py-2 rounded-2xl ${
+            <div class="max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
                 isOwn
                     ? 'bg-blue-600 text-white ml-3'
                     : 'bg-white/20 text-white mr-3'
@@ -2274,15 +2556,120 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl) {
                         ${rankBadge}
                         <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : 'text-blue-200'}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
                     </div>
+                    <div class="flex items-center space-x-2 space-x-reverse mr-auto">
+                        ${directActions}
+                        ${menuBtn}
+                    </div>
                 </div>
+                ${replyHtml}
                 <div class="text-sm leading-relaxed">${message}</div>
                 <div class="text-xs mt-1 opacity-70">${time}</div>
             </div>
         `;
     }
-   
+
+    messageDiv.className = `chat-message flex ${isOwn ? 'justify-end' : 'justify-start'}`;
+
     container.appendChild(messageDiv);
     container.scrollTop = container.scrollHeight;
+}
+
+// --- إعادة بناء نظام قائمة خيارات الرسالة ---
+
+// 1. إغلاق جميع القوائم المفتوحة
+function closeAllMessageMenus() {
+    document.querySelectorAll('.message-menu').forEach(m => m.classList.add('hidden'));
+}
+
+// 2. معالج النقر العام
+document.addEventListener('click', function(e) {
+    const menuButton = e.target.closest('.menu-btn');
+    const menuOption = e.target.closest('.message-menu button');
+
+    if (menuButton) {
+        // إذا تم النقر على زر القائمة (⋮)
+        e.stopPropagation();
+        const menu = menuButton.nextElementSibling;
+        const isHidden = menu.classList.contains('hidden');
+        closeAllMessageMenus(); // أغلق أي قائمة أخرى
+        if (isHidden) {
+            menu.classList.remove('hidden'); // افتح القائمة الحالية
+        }
+    } else if (menuOption) {
+        // إذا تم النقر على خيار داخل القائمة
+        e.stopPropagation();
+        const action = menuOption.dataset.action;
+        const button = menuOption.closest('.relative').querySelector('.menu-btn');
+        const messageId = button.dataset.messageId;
+        const user = button.dataset.user; // اسم المستخدم محفوظ في الزر
+        const content = button.dataset.content;
+
+        switch (action) {
+            case 'reply':
+                startReply(messageId, user, content);
+                break;
+            case 'delete':
+                deleteRoomMessage(messageId);
+                break;
+            case 'mute':
+                if (confirm(`هل تريد كتم المستخدم ${user}؟`)) {
+                    socket.emit('mute user', { username: user, duration: 60, currentUser });
+                }
+                break;
+            case 'unmute':
+                if (confirm(`هل تريد إلغاء كتم المستخدم ${user}؟`)) {
+                    socket.emit('unmute user', { username: user, currentUser });
+                }
+                break;
+            case 'banRoom':
+                if (confirm(`هل تريد حظر المستخدم ${user} من هذه الغرفة؟`)) {
+                    socket.emit('ban from room', { username: user, reason: 'تم الحظر من خلال الرسالة', currentUser });
+                }
+                break;
+            case 'unbanRoom':
+                if (confirm(`هل تريد إلغاء حظر المستخدم ${user} من هذه الغرفة؟`)) {
+                    socket.emit('unban from room', { username: user, currentUser });
+                }
+                break;
+        }
+        closeAllMessageMenus();
+    } else {
+        // إذا تم النقر في أي مكان آخر، أغلق جميع القوائم
+        closeAllMessageMenus();
+    }
+});
+
+// دوال الرد على الرسائل (تم نقلها إلى المكان الصحيح)
+function startReply(messageId, user, content) {
+    const replyPreview = document.getElementById('replyPreview');
+    const replyUsername = document.getElementById('replyUsername');
+    const replyContent = document.getElementById('replyContent');
+
+    replyPreview.setAttribute('data-reply-id', messageId);
+    replyUsername.textContent = user;
+    replyContent.textContent = content;
+
+    replyPreview.classList.remove('hidden');
+    document.getElementById('messageInput').focus();
+
+    // إغلاق قائمة الخيارات
+    closeAllMessageMenus();
+}
+
+function cancelReply() {
+    const replyPreview = document.getElementById('replyPreview');
+    replyPreview.classList.add('hidden');
+    replyPreview.removeAttribute('data-reply-id');
+}
+
+function scrollToMessage(messageId) {
+    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (messageElement) {
+        messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // إضافة تأثير وميض مؤقت
+        messageElement.classList.add('animate-pulse');
+        setTimeout(() => { messageElement.classList.remove('animate-pulse'); }, 2000);
+    }
 }
 
         // إضافة رسالة نظام (نسخة مدمجة)
@@ -2292,9 +2679,13 @@ function addSystemMessage(message, time) {
     messageDiv.className = 'chat-message flex justify-center';
    
     messageDiv.innerHTML = `
-        <div class="max-w-md px-3 py-2 rounded-2xl bg-gradient-to-r from-yellow-600/80 to-orange-600/80 text-white text-center border border-yellow-500/50">
+        <div class="max-w-md px-3 py-2 rounded-2xl bg-slate-700/80 text-white text-center border border-cyan-500/30">
+            <div class="flex items-center justify-center space-x-2 space-x-reverse mb-1">
+                <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=system-bot" class="w-5 h-5 rounded-full" alt="System Bot">
+                <div class="font-semibold text-sm text-cyan-300">رسائل النظام</div>
+            </div>
             <div class="text-sm leading-relaxed">${message}</div>
-            <div class="text-xs mt-1 opacity-70">${time}</div>
+            <div class="text-xs mt-1 opacity-60">${time}</div>
         </div>
     `;
    
@@ -2302,73 +2693,67 @@ function addSystemMessage(message, time) {
     container.scrollTop = container.scrollHeight;
 }
 
-        // تحديث قائمة المستخدمين المتصلين مع الترتيب حسب الرتبة
-        function updateOnlineUsersList(users) {
-            const onlineUsersList = document.getElementById('onlineUsersList');
-            const onlineUsersCount = document.getElementById('onlineUsersCount');
-            
-            if (!onlineUsersList || !onlineUsersCount) return;
-            
-            onlineUsersCount.textContent = users.length;
-            onlineUsersList.innerHTML = '';
-            
-            // ترتيب المستخدمين حسب الرتبة (من الأعلى إلى الأدنى)
-            const sortedUsers = users.sort((a, b) => {
-                const rankA = a.rank ? ranks[a.rank]?.level || 0 : 0;
-                const rankB = b.rank ? ranks[b.rank]?.level || 0 : 0;
-                
-                // صاحب الموقع دائماً في الأعلى
-                if (a.rank === 'صاحب الموقع') return -1;
-                if (b.rank === 'صاحب الموقع') return 1;
-                
-                return rankB - rankA;
-            });
-            
-            sortedUsers.forEach(user => {
-                const userRank = user.rank;
-                let rankBadge = '';
-                
-                if (userRank) {
-                    const rankInfo = ranks[userRank];
-                    rankBadge = `
-                        <div class="inline-flex items-center space-x-1 space-x-reverse bg-gradient-to-r ${rankInfo.color} px-2 py-1 rounded-full text-xs font-bold text-white">
-                            <span>${rankInfo.icon}</span>
-                            <span>${userRank}</span>
-                        </div>
-                    `;
-                }
 
-                if (user.avatar) {
-                    const userDiv = document.createElement('div');
-                    userDiv.className = 'flex items-center space-x-3 space-x-reverse bg-white/5 rounded-lg p-3';
-                    userDiv.innerHTML = `
-                        <img src="${user.avatar}" class="w-10 h-10 rounded-full object-cover border-2 border-blue-500/50" alt="${user.name}" onclick="showUserProfileModal('${user.name}')" style="cursor:pointer">
-                        <div class="flex-1 min-w-0">
-                            <div class="text-white font-semibold truncate" onclick="showUserProfileModal('${user.name}')" style="cursor:pointer">${user.name}</div>
-                            ${rankBadge}
-                        </div>
-                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-                    `;
-                    onlineUsersList.appendChild(userDiv);
-                } else {
-                    const userDiv = document.createElement('div');
-                    userDiv.className = 'flex items-center space-x-3 space-x-reverse bg-white/5 rounded-lg p-3';
-                    userDiv.innerHTML = `
-                        <div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white border-2 border-blue-500/50" onclick="showUserProfileModal('${user.name}')" style="cursor:pointer">
-                            ${user.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <div class="text-white font-semibold truncate" onclick="showUserProfileModal('${user.name}')" style="cursor:pointer">${user.name}</div>
-                            ${rankBadge}
-                        </div>
-                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
-                    `;
-                    onlineUsersList.appendChild(userDiv);
-                }
-            });
-            
-            document.getElementById('onlineUsersPanel').classList.remove('hidden');
+        // تحديث قائمة المستخدمين المتصلين مع الترتيب حسب الرتبة
+function updateOnlineUsersList(users) {
+    const onlineUsersList = document.getElementById('onlineUsersList');
+    const onlineUsersCount = document.getElementById('onlineUsersCount');
+    
+    if (!onlineUsersList || !onlineUsersCount) return;
+    
+    onlineUsersCount.textContent = users.length;
+    onlineUsersList.innerHTML = '';
+    
+    // ترتيب المستخدمين حسب الرتبة (من الأعلى إلى الأدنى)
+    const sortedUsers = users.sort((a, b) => {
+        const rankA = a.rank ? ranks[a.rank]?.level || 0 : 0;
+        const rankB = b.rank ? ranks[b.rank]?.level || 0 : 0;
+        if (a.rank === 'صاحب الموقع') return -1;
+        if (b.rank === 'صاحب الموقع') return 1;
+        return rankB - rankA;
+    });
+    
+    sortedUsers.forEach(user => {
+        const userDiv = document.createElement('div');
+        const isOwner = user.rank === 'صاحب الموقع';
+        
+        // تحديد الكلاسات الأساسية وتأثيرات الـ hover
+        let baseClasses = 'group flex items-center space-x-3 space-x-reverse p-2.5 rounded-lg transition-all duration-200 ease-in-out cursor-pointer hover:bg-white/10';
+        if (isOwner) {
+            baseClasses += ' bg-yellow-500/10 border-r-4 border-yellow-400';
+        } else {
+            baseClasses += ' bg-white/5';
         }
+        userDiv.className = baseClasses;
+        userDiv.onclick = () => showUserProfileModal(user.name);
+
+        // إنشاء شارة الرتبة
+        let rankBadge = '';
+        if (user.rank) {
+            const rankInfo = ranks[user.rank];
+            rankBadge = `<div class="inline-flex items-center space-x-1 space-x-reverse bg-gradient-to-r ${rankInfo.color} px-2 py-0.5 rounded-full text-xs font-bold text-white shadow-md">${rankInfo.icon} <span>${user.rank}</span></div>`;
+        }
+
+        // إنشاء الصورة الرمزية
+        const avatarHtml = user.avatar 
+            ? `<img src="${user.avatar}" class="w-10 h-10 rounded-full object-cover border-2 border-slate-600 group-hover:border-blue-400 transition-colors" alt="${user.name}">`
+            : `<div class="w-10 h-10 rounded-full bg-gray-500 flex items-center justify-center text-white font-bold border-2 border-slate-600 group-hover:border-blue-400 transition-colors">${user.name.charAt(0).toUpperCase()}</div>`;
+
+        userDiv.innerHTML = `
+            <div class="relative flex-shrink-0">
+                ${avatarHtml}
+                <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 border-2 border-slate-800 ring-1 ring-green-400"></span>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="text-white font-semibold truncate">${user.name}</div>
+                ${rankBadge}
+            </div>
+        `;
+        onlineUsersList.appendChild(userDiv);
+    });
+    
+    document.getElementById('onlineUsersPanel').classList.remove('hidden');
+}
 
         // دوال إدارة الرتب
         function assignRank() {
@@ -2588,10 +2973,15 @@ function addSystemMessage(message, time) {
             const usernameElem = document.getElementById('profileUsername');
             const rankElem = document.getElementById('profileRank');
             const statusElem = document.getElementById('profileStatus');
-            const statusDot = statusElem.querySelector('.w-3');
-            const statusText = statusElem.querySelector('.text-sm');
+            const statusDot = statusElem.querySelector('span:first-child'); // تعديل: اختيار العنصر الأول بشكل موثوق
+            const statusText = statusElem.querySelector('span:last-child'); // تعديل: اختيار العنصر الثاني بشكل موثوق
             const privateChatButton = document.getElementById('privateChatButton');
             const addFriendButton = document.getElementById('addFriendButton');
+            const profileMenuContainer = document.getElementById('profileMenuContainer');
+            const profileBio = document.getElementById('profileBio');
+            const profileBioInput = document.getElementById('profileBioInput');
+            const editBioButton = document.getElementById('editBioButton');
+            const saveBioButton = document.getElementById('saveBioButton');
             document.getElementById('profilePoints').textContent = profileData.points;
             document.getElementById('profileLevel').textContent = profileData.level;
             
@@ -2612,15 +3002,28 @@ function addSystemMessage(message, time) {
             }
             
             if (profileData.isOnline) {
-                statusDot.className = 'w-3 h-3 rounded-full bg-green-500';
-                statusText.textContent = '🟢 متصل الآن';
+                statusDot.className = 'w-2.5 h-2.5 rounded-full bg-green-500';
+                statusText.textContent = 'متصل الآن';
             } else {
-                statusDot.className = 'w-3 h-3 rounded-full bg-red-500';
-                statusText.textContent = '🔴 غير متصل';
+                statusDot.className = 'w-2.5 h-2.5 rounded-full bg-gray-500';
+                const lastSeenText = profileData.lastSeen ? `آخر ظهور ${getTimeAgo(new Date(profileData.lastSeen))}` : 'غير متصل';
+                statusText.textContent = lastSeenText;
             }
             
-            // إظهار زر المحادثة الخاصة فقط إذا لم يكن المستخدم نفسه
-            if (profileData.username !== currentUser.name) {
+            // عرض المعلومات الشخصية (Bio)
+            profileBio.textContent = profileData.bio || 'لا توجد معلومات لعرضها.';
+            profileBioInput.value = profileData.bio || '';
+
+            // إظهار/إخفاء أزرار التعديل وقائمة الإدارة
+            if (profileData.username === currentUser.name) {
+                editBioButton.classList.remove('hidden');
+                saveBioButton.classList.add('hidden');
+                privateChatButton.style.display = 'none';
+                addFriendButton.style.display = 'none';
+                profileMenuContainer.innerHTML = ''; // إخفاء قائمة الإدارة
+            } else {
+                editBioButton.classList.add('hidden');
+                saveBioButton.classList.add('hidden');
                 privateChatButton.style.display = 'flex';
                 privateChatButton.setAttribute('data-username', profileData.username);
                 
@@ -2632,7 +3035,7 @@ function addSystemMessage(message, time) {
                 if (friendsList.includes(profileData.username)) {
                     addFriendButton.innerHTML = `
                         <span>صديق</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                         </svg>
                     `;
@@ -2642,7 +3045,7 @@ function addSystemMessage(message, time) {
                 } else {
                     addFriendButton.innerHTML = `
                         <span>إضافة صديق</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
                         </svg>
                     `;
@@ -2650,9 +3053,34 @@ function addSystemMessage(message, time) {
                     addFriendButton.classList.add('bg-green-600', 'hover:bg-green-700');
                     addFriendButton.disabled = false;
                 }
-            } else {
-                privateChatButton.style.display = 'none';
-                addFriendButton.style.display = 'none';
+
+                // إظهار قائمة الإدارة إذا كان المستخدم الحالي مشرفاً
+                const isSiteOwner = currentUser.name === "Walid dz 31";
+                const managerLevel = ranks[currentUser.rank]?.level || 0;
+                const targetLevel = ranks[profileData.rank]?.level || 0;
+                const canManage = isSiteOwner || managerLevel > targetLevel;
+
+                if (canManage && currentUser.name !== profileData.username) {
+                    profileMenuContainer.innerHTML = `
+                        <div class="relative inline-block">
+                            <button class="menu-btn text-gray-400 hover:text-blue-400 text-xl font-bold" title="خيارات إدارية" onclick="toggleProfileMenu(event, '${profileData.username}')">⋮</button>
+                            <div id="profileActionMenu" class="message-menu hidden absolute left-0 z-50 bg-slate-800 text-white rounded shadow-lg mt-2 min-w-[160px] text-sm border border-slate-700">
+                                <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" onclick="handleProfileMute('${profileData.username}')">🔇 كتم المستخدم</button>
+                                <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" onclick="handleProfileUnmute('${profileData.username}')">🔊 إلغاء الكتم</button>
+                                <div class="border-t border-slate-600 my-1"></div>
+                                <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" onclick="handleProfileBanRoom('${profileData.username}')">🚫 حظر من الغرفة</button>
+                                <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" onclick="handleProfileUnbanRoom('${profileData.username}')">✅ إلغاء حظر الغرفة</button>
+                                ${isSiteOwner ? `
+                                    <div class="border-t border-slate-600 my-1"></div>
+                                    <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" onclick="handleProfileBanSite('${profileData.username}')">⛔ حظر من الموقع</button>
+                                    <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" onclick="handleProfileUnbanSite('${profileData.username}')">🌐 إلغاء حظر الموقع</button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    profileMenuContainer.innerHTML = '';
+                }
             }
             
             modal.classList.add('show');
@@ -2673,6 +3101,124 @@ function addSystemMessage(message, time) {
         function closeProfileModal() {
             document.getElementById('profileModal').classList.remove('show');
         }
+
+        // دوال قائمة الخيارات في الملف الشخصي
+        function toggleProfileMenu(event, username) {
+            event.stopPropagation();
+            const menu = document.getElementById('profileActionMenu');
+            if (menu) {
+                menu.classList.toggle('hidden');
+            }
+        }
+
+        function handleProfileMute(username) {
+            const duration = prompt(`أدخل مدة الكتم للمستخدم ${username} (بالدقائق):`, "60");
+            if (duration && !isNaN(duration)) {
+                socket.emit('mute user', { username, duration: parseInt(duration), currentUser });
+            }
+            document.getElementById('profileActionMenu')?.classList.add('hidden');
+        }
+
+        function handleProfileUnmute(username) {
+            if (confirm(`هل تريد إلغاء كتم المستخدم ${username}؟`)) {
+                socket.emit('unmute user', { username, currentUser });
+            }
+            document.getElementById('profileActionMenu')?.classList.add('hidden');
+        }
+
+        function handleProfileBanRoom(username) {
+            const reason = prompt(`أدخل سبب حظر ${username} من هذه الغرفة:`);
+            if (reason !== null) { // يسمح بسبب فارغ
+                socket.emit('ban from room', { username, reason, currentUser });
+            }
+            document.getElementById('profileActionMenu')?.classList.add('hidden');
+        }
+
+        function handleProfileUnbanRoom(username) {
+            if (confirm(`هل تريد إلغاء حظر المستخدم ${username} من هذه الغرفة؟`)) {
+                socket.emit('unban from room', { username, currentUser });
+            }
+            document.getElementById('profileActionMenu')?.classList.add('hidden');
+        }
+
+        function handleProfileBanSite(username) {
+            const reason = prompt(`أدخل سبب حظر ${username} من الموقع بالكامل:`);
+            if (reason !== null) {
+                socket.emit('ban from site', { username, reason, currentUser });
+            }
+            document.getElementById('profileActionMenu')?.classList.add('hidden');
+        }
+
+        function handleProfileUnbanSite(username) {
+            if (confirm(`هل تريد إلغاء حظر المستخدم ${username} من الموقع بالكامل؟`)) {
+                socket.emit('unban from site', { username, currentUser });
+            }
+            document.getElementById('profileActionMenu')?.classList.add('hidden');
+        }
+
+        // دوال تعديل المعلومات الشخصية
+        function updateBioCharCount() {
+            const bioInput = document.getElementById('profileBioInput');
+            const charCounter = document.getElementById('bioCharCounter');
+            const currentLength = bioInput.value.length;
+            const maxLength = 500;
+            charCounter.textContent = `${currentLength} / ${maxLength}`;
+            if (currentLength > maxLength) {
+                charCounter.classList.add('text-red-500');
+                charCounter.classList.remove('text-gray-400');
+            } else {
+                charCounter.classList.remove('text-red-500');
+                charCounter.classList.add('text-gray-400');
+            }
+        }
+
+        function toggleBioEdit(isEditing) {
+            const bioText = document.getElementById('profileBio');
+            const bioInput = document.getElementById('profileBioInput');
+            const editButton = document.getElementById('editBioButton');
+            const saveButton = document.getElementById('saveBioButton');
+            const cancelButton = document.getElementById('cancelBioButton');
+            const charCounter = document.getElementById('bioCharCounter');
+
+            if (isEditing) {
+                bioText.classList.add('hidden');
+                bioInput.classList.remove('hidden');
+                charCounter.classList.remove('hidden');
+                editButton.classList.add('hidden');
+                saveButton.classList.remove('hidden');
+                cancelButton.classList.remove('hidden');
+                bioInput.value = bioText.textContent === 'لا توجد معلومات لعرضها.' ? '' : bioText.textContent;
+                updateBioCharCount();
+                bioInput.focus();
+            } else {
+                bioText.classList.remove('hidden');
+                bioInput.classList.add('hidden');
+                charCounter.classList.add('hidden');
+                editButton.classList.remove('hidden');
+                saveButton.classList.add('hidden');
+                cancelButton.classList.add('hidden');
+            }
+        }
+
+        function saveBio() {
+            const newBio = document.getElementById('profileBioInput').value.trim();
+            if (newBio.length > 500) {
+                showNotification('المعلومات الشخصية يجب أن لا تتجاوز 500 حرف.', 'error');
+                return;
+            }
+            socket.emit('update user bio', { username: currentUser.name, bio: newBio, currentUser });
+        }
+
+        socket.on('bio success', (message) => {
+            showNotification(message, 'success');
+            const newBio = document.getElementById('profileBioInput').value.trim();
+            document.getElementById('profileBio').textContent = newBio || 'لا توجد معلومات لعرضها.';
+            toggleBioEdit(false);
+        });
+
+        socket.on('bio error', (error) => {
+            showNotification(error, 'error');
+        });
 
         function startPrivateChat() {
             const privateChatButton = document.getElementById('privateChatButton');
@@ -2827,9 +3373,12 @@ function updateChatMessagesBadge() {
     }
 }
 // حدث النقر على زر الإشعارات في واجهة المحادثة
-document.getElementById('chatMessagesButton')?.addEventListener('click', () => {
+document.getElementById('chatMessagesButton')?.addEventListener('click', toggleNotificationsDropdown);
+
+document.getElementById('chatFriendsButton')?.addEventListener('click', () => {
     openFriendsSidebar();
 });
+
 // دوال إدارة المنشورات
 function openPostsSidebar() {
     document.getElementById('postsSidebar').classList.add('show');
@@ -2874,20 +3423,30 @@ function displayPosts(posts) {
     posts.forEach(post => {
         const postDiv = document.createElement('div');
         postDiv.className = 'bg-white/10 rounded-xl p-4';
+        postDiv.id = `post-card-${post.id}`; // إضافة ID فريد للمنشور
         
         // حساب وقت النشر
-        const postTime = new Date(post.timestamp);
-        const timeAgo = getTimeAgo(postTime);
+        const timeAgo = getTimeAgo(new Date(post.timestamp));
         
         postDiv.innerHTML = `
-            <div class="flex items-center space-x-3 space-x-reverse mb-3">
-                <div class="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white">
-                    ${post.username.charAt(0).toUpperCase()}
-                </div>
+            <div class="flex items-center space-x-3 space-x-reverse mb-3" onclick="showUserProfileModal('${post.username}')" style="cursor:pointer;">
+                ${post.avatar ? 
+                    `<img src="${post.avatar}" class="w-10 h-10 rounded-full object-cover border-2 border-blue-500/50" alt="${post.username}">` :
+                    `<div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white border-2 border-blue-500/50">
+                        ${post.username.charAt(0).toUpperCase()}
+                    </div>`
+                }
                 <div class="flex-1">
                     <div class="text-white font-semibold">${post.username}</div>
                     <div class="text-xs text-blue-200">${timeAgo}</div>
                 </div>
+                ${post.username === currentUser.name ? `
+                    <div class="mr-auto">
+                        <button onclick="deletePost(${post.id})" class="text-red-400 hover:text-red-600" title="حذف المنشور">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                ` : ''}
             </div>
             <div class="text-white text-sm mb-4">${post.content}</div>
             <div class="flex items-center justify-between border-t border-white/10 pt-3">
@@ -2911,8 +3470,8 @@ function displayPosts(posts) {
                     ${post.comments ? post.comments.map(comment => `
                         <div class="bg-white/5 rounded-lg p-3">
                             <div class="flex items-center space-x-2 space-x-reverse mb-1">
-                                <div class="text-white font-medium text-sm">${comment.username}</div>
-                                <div class="text-xs text-blue-200">${new Date(comment.timestamp).toLocaleTimeString('ar-SA')}</div>
+                                <div class="text-white font-medium text-sm">${comment.username}</div> 
+                                <div class="text-xs text-blue-200">${new Date(parseInt(comment.timestamp, 10)).toLocaleTimeString('fr-FR')}</div>
                             </div>
                             <div class="text-white text-sm">${comment.content}</div>
                         </div>
@@ -2969,10 +3528,19 @@ function addComment(postId) {
     commentInput.value = '';
 }
 
+function deletePost(postId) {
+    if (confirm('هل أنت متأكد من حذف هذا المنشور؟ لا يمكن التراجع عن هذا الإجراء.')) {
+        socket.emit('delete post', {
+            postId: postId,
+            username: currentUser.name
+        });
+    }
+}
+
 function getTimeAgo(date) {
     const now = new Date();
     const diff = now - date;
-    const minutes = Math.floor(diff / 60000);
+    const minutes = Math.floor(diff / 60000); 
     const hours = Math.floor(diff / 3600000);
     const days = Math.floor(diff / 86400000);
     
@@ -2992,15 +3560,207 @@ socket.on('new post', (post) => {
     loadPosts(); // إعادة تحميل المنشورات
 });
 
-socket.on('post liked', (data) => {
-    loadPosts(); // إعادة تحميل المنشورات
+socket.on('post liked', ({ postId, likes }) => {
+    const postElem = document.querySelector(`[onclick="likePost(${postId})"]`);
+    if (postElem) {
+        postElem.querySelector('span').textContent = likes.length;
+    }
 });
 
 socket.on('comment added', (data) => {
     loadPosts(); // إعادة تحميل المنشورات
 });
+
+socket.on('post deleted', ({ postId }) => {
+    document.getElementById(`post-card-${postId}`)?.remove();
+});
+
+socket.on('post delete success', (message) => {
+    showNotification(message, 'success');
+});
+
+socket.on('post delete error', (error) => {
+    showNotification(error, 'error');
+});
 // إضافة مستمعي الأحداث للأزرار الجديدة
 document.getElementById('postsButton').addEventListener('click', openPostsSidebar);
+
+document.getElementById('chatPostsButton').addEventListener('click', openPostsSidebar);
+
+// إضافة مستمع الحدث لزر الإشعارات في المحادثة
+document.getElementById('chatMessagesButton')?.addEventListener('click', toggleNotificationsDropdown);
+
+// --- نظام الإشعارات الجديد ---
+
+function toggleNotificationsDropdown(event) {
+    event.stopPropagation();
+    const dropdown = document.getElementById('chatNotificationsDropdown');
+    const isHidden = dropdown.classList.contains('hidden');
+
+    if (isHidden) {
+        // طلب الإشعارات عند الفتح
+        socket.emit('get notifications', currentUser.name);
+        dropdown.classList.remove('hidden');
+        // تحديدها كمقروءة بعد فترة قصيرة
+        setTimeout(() => {
+            socket.emit('mark notifications as read', currentUser.name);
+            updateNotificationsBadge(false);
+        }, 2000);
+    } else {
+        dropdown.classList.add('hidden');
+    }
+}
+
+// إغلاق القائمة عند النقر خارجها
+document.addEventListener('click', function(e) {
+    const dropdown = document.getElementById('chatNotificationsDropdown');
+    const button = document.getElementById('chatMessagesButton');
+    if (dropdown && !dropdown.contains(e.target) && !button.contains(e.target)) {
+        dropdown.classList.add('hidden');
+    }
+});
+
+function updateNotificationsBadge(hasUnread) {
+    const badges = document.querySelectorAll('#chatMessagesBadge, #messagesBadge');
+    badges.forEach(badge => {
+        if (badge) {
+            // إزالة النص من الشارة لجعلها نقطة فقط
+            badge.textContent = ''; 
+            badge.classList.toggle('hidden', !hasUnread);
+        }
+    });
+}
+
+socket.on('new notification', (notification) => {
+    showNotification(`🔔 لديك إشعار جديد!`, 'info');
+    // طلب الإشعارات لتحديث الحالة
+    socket.emit('get notifications', currentUser.name);
+});
+
+socket.on('notifications list', (notifications) => {
+    const container = document.getElementById('chatNotificationsList');
+    container.innerHTML = '';
+    const unreadCount = notifications.filter(n => !n.read).length;
+
+    if (notifications.length === 0) {
+        container.innerHTML = '<p class="text-blue-200 text-sm text-center p-4">لا توجد إشعارات</p>';
+        return;
+    }
+
+    // تحديث الشارة بناءً على وجود إشعارات غير مقروءة
+    updateNotificationsBadge(unreadCount > 0);
+
+    notifications.forEach(notif => {
+        const notifDiv = document.createElement('div');
+        
+        let text = '';
+        if (notif.type === 'like') {
+            text = `👍 أعجب <strong class="text-white">${notif.senderUsername}</strong> بمنشورك.`;
+        } else if (notif.type === 'comment') {
+            text = `💬 علّق <strong class="text-white">${notif.senderUsername}</strong> على منشورك.`;
+        } else if (notif.type === 'new_post') {
+            text = `✍️ نشر <strong class="text-white">${notif.senderUsername}</strong> منشوراً جديداً.`;
+        }
+        // يمكنك إضافة أنواع أخرى هنا (طلبات صداقة، رسائل...)
+
+        // جعل الإشعار قابلاً للنقر إذا كان مرتبطاً بمنشور
+        if (notif.postId) {
+            notifDiv.className = `p-2 text-sm rounded-md hover:bg-white/10 cursor-pointer ${!notif.read ? 'font-bold' : ''}`;
+            notifDiv.setAttribute('onclick', `goToPost(${notif.postId})`);
+        } else {
+            notifDiv.className = `p-2 text-sm rounded-md hover:bg-white/10 ${!notif.read ? 'font-bold' : ''}`;
+        }
+
+        notifDiv.innerHTML = `<p class="text-blue-200">${text}</p>`;
+        container.appendChild(notifDiv);
+    });
+});
+
+function goToPost(postId) {
+    // 1. إغلاق قائمة الإشعارات
+    document.getElementById('chatNotificationsDropdown').classList.add('hidden');
+
+    // 2. فتح قائمة المنشورات (سيؤدي هذا إلى تحميلها)
+    openPostsSidebar();
+
+    // 3. البحث عن المنشور وتمرير الشاشة إليه بعد فترة قصيرة للسماح بالتحميل
+    setTimeout(() => {
+        const postElement = document.getElementById(`post-card-${postId}`);
+        if (postElement) {
+            // التمرير إلى المنشور
+            postElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // تمييز المنشور بلون مختلف
+            postElement.style.transition = 'background-color 0.5s ease';
+            postElement.style.backgroundColor = 'rgba(59, 130, 246, 0.3)'; // تمييز أزرق
+
+            // إزالة التمييز بعد فترة
+            setTimeout(() => {
+                postElement.style.backgroundColor = '';
+            }, 2500);
+        } else {
+            showNotification('لم يتم العثور على المنشور، قد يكون قديماً.', 'warning');
+        }
+    }, 500); // انتظار نصف ثانية للسماح بتحميل المنشورات
+}
+
+// دوال قائمة المتفاعلين
+function openTopUsersModal() {
+    const modal = document.getElementById('topUsersModal');
+    const overlay = document.getElementById('topUsersOverlay');
+    modal.classList.add('show');
+    overlay.classList.add('show');
+    
+    // طلب البيانات من السيرفر
+    socket.emit('get top users');
+}
+
+function closeTopUsersModal() {
+    const modal = document.getElementById('topUsersModal');
+    const overlay = document.getElementById('topUsersOverlay');
+    modal.classList.remove('show');
+    overlay.classList.remove('show');
+    
+    // إعادة تعيين المحتوى إلى حالة التحميل
+    const container = document.getElementById('topUsersListContainer');
+    container.innerHTML = `
+        <div class="text-center text-blue-200 p-8">
+            <div class="spinner mx-auto"></div>
+            <p class="mt-2">جاري تحميل القائمة...</p>
+        </div>
+    `;
+}
+
+socket.on('top users list', (users) => {
+    const container = document.getElementById('topUsersListContainer');
+    container.innerHTML = '';
+
+    if (users.length === 0) {
+        container.innerHTML = '<p class="text-blue-200 text-center p-8">لا يوجد متفاعلون لعرضهم بعد.</p>';
+        return;
+    }
+
+    users.forEach((user, index) => {
+        const userDiv = document.createElement('div');
+        userDiv.className = 'flex items-center bg-white/5 p-3 rounded-lg hover:bg-white/10 transition-colors cursor-pointer';
+        userDiv.onclick = () => showUserProfileModal(user.username);
+
+        userDiv.innerHTML = `
+            <div class="flex-shrink-0 w-10 text-center text-xl font-bold ${index < 3 ? 'text-yellow-400' : 'text-blue-300'}">${index + 1}</div>
+            ${user.avatar ? 
+                `<img src="${user.avatar}" class="w-10 h-10 rounded-full object-cover" alt="${user.username}">` :
+                `<div class="w-10 h-10 rounded-full bg-gray-500 flex items-center justify-center text-white font-bold">${user.username.charAt(0).toUpperCase()}</div>`
+            }
+            <div class="flex-1 min-w-0 mx-3">
+                <div class="text-white font-semibold truncate">${user.username}</div>
+                <div class="text-xs text-blue-200">📈 المستوى ${user.level}</div>
+            </div>
+            <div class="text-yellow-400 font-bold text-sm">⭐ ${user.points}</div>
+        `;
+        container.appendChild(userDiv);
+    });
+});
+
 document.getElementById('chatPostsButton').addEventListener('click', openPostsSidebar);
         
         // إضافة هذه الدوال في قسم JavaScript
@@ -3365,10 +4125,17 @@ socket.on('private image sent', (message) => {
 
 // إضافة رسالة صورة إلى المحادثة العامة
 // إضافة رسالة صورة إلى الدردشة (نسخة مدمجة)
-function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl) {
+function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl, messageId = null) {
     const container = document.getElementById('messagesContainer');
     const messageDiv = document.createElement('div');
     messageDiv.className = `chat-message flex ${isOwn ? 'justify-end' : 'justify-start'}`;
+    // إذا لم يوجد messageId، أنشئ واحد مؤقت
+    // إذا لم يوجد messageId، أنشئ واحد مؤقت، واحتفظ بخريطة تربط المؤقت بالحقيقي
+    // دائماً استخدم messageId حقيقي
+    if (!messageId) {
+        messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+    messageDiv.setAttribute('data-message-id', messageId);
     
     let rankBadge = '';
     if (userRank) {
@@ -3379,6 +4146,11 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
                 <span>${userRank}</span>
             </div>
         `;
+    }
+    // زر الحذف: يظهر دائماً للاختبار
+    let deleteBtn = '';
+    if (messageId) {
+        deleteBtn = `<button class=\"ml-2 text-red-400 hover:text-red-600 text-xs font-bold\" title=\"حذف الرسالة\" onclick=\"deleteRoomMessage('${messageId}')\">🗑️</button>`;
     }
 
     messageDiv.innerHTML = `
@@ -3396,6 +4168,7 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
                     ${rankBadge}
                     <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : 'text-blue-200'}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
                 </div>
+                ${deleteBtn}
             </div>
             <div class="mb-1">
                 <img src="${imageData}" class="max-w-full h-auto rounded-lg cursor-pointer chat-image" onclick="openImageModal('${imageData}')" alt="صورة محادثة">
@@ -3406,6 +4179,32 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
     
     container.appendChild(messageDiv);
     container.scrollTop = container.scrollHeight;
+}
+// استقبال حدث حذف الرسالة من السيرفر
+socket.on('room message deleted', ({ messageId }) => {
+    // حاول حذف الرسالة سواء بالمعرف الحقيقي أو المؤقت
+    let msgElem = document.querySelector(`[data-message-id="${messageId}"]`);
+    if (!msgElem && window.tempMessageIdMap) {
+        // ابحث عن أي معرف مؤقت مرتبط بهذا المعرف
+        for (const [tempId, realId] of Object.entries(window.tempMessageIdMap)) {
+            if (realId === messageId) {
+                msgElem = document.querySelector(`[data-message-id="${tempId}"]`);
+                break;
+            }
+        }
+    }
+    if (msgElem) msgElem.remove();
+});
+
+// دالة حذف رسالة غرفة
+function deleteRoomMessage(messageId) {
+    if (!currentRoom || !currentUser) return;
+    if (!confirm('هل أنت متأكد من حذف هذه الرسالة؟')) return;
+    socket.emit('delete room message', {
+        roomId: currentRoom.id,
+        messageId: messageId,
+        currentUser: currentUser
+    });
 }
 
 // إضافة رسالة صورة إلى المحادثة الخاصة
