@@ -1394,6 +1394,12 @@
 
     socket.on('disconnect', (reason) => {
         console.warn('تم قطع الاتصال:', reason);
+        if (currentRoom) {
+            if (reason === 'io server disconnect') {
+                showNotification('تم قطع اتصالك من قبل الخادم.', 'error');
+            }
+            goBack(true); // العودة للصفحة الرئيسية مع إظهار رسالة الخمول
+        }
     });
         // تتبع الرسائل غير المقروءة
 let unreadPrivateMessages = {};
@@ -1555,51 +1561,26 @@ function updateUnreadBadges() {
         }
 
         // التحقق من الجلسة المحفوظة عند تحميل الصفحة
-        window.addEventListener('DOMContentLoaded', () => {
+        window.addEventListener('DOMContentLoaded', async () => {
             showLoading();
-            const savedSession = localStorage.getItem('userSession');
+            try {
+                const response = await fetch('/check-auth');
+                const data = await response.json();
 
-            const sessionTimeout = setTimeout(() => {
-                if (!sessionChecked) {
-                    console.warn('Session check timed out. Showing login page.');
-                    sessionChecked = true;
-                    hideLoading();
-                    document.getElementById('loginPage').classList.remove('hidden');
+                if (data.authenticated) {
+                    handleSessionValid(data.user);
+                } else {
+                    handleSessionInvalid();
                 }
-            }, 5000); // 5 seconds timeout
-
-            const clearSessionTimeout = () => clearTimeout(sessionTimeout);
-            socket.once('session valid', clearSessionTimeout);
-            socket.once('session invalid', clearSessionTimeout);
-            
-            if (savedSession) {
-                try {
-                    const sessionData = JSON.parse(savedSession);
-                    if (sessionData && sessionData.sessionId) {
-                        socket.emit('check session', sessionData.sessionId);
-                    } else {
-                        throw new Error('Invalid session data');
-                    }
-                } catch (error) {
-                    console.error('Error with session data:', error);
-                    localStorage.removeItem('userSession');
-                    localStorage.removeItem('currentRoom');
-                    sessionChecked = true;
-                    hideLoading();
-                    document.getElementById('loginPage').classList.remove('hidden');
-                    clearSessionTimeout();
-                }
-            } else {
-                sessionChecked = true;
-                hideLoading();
-                document.getElementById('loginPage').classList.remove('hidden');
-                clearSessionTimeout();
+            } catch (error) {
+                console.error('فشل التحقق من المصادقة:', error);
+                handleSessionInvalid();
             }
         });
 
 
         // استقبال نتائج التحقق من الجلسة
-        socket.on('session valid', (userData) => {
+        function handleSessionValid(userData) {
             currentUser = userData;
             updateHeaderUserInfo();
             showNotification(`مرحباً بعودتك ${userData.name}! 😊`, 'success');
@@ -1608,6 +1589,9 @@ function updateUnreadBadges() {
             // تحميل طلبات الصداقة وقائمة الأصدقاء
             socket.emit('get friend requests', currentUser.name);
             socket.emit('get friends list', currentUser.name);
+
+            // التحقق من صلاحيات المستخدم (مثل إظهار زر تغيير الخلفية)
+            toggleBackgroundButton();
             
             // الانضمام إلى الغرفة المحفوظة إذا كانت موجودة
             const savedRoom = localStorage.getItem('currentRoom');
@@ -1616,24 +1600,22 @@ function updateUnreadBadges() {
                 setTimeout(() => {
                     openChat(roomData.id, roomData.name, roomData.icon);
                 }, 500);
+            } else {
+                hideLoading();
             }
             
             sessionChecked = true;
             hideLoading();
-        });
+        }
 
-        socket.on('session invalid', () => {
+        function handleSessionInvalid() {
             console.log('الجلسة غير صالحة، جاري تنظيف البيانات المحلية...');
-            localStorage.removeItem('userSession');
             localStorage.removeItem('currentRoom');
-            localStorage.removeItem('currentUser');
             currentUser = null;
             sessionChecked = true;
             hideLoading();
-            document.getElementById('mainPage').classList.add('hidden');
-            document.getElementById('chatPage').classList.add('hidden');
             document.getElementById('loginPage').classList.remove('hidden');
-        });
+        }
 
         // تحديث معلومات المستخدم في الرأس
         function updateHeaderUserInfo() {
@@ -1692,26 +1674,9 @@ function updateUnreadBadges() {
 
         // استقبال نتائج تسجيل الدخول
         socket.on('login success', (userData) => {
-            currentUser = userData;
-            socket.emit('update session', { 
-                sessionId: userData.sessionId, 
-                username: userData.name, 
-                password: userData.password 
-            });
-            
-            // حفظ الجلسة إذا طلب المستخدم ذلك
-            if (document.getElementById('rememberMe').checked) {
-                localStorage.setItem('userSession', JSON.stringify({
-                    username: userData.name,
-                    sessionId: userData.sessionId
-                }));
-            }
-            
-            updateHeaderUserInfo();
-            showNotification(`مرحباً ${userData.name}! 😊`, 'success');
-            showMainPage();
-            
-            // تحميل طلبات الصداقة وقائمة الأصدقاء
+            // تعيين الكوكي لجلسة الدخول
+            document.cookie = `sessionId=${userData.sessionId}; path=/; max-age=31536000; SameSite=Lax`; // صلاحية لمدة سنة
+            handleSessionValid(userData);
             socket.emit('get friend requests', currentUser.name);
             socket.emit('get friends list', currentUser.name);
             
@@ -1730,19 +1695,9 @@ function updateUnreadBadges() {
 
         // استقبال نتائج إنشاء الحساب
         socket.on('register success', (userData) => {
-            currentUser = userData;
-            
-            // حفظ الجلسة تلقائياً عند إنشاء حساب جديد
-            localStorage.setItem('userSession', JSON.stringify({
-                username: userData.name,
-                sessionId: userData.sessionId
-            }));
-            
-            updateHeaderUserInfo();
-            showNotification(`تم إنشاء حسابك بنجاح! 😊`, 'success');
-            showMainPage();
-            
-            // تحميل طلبات الصداقة وقائمة الأصدقاء
+            // تعيين الكوكي لجلسة الدخول
+            document.cookie = `sessionId=${userData.sessionId}; path=/; max-age=31536000; SameSite=Lax`; // صلاحية لمدة سنة
+            handleSessionValid(userData);
             socket.emit('get friend requests', currentUser.name);
             socket.emit('get friends list', currentUser.name);
             
@@ -2373,7 +2328,7 @@ friendsList.forEach(username => {
         }
 
         // العودة إلى الصفحة الرئيسية
-        function goBack() {
+        function goBack(isDisconnected = false) {
     if (currentRoom) {
         socket.emit('leave room', { roomId: currentRoom.id, user: currentUser });
         localStorage.removeItem('currentRoom');
@@ -2381,6 +2336,10 @@ friendsList.forEach(username => {
     document.getElementById('chatPage').classList.add('hidden');
     document.getElementById('mainPage').classList.remove('hidden');
     document.getElementById('messagesContainer').innerHTML = '';
+
+    if (isDisconnected) {
+        showNotification('لقد فقدت الاتصال بالغرفة بسبب الخمول.', 'warning');
+    }
     
     // إخفاء الأزرار في رأس المحادثة عند العودة
     document.getElementById('chatPostsButton').classList.add('hidden');
@@ -2402,13 +2361,13 @@ function logout() {
     if (currentRoom) {
         socket.emit('leave room', { roomId: currentRoom.id, user: currentUser });
     }
-    localStorage.removeItem('userSession');
     localStorage.removeItem('currentRoom');
     currentUser = null;
     currentRoom = null;
     document.getElementById('mainPage').classList.add('hidden');
     document.getElementById('chatPage').classList.add('hidden');
     document.getElementById('loginPage').classList.remove('hidden');
+    document.cookie = "sessionId=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"; // حذف الكوكي
 }
 
 // منع حذف الجلسة عند إغلاق الصفحة إلا إذا كان logout حقيقي
@@ -2418,7 +2377,6 @@ window.addEventListener('beforeunload', function (e) {
         return;
     }
     // إذا كان logout حقيقي، احذف الجلسة
-    localStorage.removeItem('userSession');
     localStorage.removeItem('currentRoom');
 });
 // ...existing code...

@@ -4,6 +4,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
+const cookieParser = require('cookie-parser');
 const { Sequelize, DataTypes } = require('sequelize');
 
 
@@ -1006,6 +1007,7 @@ function canSendMessage(username, roomName) {
 // خدمة الملفات الثابتة
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
+app.use(cookieParser());
 
 // تحميل البيانات عند بدء التشغيل
 loadData();
@@ -1258,27 +1260,6 @@ socket.on('update site background', async (data) => {
   // إرسال الخلفية الحالية للمستخدم الجديد فور الاتصال
 socket.emit('site background data', globalSiteBackground);
 });
-
-// إرسال بيانات الصور تلقائياً عند الاتصال
-socket.emit('user avatars data', userAvatars);
-
-  // التحقق من الجلسة المحفوظة
-  socket.on('check session', async (sessionId) => {
-    if (userSessions[sessionId]) {
-      const userData = userSessions[sessionId];
-      if (users[userData.username] && users[userData.username].password === userData.password) {
-        socket.emit('session valid', {
-          name: userData.username,
-          rank: userRanks[userData.username] || null,
-          isSiteOwner: false,
-          gender: users[userData.username].gender,
-          socketId: socket.id
-        });
-        return;
-      }
-    }
-    socket.emit('session invalid');
-  });
   // حدث إرسال صورة في المحادثة العامة
 socket.on('send image message', async (data) => {
   const { roomId, imageData, user } = data;
@@ -1305,8 +1286,8 @@ socket.on('send image message', async (data) => {
   };
   
   if (!messages[roomId]) messages[roomId] = [];
-  if (messages[roomId].length > 50) {
-    messages[roomId] = messages[roomId].slice(-50);
+  if (messages[roomId].length > 150) {
+    messages[roomId] = messages[roomId].slice(-150);
   }
   messages[roomId].push(newMessage);
   
@@ -1369,9 +1350,8 @@ socket.on('send private image', async (data) => {
           userSessions[sessionId] = { 
             username: userData.username, 
             password: ownerUser.password 
-          };
-          
-          await saveUserSession(sessionId, userData.username, ownerUser.password);
+          };          
+          await saveUserSession(sessionId, userData.username, ownerUser.password);          
           
           socket.emit('login success', {
             name: userData.username,
@@ -1393,8 +1373,7 @@ socket.on('send private image', async (data) => {
     if (isPasswordValid) {
       const sessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
       userSessions[sessionId] = { username: userData.username, password: users[userData.username].password };
-      await saveUserSession(sessionId, userData.username, users[userData.username].password);
-      
+      await saveUserSession(sessionId, userData.username, users[userData.username].password);      
       socket.emit('login success', {
         name: userData.username,
         rank: userRanks[userData.username] || null,
@@ -1429,8 +1408,7 @@ socket.on('send private image', async (data) => {
   
   const sessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
   userSessions[sessionId] = { username: userData.username, password: hashedPassword };
-  await saveUserSession(sessionId, userData.username, hashedPassword);
-  
+  await saveUserSession(sessionId, userData.username, hashedPassword);  
   socket.emit('register success', {
     name: userData.username,
     rank: null,
@@ -1494,8 +1472,8 @@ socket.on('join room', (data) => {
     
     // إضافة الرسالة للسجل قبل إرسالها
     if (!messages[roomId]) messages[roomId] = [];
-    if (messages[roomId].length > 50) {
-      messages[roomId] = messages[roomId].slice(-50);
+    if (messages[roomId].length > 150) {
+      messages[roomId] = messages[roomId].slice(-150);
     }
     messages[roomId].push(welcomeMessage);
     
@@ -1620,8 +1598,8 @@ await saveUserPoints(user.name, userPoints[user.name].points, userPoints[user.na
     };
     
     if (!messages[roomId]) messages[roomId] = [];
-    if (messages[roomId].length > 50) {
-      messages[roomId] = messages[roomId].slice(-50);
+    if (messages[roomId].length > 150) {
+      messages[roomId] = messages[roomId].slice(-150);
     }
     messages[roomId].push(newMessage);
     
@@ -2629,20 +2607,26 @@ socket.on('get private messages', async (data) => {
   });
   
   // في حدث disconnect - البحث عن هذا الجزء واستبداله
-socket.on('disconnect', async () => {
+socket.on('disconnect', async (reason) => {
     const user = onlineUsers[socket.id];
     if (user) {
       const roomId = user.roomId;
       const room = rooms.find(r => r.id === roomId);
       
       if (room) {
-        room.users = room.users.filter(u => u.id !== socket.id);
+        const userIndex = room.users.findIndex(u => u.id === socket.id);
+        if (userIndex !== -1) {
+            room.users.splice(userIndex, 1);
+        }
         io.emit('rooms update', rooms);
         io.to(roomId).emit('users update', room.users);
       }
       
-      // رسالة المغادرة - الجزء المعدل
-      let leaveContent = `🚪 غادر <strong class="text-white">${user.name}</strong> الغرفة.`;
+      // رسالة المغادرة - تم تعديلها لتوضيح سبب الخروج
+      let leaveContent = `🔌 فقد <strong class="text-white">${user.name}</strong> الاتصال بالغرفة.`;
+      if (reason === 'ping timeout') {
+          leaveContent = `🔌 فقد <strong class="text-white">${user.name}</strong> الاتصال بسبب الخمول.`;
+      }
       if (user.rank) {
           leaveContent = `🚪 غادر ${ranks[user.rank].icon} <strong class="text-white">${user.rank} ${user.name}</strong> الغرفة.`;
       }
@@ -2695,6 +2679,34 @@ socket.on('disconnect', async () => {
 // API للحصول على الغرف
 app.get('/api/rooms', (req, res) => {
   res.json(rooms);
+});
+
+// نقطة وصول جديدة للتحقق من المصادقة عبر الكوكيز
+app.get('/check-auth', async (req, res) => {
+    const sessionId = req.cookies.sessionId;
+
+    if (sessionId && userSessions[sessionId]) {
+        const sessionData = userSessions[sessionId];
+        const user = users[sessionData.username];
+
+        if (user && user.password === sessionData.password) {
+            // الجلسة صالحة
+            return res.json({
+                authenticated: true,
+                user: {
+                    name: sessionData.username,
+                    rank: userRanks[sessionData.username] || null,
+                    isSiteOwner: sessionData.username === SITE_OWNER.username,
+                    gender: user.gender,
+                    sessionId: sessionId
+                }
+            });
+        }
+    }
+
+    // الجلسة غير صالحة
+    res.clearCookie('sessionId');
+    return res.json({ authenticated: false });
 });
 
 const PORT = process.env.PORT || 3000;
