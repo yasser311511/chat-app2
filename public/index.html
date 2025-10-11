@@ -56,6 +56,15 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: rgba(255, 255, 255, 0.5);
         }
+        /* تعديل z-index للشاشات الكبيرة - تم نقله إلى رأس المحادثة */
+        @media (min-width: 768px) {
+            #onlineUsersPanel { z-index: 20; }
+        }
+        /* تعديل خاص بالشاشات الصغيرة */
+        @media (max-width: 768px) {
+            .chat-header-mobile { min-height: 110px; }
+            .chat-header-buttons { flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
+        }
         .rank-badge {
             background: linear-gradient(45deg, #3B82F6, #8B5CF6);
             padding: 2px 8px;
@@ -555,12 +564,7 @@
         <!-- رأس الصفحة الرئيسية -->
         <header class="main-header flex justify-between items-center">
             <div></div> <!-- عنصر فارغ للمساحة اليسرى -->
-            
             <h1 id="welcomeMessage" class="text-2xl font-bold text-white">🏠 غرف المحادثة</h1>
-            <a href="https://xo-game-6m3e.onrender.com/" target="_blank" class="flex items-center space-x-2 space-x-reverse text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
-    <i class="fas fa-gamepad"></i>
-    <span> لعبة XO </span>
-</a>
 <!-- زر المنشورات في الصفحة الرئيسية - سيتم إخفاؤه -->
 <div class="relative hidden">
     <button id="postsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
@@ -636,8 +640,8 @@
     <!-- صفحة المحادثة -->
     <div id="chatPage" class="hidden min-h-screen flex flex-col">
         <!-- رأس المحادثة -->
-        <div class="bg-white/10 backdrop-blur-lg border-b border-white/20 p-4 relative z-30">
-            <div class="container mx-auto flex items-center justify-between">
+        <div class="bg-white/10 backdrop-blur-lg border-b border-white/20 p-4 relative z-30 md:z-40 chat-header-mobile">
+            <div class="container mx-auto flex items-center justify-between flex-wrap md:flex-nowrap">
                 <div class="flex items-center space-x-4 space-x-reverse">
                     <button onclick="goBack()" class="text-white hover:text-blue-200 transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -652,7 +656,18 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center space-x-2 space-x-reverse">
+                <div class="flex items-center space-x-2 space-x-reverse mt-2 md:mt-0 chat-header-buttons">
+                    <!-- زر لعبة XO -->
+                    <a href="https://xo-game-6m3e.onrender.com/" target="_blank" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="لعبة XO">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </a>
+                    <!-- زر المتجر -->
+                    <button id="shopButton" onclick="openShopModal()" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="المتجر">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        </svg>
+                    </button>
+
                     <!-- في رأس صفحة المحادثة - داخل <div class="flex items-center space-x-2 space-x-reverse"> -->
 <button id="chatChangeBackgroundBtn" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors hidden">
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -678,21 +693,37 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
         </svg>
     </button>
-                    <!-- زر الإشعارات في واجهة المحادثة -->
+                    <!-- زر الرسائل الخاصة (البريد) -->
     <div class="relative" id="chatMessagesButtonContainer">
         <button id="chatMessagesButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
-            </svg>no
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
             <span id="chatMessagesBadge" class="notification-badge hidden"></span>
         </button>
-        <!-- القائمة المنبثقة للإشعارات في المحادثة (تم نقلها هنا) -->
+        <div id="privateConversationsDropdown" class="hidden absolute top-full left-0 mt-2 w-72 bg-slate-800 rounded-lg shadow-lg border border-slate-700 z-50">
+            <div class="p-3 border-b border-slate-700">
+                <h3 class="text-white font-semibold">المحادثات الخاصة</h3>
+            </div>
+            <div id="privateConversationsList" class="p-2 max-h-80 overflow-y-auto custom-scrollbar">
+                <!-- المحادثات الخاصة ستظهر هنا -->
+            </div>
+        </div>
+    </div>
+                    <!-- زر الإشعارات (الجرس) -->
+    <div class="relative" id="chatNotificationsButtonContainer">
+        <button id="chatNotificationsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+            </svg>
+            <span id="chatNotificationsBadge" class="notification-badge hidden"></span>
+        </button>
         <div id="chatNotificationsDropdown" class="hidden absolute top-full left-0 mt-2 w-72 bg-slate-800 rounded-lg shadow-lg border border-slate-700 z-50">
             <div class="p-3 border-b border-slate-700">
                 <h3 class="text-white font-semibold">الإشعارات</h3>
             </div>
             <div id="chatNotificationsList" class="p-2 max-h-80 overflow-y-auto custom-scrollbar">
-                <!-- الإشعارات ستظهر هنا -->
+                <!-- إشعارات المنشورات ستظهر هنا -->
             </div>
         </div>
     </div>
@@ -708,15 +739,15 @@
         </div>
 
         <!-- المحتوى الرئيسي -->
-        <div class="main-content relative z-10">
+        <div class="flex-1 flex overflow-hidden">
             <!-- منطقة الرسائل -->
-            <div class="flex-1 overflow-hidden p-4">
+            <div class="flex-1 flex flex-col overflow-hidden p-4 relative">
                 <div id="messagesContainer" class="container mx-auto max-w-4xl space-y-4 messages-container custom-scrollbar">
                     <!-- الرسائل ستظهر هنا -->
                 </div>
             </div>
 
-            <!-- قائمة المستخدمين المتصلين -->
+            <!-- قائمة المستخدمين المتصلين (للشاشات الكبيرة) -->
             <div id="onlineUsersPanel" class="hidden md:block w-80 bg-white/5 backdrop-blur-lg border-l border-white/10 p-4 users-container custom-scrollbar">
                 <h3 class="text-white font-bold mb-4 flex items-center space-x-2 space-x-reverse">
                     <span class="w-3 h-3 bg-green-500 rounded-full"></span>
@@ -728,7 +759,6 @@
                     <!-- المستخدمون المتصلون سيتم تحميلهم ديناميكياً -->
                 </div>
             </div>
-            
             <!-- زر إخفاء/إظهار قائمة المتصلين للجوال -->
             <div id="usersOverlay" class="users-overlay" onclick="toggleUsersList()"></div>
         </div>
@@ -1018,6 +1048,14 @@
                     </div>
                 </div>
 
+                <!-- قسم مخزون العناصر -->
+                <div id="inventorySection" class="hidden">
+                    <h3 class="text-lg font-semibold text-white mb-2 border-b border-white/20 pb-2">مخزوني</h3>
+                    <div id="inventoryItems" class="space-y-2">
+                        <!-- عناصر المخزون ستظهر هنا -->
+                    </div>
+                </div>
+
                 <!-- أزرار الإجراءات -->
                 <div class="space-y-3">
                     <button id="privateChatButton" onclick="startPrivateChat()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 space-x-reverse">
@@ -1028,6 +1066,11 @@
                     <button id="addFriendButton" onclick="sendFriendRequest()" class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 space-x-reverse">
                         <span>إضافة صديق</span>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                    </button>
+
+                    <button id="sendPointsButton" onclick="sendPoints()" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 space-x-reverse">
+                        <span>إرسال نقاط</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1m0-1V4m0 2v1m0 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                     </button>
                 </div>
 
@@ -1222,6 +1265,80 @@
 
 <div id="topUsersOverlay" class="friends-overlay" onclick="closeTopUsersModal()"></div>
 
+<!-- نافذة المتجر -->
+<div id="shopModal" class="profile-modal">
+    <div class="profile-content custom-scrollbar" style="max-width: 500px;">
+        <!-- رأس النافذة -->
+        <div class="relative bg-white/5 p-6 text-center">
+             <button onclick="closeShopModal()" class="absolute top-4 right-4 text-white hover:text-blue-200 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-2xl font-bold text-white">🛒 المتجر</h2>
+            <p class="text-blue-200 text-sm">استخدم نقاطك لشراء عناصر مميزة</p>
+        </div>
+
+        <!-- محتوى المتجر -->
+        <div id="shopItemsContainer" class="flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar">
+            <!-- سيتم ملء العناصر هنا -->
+            <div class="text-center text-blue-200 p-8">
+                <div class="spinner mx-auto"></div>
+                <p class="mt-2">جاري تحميل عناصر المتجر...</p>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="shopOverlay" class="friends-overlay" onclick="closeShopModal()"></div>
+
+<style>
+    #shopModal.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    #shopModal.show .profile-content {
+        transform: scale(1);
+    }
+    #shopOverlay.show {
+        display: block;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 9999;
+    }
+</style>
+
+<!-- نافذة إرسال النقاط -->
+<div id="sendPointsModal" class="profile-modal">
+    <div class="profile-content" style="max-width: 350px;">
+        <!-- رأس النافذة -->
+        <div class="relative bg-white/5 p-6 text-center">
+             <button onclick="closeSendPointsModal()" class="absolute top-4 right-4 text-white hover:text-blue-200 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-2xl font-bold text-white">🎁 إرسال نقاط</h2>
+            <p id="sendPointsToUser" class="text-blue-200 text-sm"></p>
+        </div>
+
+        <!-- محتوى النافذة -->
+        <div class="flex-1 p-6 space-y-4">
+            <div>
+                <label for="pointsAmountInput" class="block text-white text-sm font-semibold mb-2">عدد النقاط</label>
+                <input
+                    type="number"
+                    id="pointsAmountInput"
+                    placeholder="أدخل عدد النقاط..."
+                    min="1"
+                    class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                >
+            </div>
+            <button
+                onclick="submitSendPoints()"
+                class="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 space-x-reverse"
+            >
+                <span>إرسال</span>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1m0-1V4m0 2v1m0 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
 <style>
     #topUsersModal.show {
         opacity: 1;
@@ -1236,7 +1353,6 @@
         z-index: 9999;
     }
 </style>
-
 
 <!-- قبل نهاية body -->
 <!-- نافذة تغيير خلفية الموقع -->
@@ -1349,8 +1465,70 @@
         let sessionChecked = false;
         let privateChatTarget = null;
         let friendRequests = [];
+        let privateConversations = {};
         let friendsList = [];
         let userAvatars = {};
+        let shopItems = [];
+
+        // --- دوال نافذة إرسال النقاط (تم نقلها إلى النطاق العام) ---
+
+        function openSendPointsModal(username) {
+            const modal = document.getElementById('sendPointsModal');
+            const title = document.getElementById('sendPointsToUser');
+            const input = document.getElementById('pointsAmountInput');
+
+            title.textContent = `إلى المستخدم: ${username}`;
+            modal.dataset.username = username;
+            input.value = '';
+            modal.classList.add('show');
+        }
+
+        function closeSendPointsModal() {
+            document.getElementById('sendPointsModal').classList.remove('show');
+        }
+
+        // --- دوال نافذة المتجر ---
+        function openShopModal() {
+            const modal = document.getElementById('shopModal');
+            const overlay = document.getElementById('shopOverlay');
+            modal.classList.add('show');
+            overlay.classList.add('show');
+            
+            // طلب بيانات المتجر من السيرفر
+            socket.emit('get shop items');
+        }
+
+        function closeShopModal() {
+            const modal = document.getElementById('shopModal');
+            const overlay = document.getElementById('shopOverlay');
+            modal.classList.remove('show');
+            overlay.classList.remove('show');
+        }
+
+        // --- دوال إرسال النقاط (تم نقلها إلى النطاق العام) ---
+        function sendPoints() {
+            const toUser = document.getElementById('profileUsername').textContent;
+            if (!toUser || toUser === currentUser.name) {
+                showNotification('لا يمكنك إرسال نقاط لنفسك.', 'error');
+                return;
+            }
+            openSendPointsModal(toUser);
+        }
+
+        function submitSendPoints() {
+            const modal = document.getElementById('sendPointsModal');
+            const toUser = modal.dataset.username;
+            const amountInput = document.getElementById('pointsAmountInput');
+            const amount = parseInt(amountInput.value, 10);
+
+            if (isNaN(amount) || amount <= 0) {
+                showNotification('يرجى إدخال عدد نقاط صحيح وأكبر من صفر.', 'error');
+                return;
+            }
+
+            socket.emit('send points', { fromUser: currentUser.name, toUser: toUser, amount: amount });
+            closeSendPointsModal();
+        }
 
 // استقبال بيانات الصور من السيرفر
     socket.on('user avatars data', (avatarsData) => {
@@ -1487,9 +1665,11 @@ function updateUnreadBadges() {
         // نظام الرتب
         const ranks = {
             'صاحب الموقع': { color: 'from-red-600 to-orange-400', icon: '🏆', level: 6 },
-            'منشئ': { color: 'from-yellow-400 to-orange-500', icon: '👑', level: 5 },
-            'سوبر ادمن': { color: 'from-red-500 to-pink-600', icon: '⭐', level: 4 },
-            'ادمن': { color: 'from-purple-500 to-indigo-600', icon: '🛡️', level: 3 },
+            'رئيس': { color: 'from-yellow-400 to-yellow-500', icon: '🎩', level: 5 },
+            'رئيسة': { color: 'from-yellow-400 to-yellow-500', icon: '🎩', level: 5 },
+            'منشئ': { color: 'from-yellow-400 to-orange-500', icon: '👑', level: 4 },
+            'سوبر ادمن': { color: 'from-red-500 to-pink-600', icon: '⭐', level: 3 },
+            'ادمن': { color: 'from-purple-500 to-indigo-600', icon: '🛡️', level: 2 },
             'بريميوم': { color: 'from-green-500 to-emerald-600', icon: '💎', level: 2 },
             'جيد': { color: 'from-blue-500 to-cyan-600', icon: '❇️', level: 1 }
         };
@@ -1589,23 +1769,33 @@ function updateUnreadBadges() {
             // تحميل طلبات الصداقة وقائمة الأصدقاء
             socket.emit('get friend requests', currentUser.name);
             socket.emit('get friends list', currentUser.name);
+            // طلب عدد الرسائل والإشعارات غير المقروءة عند التحقق من الجلسة
+            socket.emit('get unread counts', currentUser.name);
 
-            // التحقق من صلاحيات المستخدم (مثل إظهار زر تغيير الخلفية)
-            toggleBackgroundButton();
-            
-            // الانضمام إلى الغرفة المحفوظة إذا كانت موجودة
-            const savedRoom = localStorage.getItem('currentRoom');
-            if (savedRoom) {
-                const roomData = JSON.parse(savedRoom);
-                setTimeout(() => {
-                    openChat(roomData.id, roomData.name, roomData.icon);
-                }, 500);
-            } else {
-                hideLoading();
-            }
-            
-            sessionChecked = true;
-            hideLoading();
+
+            // --- تعديل: تأخير التحقق من الغرفة المحفوظة لضمان تحميل البيانات ---
+            setTimeout(() => {
+                // التحقق من صلاحيات المستخدم (مثل إظهار زر تغيير الخلفية)
+                toggleBackgroundButton();
+                
+                // الانضمام إلى الغرفة المحفوظة إذا كانت موجودة
+                const savedRoom = localStorage.getItem('currentRoom');
+                if (savedRoom) {
+                    try {
+                        const roomData = JSON.parse(savedRoom);
+                        if (roomData && roomData.id) {
+                            openChat(roomData.id, roomData.name, roomData.icon);
+                        } else {
+                            hideLoading();
+                        }
+                    } catch (e) {
+                        localStorage.removeItem('currentRoom');
+                        hideLoading();
+                    }
+                } else {
+                    hideLoading(); // إخفاء التحميل فقط إذا لم تكن هناك غرفة للانضمام إليها
+                }
+            }, 200); // تأخير بسيط لضمان رسم الواجهة
         }
 
         function handleSessionInvalid() {
@@ -1620,8 +1810,14 @@ function updateUnreadBadges() {
         // تحديث معلومات المستخدم في الرأس
         function updateHeaderUserInfo() {
             if (currentUser) {
-                document.getElementById('headerUsername').textContent = currentUser.name;
-                document.getElementById('headerAvatarInitial').textContent = currentUser.name.charAt(0).toUpperCase();
+                const headerUsernameElem = document.getElementById('headerUsername');
+                if (headerUsernameElem) {
+                    headerUsernameElem.textContent = currentUser.name;
+                }
+                const headerAvatarInitialElem = document.getElementById('headerAvatarInitial');
+                if (headerAvatarInitialElem) {
+                    headerAvatarInitialElem.textContent = currentUser.name.charAt(0).toUpperCase();
+                }
                 
                 // تحديث الصورة إذا كانت موجودة
                 socket.emit('get avatar', currentUser.name);
@@ -1679,6 +1875,7 @@ function updateUnreadBadges() {
             handleSessionValid(userData);
             socket.emit('get friend requests', currentUser.name);
             socket.emit('get friends list', currentUser.name);
+            socket.emit('get unread counts', currentUser.name);
             
             hideLoading();
             // بعد تسجيل الدخول الناجح، تحقق من صلاحيات المستخدم
@@ -1700,6 +1897,7 @@ function updateUnreadBadges() {
             handleSessionValid(userData);
             socket.emit('get friend requests', currentUser.name);
             socket.emit('get friends list', currentUser.name);
+            socket.emit('get unread counts', currentUser.name);
             
             // بعد إنشاء الحساب، تحقق من صلاحيات المستخدم
             if (currentUser) {
@@ -2418,7 +2616,7 @@ window.addEventListener('beforeunload', function (e) {
         // إضافة رسالة إلى الدردشة (نسخة مدمجة)
 function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messageId = null, replyTo = null) {
     const container = document.getElementById('messagesContainer');
-    const messageDiv = document.createElement('div');
+    const messageDiv = document.createElement('div');    
     messageDiv.setAttribute('data-message-id', messageId);
    
     let rankBadge = '';
@@ -2432,6 +2630,17 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
             </div>
         `;
     }
+
+    // البحث عن لون اسم المستخدم
+    let nameColorClass = 'text-blue-200'; // اللون الافتراضي
+    const onlineUser = document.querySelector(`#onlineUsersList [data-username="${user}"]`);
+    if (onlineUser) {
+        const color = onlineUser.dataset.nameColor;
+        if (color && color !== 'null') {
+            nameColorClass = color;
+        }
+    }
+
     // زر الحذف: يظهر دائماً للاختبار
     // --- تعديل: فصل الأزرار عن القائمة ---
     let directActions = '';
@@ -2487,7 +2696,7 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
                     <img src="${avatarUrl}" class="w-6 h-6 rounded-full object-cover" alt="${user}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">
                     <div>
                         ${rankBadge}
-                        <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : 'text-blue-200'}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
+                        <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : nameColorClass}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
                     </div>
                     <div class="flex items-center space-x-2 space-x-reverse mr-auto">
                         ${directActions}
@@ -2512,7 +2721,7 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
                     </div>
                     <div>
                         ${rankBadge}
-                        <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : 'text-blue-200'}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
+                        <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : nameColorClass}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
                     </div>
                     <div class="flex items-center space-x-2 space-x-reverse mr-auto">
                         ${directActions}
@@ -2671,6 +2880,13 @@ function updateOnlineUsersList(users) {
         return rankB - rankA;
     });
     
+    // تحديث لون اسم المستخدم في الواجهة
+    users.forEach(user => {
+        if (user.name === currentUser.name) {
+            currentUser.nameColor = user.nameColor;
+        }
+    });
+
     sortedUsers.forEach(user => {
         const userDiv = document.createElement('div');
         const isOwner = user.rank === 'صاحب الموقع';
@@ -2684,6 +2900,8 @@ function updateOnlineUsersList(users) {
         }
         userDiv.className = baseClasses;
         userDiv.onclick = () => showUserProfileModal(user.name);
+        userDiv.setAttribute('data-username', user.name);
+        userDiv.setAttribute('data-name-color', user.nameColor || 'null');
 
         // إنشاء شارة الرتبة
         let rankBadge = '';
@@ -2703,7 +2921,7 @@ function updateOnlineUsersList(users) {
                 <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 border-2 border-slate-800 ring-1 ring-green-400"></span>
             </div>
             <div class="flex-1 min-w-0">
-                <div class="text-white font-semibold truncate">${user.name}</div>
+                <div class="font-semibold truncate ${user.nameColor || 'text-white'}">${user.name}</div>
                 ${rankBadge}
             </div>
         `;
@@ -2925,6 +3143,112 @@ function updateOnlineUsersList(users) {
     socket.emit('get user profile', { username });
 }
 
+        socket.on('points sent success', (data) => {
+            const message = typeof data === 'object' ? data.message : data;
+            const newPoints = typeof data === 'object' ? data.newPoints : null;
+            showNotification(message, 'success');
+            if (currentUser && newPoints !== null) currentUser.points = newPoints;
+        });
+        socket.on('points sent error', (error) => {
+            showNotification(error, 'error');
+        });
+
+        // --- أحداث المتجر ---
+        socket.on('shop items data', (items) => {
+            window.shopItems = items; // حفظ عناصر المتجر للاستخدام لاحقاً
+            const container = document.getElementById('shopItemsContainer');
+            container.innerHTML = '';
+
+            if (items.length === 0) {
+                container.innerHTML = '<p class="text-blue-200 text-center p-8">المتجر فارغ حالياً.</p>';
+                return;
+            }
+
+            items.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'flex items-center bg-slate-800/50 p-4 rounded-lg border border-slate-700';
+                
+                itemDiv.innerHTML = `
+                    <div class="text-3xl ml-4">${item.itemType === 'name_change_card' ? '💳' : (ranks[item.itemValue]?.icon || '🛍️')}</div>
+                    <div class="flex-1">
+                        <h4 class="text-white font-semibold">${item.name}</h4>
+                        <p class="text-blue-200 text-xs">${item.description}</p>
+                    </div>
+                    <button onclick="buyItem(${item.id})" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center space-x-2 space-x-reverse">
+                        <span>${item.price}</span>
+                        <span class="text-yellow-300">⭐</span>
+                    </button>
+                `;
+                container.appendChild(itemDiv);
+            });
+        });
+
+        function buyItem(itemId) {
+            if (confirm('هل أنت متأكد من شراء هذا العنصر؟ سيتم خصم النقاط من رصيدك.')) {
+                socket.emit('buy item', { itemId, currentUser });
+            }
+        }
+
+        socket.on('buy item success', (data) => {
+            showNotification(data.message, 'success');
+            // تحديث نقاط المستخدم
+            if (currentUser) currentUser.points = data.newPoints;
+            // تحديث لون اسم المستخدم إذا تم شراؤه
+            if (data.updatedNameColor) {
+                currentUser.nameColor = data.updatedNameColor;
+                updateHeaderUserInfo();
+            }
+            // تحديث عرض النقاط في الملف الشخصي إذا كان مفتوحاً
+            if (!document.getElementById('profileModal').classList.contains('hidden')) {
+                document.getElementById('profilePoints').textContent = data.newPoints;
+            }
+            // إذا كان العنصر المشترى هو بطاقة تغيير الاسم، افتح نافذة التغيير
+            if (data.purchasedItem && data.purchasedItem.itemType === 'name_change_card') {
+                closeShopModal();
+                useNameChangeCard(data.inventory[data.inventory.length - 1].id);
+            }
+        });
+
+        socket.on('buy item error', (error) => {
+            showNotification(error, 'error');
+        });
+
+        socket.on('name change success', (data) => {
+            showNotification(data.message, 'success');
+            // تحديث الكوكي بالجلسة الجديدة
+            document.cookie = `sessionId=${data.newSessionId}; path=/; max-age=31536000; SameSite=Lax`;
+            // تحديث بيانات المستخدم الحالي
+            currentUser.name = data.newUsername;
+            currentUser.nameColor = data.nameColor;
+            currentUser.sessionId = data.newSessionId;
+            updateHeaderUserInfo();
+            closeProfileModal();
+        });
+
+        socket.on('name change error', (error) => {
+            showNotification(error, 'error');
+        });
+
+        socket.on('user name changed', ({ oldUsername, newUsername }) => {
+            // تحديث اسم المستخدم في الواجهة لجميع المستخدمين
+            document.querySelectorAll(`[data-username="${oldUsername}"]`).forEach(el => el.dataset.username = newUsername);
+        });
+
+        function useNameChangeCard(inventoryId) {
+            const newUsername = prompt("الرجاء إدخال اسمك الجديد:");
+            if (newUsername && newUsername.trim() !== '') {
+                if (confirm(`هل أنت متأكد من تغيير اسمك إلى "${newUsername}"؟ سيتم استهلاك بطاقة تغيير الاسم.`)) {
+                    socket.emit('use name change card', {
+                        oldUsername: currentUser.name,
+                        newUsername: newUsername.trim(),
+                        inventoryId: inventoryId,
+                        currentUser: currentUser
+                    });
+                }
+            }
+        }
+
+
         function showUserProfile(profileData) {
             const modal = document.getElementById('profileModal');
             const avatar = document.getElementById('profileAvatar');
@@ -2935,13 +3259,24 @@ function updateOnlineUsersList(users) {
             const statusText = statusElem.querySelector('span:last-child'); // تعديل: اختيار العنصر الثاني بشكل موثوق
             const privateChatButton = document.getElementById('privateChatButton');
             const addFriendButton = document.getElementById('addFriendButton');
+            const sendPointsButton = document.getElementById('sendPointsButton');
             const profileMenuContainer = document.getElementById('profileMenuContainer');
             const profileBio = document.getElementById('profileBio');
             const profileBioInput = document.getElementById('profileBioInput');
             const editBioButton = document.getElementById('editBioButton');
             const saveBioButton = document.getElementById('saveBioButton');
-            document.getElementById('profilePoints').textContent = profileData.points;
-            document.getElementById('profileLevel').textContent = profileData.level;
+            const specialUsers = ["Walid dz 31", "سيد احمد", "ميارا"];
+            
+            if (specialUsers.includes(profileData.username)) {
+                document.getElementById('profilePoints').textContent = '99999';
+                document.getElementById('profileLevel').textContent = '9999';
+            } else {
+                document.getElementById('profilePoints').textContent = profileData.points;
+                document.getElementById('profileLevel').textContent = profileData.level;
+            }
+
+            const inventorySection = document.getElementById('inventorySection');
+            const inventoryItemsContainer = document.getElementById('inventoryItems');
             
             // تعبئة البيانات
             avatar.src = profileData.avatar || (profileData.gender === 'female' ? defaultAvatars.girl1 : defaultAvatars.boy1);
@@ -2978,7 +3313,29 @@ function updateOnlineUsersList(users) {
                 saveBioButton.classList.add('hidden');
                 privateChatButton.style.display = 'none';
                 addFriendButton.style.display = 'none';
+                sendPointsButton.style.display = 'none';
                 profileMenuContainer.innerHTML = ''; // إخفاء قائمة الإدارة
+
+                // عرض مخزون المستخدم
+                inventorySection.classList.remove('hidden');
+                inventoryItemsContainer.innerHTML = '';
+                if (profileData.inventory && profileData.inventory.length > 0) {
+                    profileData.inventory.forEach(invItem => {
+                        const shopItem = shopItems.find(si => si.id === invItem.itemId);
+                        if (shopItem && shopItem.itemType === 'name_change_card') {
+                            const itemDiv = document.createElement('div');
+                            itemDiv.className = 'flex items-center justify-between bg-white/10 p-2 rounded-lg';
+                            itemDiv.innerHTML = `
+                                <span class="text-white text-sm">💳 ${shopItem.name}</span>
+                                <button onclick="useNameChangeCard(${invItem.id})" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md">استخدام</button>
+                            `;
+                            inventoryItemsContainer.appendChild(itemDiv);
+                        }
+                    });
+                } else {
+                    inventoryItemsContainer.innerHTML = '<p class="text-blue-200 text-xs text-center">المخزون فارغ.</p>';
+                }
+
             } else {
                 editBioButton.classList.add('hidden');
                 saveBioButton.classList.add('hidden');
@@ -2987,6 +3344,8 @@ function updateOnlineUsersList(users) {
                 
                 // إظهار زر إضافة صديق فقط إذا لم يكن المستخدم نفسه
                 addFriendButton.style.display = 'flex';
+                sendPointsButton.style.display = 'flex';
+                inventorySection.classList.add('hidden');
                 addFriendButton.setAttribute('data-username', profileData.username);
                 
                 // التحقق إذا كان المستخدم صديقاً بالفعل
@@ -3188,6 +3547,63 @@ function updateOnlineUsersList(users) {
             openPrivateChat(username);
         }
 
+/* --- دالة محسّنة لجعل العناصر قابلة للسحب (تدعم اللمس والفأرة) --- */
+function makeDraggable(element, handle) {
+    let active = false;
+    let currentX, currentY, initialX, initialY, xOffset = 0, yOffset = 0;
+
+    const dragStart = (e) => {
+        e = e || window.event;
+        if (e.type === 'touchstart') {
+            initialX = e.touches[0].clientX - xOffset;
+            initialY = e.touches[0].clientY - yOffset;
+        } else {
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+        }
+
+        if (e.target === handle || handle.contains(e.target)) {
+            active = true;
+        }
+    };
+
+    const dragEnd = () => {
+        initialX = currentX;
+        initialY = currentY;
+        active = false;
+    };
+
+    const drag = (e) => {
+        if (!active) return;
+        e = e || window.event;
+        e.preventDefault();
+
+        if (e.type === 'touchmove') {
+            currentX = e.touches[0].clientX - initialX;
+            currentY = e.touches[0].clientY - initialY;
+        } else {
+            currentX = e.clientX - initialX;
+            currentY = e.clientY - initialY;
+        }
+
+        xOffset = currentX;
+        yOffset = currentY;
+
+        requestAnimationFrame(() => {
+            element.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+        });
+    };
+
+    // إضافة مستمعي الأحداث
+    const parent = element.parentElement;
+    parent.addEventListener('touchstart', dragStart, false);
+    parent.addEventListener('touchend', dragEnd, false);
+    parent.addEventListener('touchmove', drag, { passive: false });
+    parent.addEventListener('mousedown', dragStart, false);
+    parent.addEventListener('mouseup', dragEnd, false);
+    parent.addEventListener('mousemove', drag, { passive: false });
+}
+
        function openPrivateChat(username) {
     privateChatTarget = username;
     const modal = document.getElementById('privateChatModal');
@@ -3220,6 +3636,10 @@ function updateOnlineUsersList(users) {
         otherUser: username,
         currentUser: currentUser.name
     });
+
+    // جعل النافذة قابلة للسحب
+    const header = document.querySelector('#privateChatModal .private-chat-header');
+    makeDraggable(modal, header);
 }
 
         function closePrivateChat() {
@@ -3337,7 +3757,6 @@ document.getElementById('chatFriendsButton')?.addEventListener('click', () => {
     openFriendsSidebar();
 });
 
-// دوال إدارة المنشورات
 function openPostsSidebar() {
     document.getElementById('postsSidebar').classList.add('show');
     document.getElementById('postsOverlay').classList.add('show');
@@ -3351,17 +3770,14 @@ function closePostsSidebar() {
 
 function createNewPost() {
     const content = document.getElementById('newPostContent').value.trim();
-    
     if (!content) {
         showNotification('يرجى كتابة محتوى للمنشور', 'error');
         return;
     }
-    
     socket.emit('create post', {
         content: content,
         username: currentUser.name
     });
-    
     document.getElementById('newPostContent').value = '';
 }
 
@@ -3369,91 +3785,86 @@ function loadPosts() {
     socket.emit('get posts');
 }
 
-function displayPosts(posts) {
+function displayPosts(posts, prepend = false) {
     const container = document.getElementById('postsList');
-    container.innerHTML = '';
-    
-    if (posts.length === 0) {
-        container.innerHTML = '<p class="text-blue-200 text-sm text-center">لا توجد منشورات بعد</p>';
+    if (!prepend) {
+        container.innerHTML = '';
+    }
+
+    if (posts.length === 0 && !prepend) {
+        container.innerHTML = '<p class="text-blue-200 text-sm text-center">لا توجد منشورات بعد.</p>';
         return;
     }
-    
-    posts.forEach(post => {
-        const postDiv = document.createElement('div');
-        postDiv.className = 'bg-white/10 rounded-xl p-4';
-        postDiv.id = `post-card-${post.id}`; // إضافة ID فريد للمنشور
-        
+
+    const postsHtml = posts.map(post => {
         // حساب وقت النشر
         const timeAgo = getTimeAgo(new Date(post.timestamp));
-        
-        postDiv.innerHTML = `
-            <div class="flex items-center space-x-3 space-x-reverse mb-3" onclick="showUserProfileModal('${post.username}')" style="cursor:pointer;">
-                ${post.avatar ? 
-                    `<img src="${post.avatar}" class="w-10 h-10 rounded-full object-cover border-2 border-blue-500/50" alt="${post.username}">` :
-                    `<div class="w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white border-2 border-blue-500/50">
-                        ${post.username.charAt(0).toUpperCase()}
-                    </div>`
-                }
-                <div class="flex-1">
-                    <div class="text-white font-semibold">${post.username}</div>
-                    <div class="text-xs text-blue-200">${timeAgo}</div>
-                </div>
-                ${post.username === currentUser.name ? `
-                    <div class="mr-auto">
-                        <button onclick="deletePost(${post.id})" class="text-red-400 hover:text-red-600" title="حذف المنشور">
+        const isLiked = post.likes && post.likes.includes(currentUser.name);
+
+        return `
+            <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700" id="post-card-${post.id}">
+                <!-- Post Header -->
+                <div class="flex items-center space-x-3 space-x-reverse mb-4">
+                    <img src="${post.avatar || defaultAvatars.guest}" class="w-11 h-11 rounded-full object-cover cursor-pointer border-2 border-slate-600" onclick="showUserProfileModal('${post.username}')" alt="${post.username}">
+                    <div class="flex-1">
+                        <p class="font-semibold text-white cursor-pointer" onclick="showUserProfileModal('${post.username}')">${post.username}</p>
+                        <p class="text-xs text-slate-400">${timeAgo}</p>
+                    </div>
+                    ${post.username === currentUser.name ? `
+                        <button onclick="deletePost(${post.id})" class="text-slate-400 hover:text-red-500 transition-colors" title="حذف المنشور">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
-                    </div>
-                ` : ''}
-            </div>
-            <div class="text-white text-sm mb-4">${post.content}</div>
-            <div class="flex items-center justify-between border-t border-white/10 pt-3">
-                <div class="flex space-x-4 space-x-reverse">
-                    <button onclick="likePost(${post.id})" class="flex items-center space-x-1 space-x-reverse text-blue-200 hover:text-white">
-                        <svg class="w-4 h-4" fill="${post.likes && post.likes.includes(currentUser.name) ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905a3.61 3.61 0 01-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
+                    ` : ''}
+                </div>
+
+                <!-- Post Content -->
+                <p class="text-slate-200 text-sm mb-4 whitespace-pre-wrap">${post.content}</p>
+
+                <!-- Post Actions -->
+                <div class="flex items-center justify-between text-slate-400 border-t border-slate-700 pt-2">
+                    <button id="like-btn-${post.id}" onclick="likePost(${post.id})" class="flex items-center space-x-2 space-x-reverse hover:text-pink-500 transition-colors ${isLiked ? 'text-pink-500' : ''}">
+                        <svg class="w-5 h-5" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.5l1.318-1.182a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"></path>
                         </svg>
-                        <span>${post.likes ? post.likes.length : 0}</span>
+                        <span id="like-count-${post.id}">${post.likes ? post.likes.length : 0}</span>
                     </button>
-                    <button onclick="toggleComments(${post.id})" class="flex items-center space-x-1 space-x-reverse text-blue-200 hover:text-white">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button onclick="toggleComments(${post.id})" class="flex items-center space-x-2 space-x-reverse hover:text-blue-400 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                         </svg>
-                        <span>${post.comments ? post.comments.length : 0}</span>
+                        <span id="comment-count-${post.id}">${post.comments ? post.comments.length : 0}</span>
                     </button>
                 </div>
-            </div>
-            <div id="comments-${post.id}" class="hidden mt-4">
-                <div class="space-y-3 mb-3">
-                    ${post.comments ? post.comments.map(comment => `
-                        <div class="bg-white/5 rounded-lg p-3">
-                            <div class="flex items-center space-x-2 space-x-reverse mb-1">
-                                <div class="text-white font-medium text-sm">${comment.username}</div> 
-                                <div class="text-xs text-blue-200">${new Date(parseInt(comment.timestamp, 10)).toLocaleTimeString('fr-FR')}</div>
+
+                <!-- Comments Section -->
+                <div id="comments-section-${post.id}" class="hidden mt-4 pt-3 border-t border-slate-700">
+                    <div id="comments-list-${post.id}" class="space-y-3 mb-3 max-h-60 overflow-y-auto custom-scrollbar">
+                        ${post.comments ? post.comments.map(comment => `
+                            <div class="bg-slate-700/50 rounded-lg p-3 text-sm">
+                                <div class="flex items-center space-x-2 space-x-reverse mb-1">
+                                    <p class="font-semibold text-blue-300">${comment.username}</p>
+                                    <p class="text-xs text-slate-400">${new Date(comment.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
+                                </div>
+                                <p class="text-slate-300">${comment.content}</p>
                             </div>
-                            <div class="text-white text-sm">${comment.content}</div>
-                        </div>
-                    `).join('') : ''}
-                </div>
-                <div class="flex space-x-2 space-x-reverse">
-                    <input 
-                        type="text" 
-                        id="comment-${post.id}" 
-                        placeholder="اكتب تعليقك..." 
-                        class="flex-1 bg-white/20 border border-white/30 rounded-lg px-3 py-1 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-                    >
-                    <button 
-                        onclick="addComment(${post.id})" 
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-lg text-sm"
-                    >
-                        إرسال
-                    </button>
+                        `).join('') : ''}
+                    </div>
+                    <div class="flex space-x-2 space-x-reverse mt-2">
+                        <input type="text" id="comment-input-${post.id}" placeholder="اكتب تعليقك..." class="flex-1 bg-slate-700 border border-slate-600 rounded-full px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" onkeypress="if(event.key === 'Enter') addComment(${post.id})">
+                        <button onclick="addComment(${post.id})" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-full transition-colors text-sm">
+                            إرسال
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
-        
-        container.appendChild(postDiv);
-    });
+    }).join('');
+
+    if (prepend) {
+        container.insertAdjacentHTML('afterbegin', postsHtml);
+    } else {
+        container.innerHTML = postsHtml;
+    }
 }
 
 function likePost(postId) {
@@ -3464,12 +3875,15 @@ function likePost(postId) {
 }
 
 function toggleComments(postId) {
-    const commentsSection = document.getElementById(`comments-${postId}`);
+    const commentsSection = document.getElementById(`comments-section-${postId}`);
     commentsSection.classList.toggle('hidden');
+    if (!commentsSection.classList.contains('hidden')) {
+        document.getElementById(`comment-input-${postId}`).focus();
+    }
 }
 
 function addComment(postId) {
-    const commentInput = document.getElementById(`comment-${postId}`);
+    const commentInput = document.getElementById(`comment-input-${postId}`);
     const content = commentInput.value.trim();
     
     if (!content) {
@@ -3482,7 +3896,6 @@ function addComment(postId) {
         username: currentUser.name,
         content: content
     });
-    
     commentInput.value = '';
 }
 
@@ -3513,20 +3926,46 @@ socket.on('posts data', (posts) => {
     displayPosts(posts);
 });
 
-socket.on('new post', (post) => {
-    showNotification(`منشور جديد من ${post.username}`, 'info');
-    loadPosts(); // إعادة تحميل المنشورات
+socket.on('new post', (newPost) => {
+    showNotification(`منشور جديد من ${newPost.username}`, 'info');
+    // إضافة المنشور الجديد في الأعلى بدلاً من إعادة التحميل
+    const container = document.getElementById('postsList');
+    if (container.querySelector('p')) { // إذا كانت هناك رسالة "لا توجد منشورات"
+        container.innerHTML = '';
+    }
+    displayPosts([newPost], true);
 });
 
 socket.on('post liked', ({ postId, likes }) => {
-    const postElem = document.querySelector(`[onclick="likePost(${postId})"]`);
-    if (postElem) {
-        postElem.querySelector('span').textContent = likes.length;
+    const likeCountElem = document.getElementById(`like-count-${postId}`);
+    const likeBtnElem = document.getElementById(`like-btn-${postId}`);
+    
+    if (likeCountElem && likeBtnElem) {
+        likeCountElem.textContent = likes.length;
+        const isLiked = likes.includes(currentUser.name);
+        likeBtnElem.classList.toggle('text-pink-500', isLiked);
+        likeBtnElem.querySelector('svg').setAttribute('fill', isLiked ? 'currentColor' : 'none');
     }
 });
 
-socket.on('comment added', (data) => {
-    loadPosts(); // إعادة تحميل المنشورات
+socket.on('comment added', ({ postId, username, content, timestamp }) => {
+    const commentsList = document.getElementById(`comments-list-${postId}`);
+    const commentCountElem = document.getElementById(`comment-count-${postId}`);
+
+    if (commentsList && commentCountElem) {
+        const newComment = document.createElement('div');
+        newComment.className = 'bg-slate-700/50 rounded-lg p-3 text-sm';
+        newComment.innerHTML = `
+            <div class="flex items-center space-x-2 space-x-reverse mb-1">
+                <p class="font-semibold text-blue-300">${username}</p>
+                <p class="text-xs text-slate-400">${new Date(timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
+            </div>
+            <p class="text-slate-300">${content}</p>
+        `;
+        commentsList.appendChild(newComment);
+        commentsList.scrollTop = commentsList.scrollHeight; // تمرير لأسفل
+        commentCountElem.textContent = parseInt(commentCountElem.textContent) + 1;
+    }
 });
 
 socket.on('post deleted', ({ postId }) => {
@@ -3543,56 +3982,66 @@ socket.on('post delete error', (error) => {
 // إضافة مستمعي الأحداث للأزرار الجديدة
 document.getElementById('postsButton').addEventListener('click', openPostsSidebar);
 
-document.getElementById('chatPostsButton').addEventListener('click', openPostsSidebar);
-
-// إضافة مستمع الحدث لزر الإشعارات في المحادثة
-document.getElementById('chatMessagesButton')?.addEventListener('click', toggleNotificationsDropdown);
+document.getElementById('chatPostsButton')?.addEventListener('click', openPostsSidebar);
+document.getElementById('chatFriendsButton')?.addEventListener('click', openFriendsSidebar);
+document.getElementById('chatMessagesButton')?.addEventListener('click', togglePrivateConversationsDropdown);
+document.getElementById('chatNotificationsButton')?.addEventListener('click', toggleNotificationsDropdown);
 
 // --- نظام الإشعارات الجديد ---
 
-function toggleNotificationsDropdown(event) {
+function togglePrivateConversationsDropdown(event) {
     event.stopPropagation();
-    const dropdown = document.getElementById('chatNotificationsDropdown');
+    const dropdown = document.getElementById('privateConversationsDropdown');
+    const otherDropdown = document.getElementById('chatNotificationsDropdown');
     const isHidden = dropdown.classList.contains('hidden');
-
+ 
+    // تبديل حالة الظهور
+    dropdown.classList.toggle('hidden');
+ 
+    // إذا تم فتح القائمة الآن
     if (isHidden) {
-        // طلب الإشعارات عند الفتح
-        socket.emit('get notifications', currentUser.name);
-        dropdown.classList.remove('hidden');
-        // تحديدها كمقروءة بعد فترة قصيرة
-        setTimeout(() => {
-            socket.emit('mark notifications as read', currentUser.name);
-            updateNotificationsBadge(false);
-        }, 2000);
-    } else {
-        dropdown.classList.add('hidden');
+        otherDropdown.classList.add('hidden'); // تأكد من إغلاق القائمة الأخرى
+        socket.emit('get private conversations', currentUser.name); // اطلب المحادثات من السيرفر
     }
 }
 
 // إغلاق القائمة عند النقر خارجها
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
+    const privateDropdown = document.getElementById('privateConversationsDropdown');
+    const privateButton = document.getElementById('chatMessagesButton');
+    if (privateDropdown && !privateDropdown.contains(e.target) && !privateButton.contains(e.target)) {
+        privateDropdown.classList.add('hidden');
+    }
+
     const dropdown = document.getElementById('chatNotificationsDropdown');
-    const button = document.getElementById('chatMessagesButton');
+    const button = document.getElementById('chatNotificationsButton');
     if (dropdown && !dropdown.contains(e.target) && !button.contains(e.target)) {
         dropdown.classList.add('hidden');
     }
 });
 
 function updateNotificationsBadge(hasUnread) {
-    const badges = document.querySelectorAll('#chatMessagesBadge, #messagesBadge');
-    badges.forEach(badge => {
-        if (badge) {
-            // إزالة النص من الشارة لجعلها نقطة فقط
-            badge.textContent = ''; 
-            badge.classList.toggle('hidden', !hasUnread);
+    const badge = document.getElementById('chatNotificationsBadge');
+    if (badge) {
+        badge.classList.toggle('hidden', !hasUnread);
+    }
+}
+
+function updateMessagesBadge(count) {
+    const chatBadge = document.getElementById('chatMessagesBadge');
+    if (chatBadge) {
+        if (count > 0) {
+            chatBadge.textContent = count;
+            chatBadge.classList.remove('hidden');
+        } else {
+            chatBadge.classList.add('hidden');
         }
-    });
+    }
 }
 
 socket.on('new notification', (notification) => {
     showNotification(`🔔 لديك إشعار جديد!`, 'info');
-    // طلب الإشعارات لتحديث الحالة
-    socket.emit('get notifications', currentUser.name);
+    socket.emit('get unread counts', currentUser.name);
 });
 
 socket.on('notifications list', (notifications) => {
@@ -3605,12 +4054,11 @@ socket.on('notifications list', (notifications) => {
         return;
     }
 
-    // تحديث الشارة بناءً على وجود إشعارات غير مقروءة
-    updateNotificationsBadge(unreadCount > 0);
-
     notifications.forEach(notif => {
         const notifDiv = document.createElement('div');
-        
+        notifDiv.className = `p-2 text-sm rounded-md hover:bg-white/10 cursor-pointer ${!notif.read ? 'bg-blue-500/20' : ''}`;
+        notifDiv.setAttribute('onclick', `goToPost(${notif.postId})`);
+
         let text = '';
         if (notif.type === 'like') {
             text = `👍 أعجب <strong class="text-white">${notif.senderUsername}</strong> بمنشورك.`;
@@ -3619,20 +4067,88 @@ socket.on('notifications list', (notifications) => {
         } else if (notif.type === 'new_post') {
             text = `✍️ نشر <strong class="text-white">${notif.senderUsername}</strong> منشوراً جديداً.`;
         }
-        // يمكنك إضافة أنواع أخرى هنا (طلبات صداقة، رسائل...)
-
-        // جعل الإشعار قابلاً للنقر إذا كان مرتبطاً بمنشور
-        if (notif.postId) {
-            notifDiv.className = `p-2 text-sm rounded-md hover:bg-white/10 cursor-pointer ${!notif.read ? 'font-bold' : ''}`;
-            notifDiv.setAttribute('onclick', `goToPost(${notif.postId})`);
-        } else {
-            notifDiv.className = `p-2 text-sm rounded-md hover:bg-white/10 ${!notif.read ? 'font-bold' : ''}`;
-        }
 
         notifDiv.innerHTML = `<p class="text-blue-200">${text}</p>`;
         container.appendChild(notifDiv);
     });
 });
+
+socket.on('private conversations list', (conversations) => {
+    const container = document.getElementById('privateConversationsList');
+    container.innerHTML = '';
+    let totalUnread = 0;
+
+    if (conversations.length === 0) {
+        container.innerHTML = '<p class="text-blue-200 text-sm text-center p-4">لا توجد محادثات خاصة بعد.</p>';
+        return;
+    }
+
+    conversations.forEach(conv => {
+        const convDiv = document.createElement('div');
+        const otherUser = conv.otherUser;
+        const avatarUrl = userAvatars[otherUser] || defaultAvatars.guest;
+
+        if (conv.unreadCount > 0) {
+            totalUnread += conv.unreadCount;
+        }
+
+        convDiv.className = `flex items-center p-2 rounded-md cursor-pointer transition-colors ${conv.unreadCount > 0 ? 'bg-blue-500/20' : 'hover:bg-white/10'}`;
+        convDiv.onclick = () => {
+            openPrivateChat(otherUser);
+            document.getElementById('privateConversationsDropdown').classList.add('hidden');
+        };
+
+        convDiv.innerHTML = `
+            <div class="relative flex-shrink-0">
+                <img src="${avatarUrl}" class="w-10 h-10 rounded-full object-cover" alt="${otherUser}">
+                ${conv.isOnline ? '<span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-slate-800"></span>' : ''}
+            </div>
+            <div class="flex-1 min-w-0 mx-3">
+                <div class="flex justify-between items-center">
+                    <p class="text-white font-semibold truncate">${otherUser}</p>
+                </div>
+                <div class="flex justify-between items-center">
+                    <p class="text-blue-200 text-sm truncate">${conv.lastMessage.content}</p>
+                    ${conv.unreadCount > 0 ? `<span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">${conv.unreadCount}</span>` : ''}
+                </div>
+            </div>
+        `;
+        container.appendChild(convDiv);
+    });
+});
+
+socket.on('private conversations updated', () => {
+    socket.emit('get unread counts', currentUser.name);
+    // إذا كانت القائمة مفتوحة، قم بتحديثها
+    if (!document.getElementById('privateConversationsDropdown').classList.contains('hidden')) {
+        socket.emit('get private conversations', currentUser.name);
+    }
+});
+
+socket.on('unread counts data', (counts) => {
+    updateMessagesBadge(counts.privateMessages);
+    updateNotificationsBadge(counts.notifications > 0);
+});
+
+function toggleNotificationsDropdown(event) {
+    event.stopPropagation();
+    const dropdown = document.getElementById('chatNotificationsDropdown');
+    const otherDropdown = document.getElementById('privateConversationsDropdown');
+    const isHidden = dropdown.classList.contains('hidden');
+
+    otherDropdown.classList.add('hidden'); // إخفاء قائمة الرسائل دائماً
+
+    if (isHidden) {
+        socket.emit('get notifications', currentUser.name);
+        dropdown.classList.remove('hidden');
+        setTimeout(() => {
+            socket.emit('mark notifications as read', currentUser.name);
+            updateNotificationsBadge(false);
+        }, 2000);
+    } else {
+        dropdown.classList.add('hidden');
+    }
+}
 
 function goToPost(postId) {
     // 1. إغلاق قائمة الإشعارات

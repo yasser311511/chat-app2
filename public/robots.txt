@@ -1,3 +1,0 @@
-﻿User-agent: *
-Allow: /
-Sitemap: https://walidchating.onrender.com/sitemap.xml

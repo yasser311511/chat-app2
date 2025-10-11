@@ -26,7 +26,8 @@ const User = sequelize.define('User', {
   username: { type: DataTypes.STRING, primaryKey: true },
   password: { type: DataTypes.STRING, allowNull: false },
   gender: { type: DataTypes.STRING, allowNull: false },
-  bio: { type: DataTypes.TEXT, allowNull: true }
+  bio: { type: DataTypes.TEXT, allowNull: true },
+  nameColor: { type: DataTypes.STRING, allowNull: true }
 });
 
 const UserRank = sequelize.define('UserRank', {
@@ -61,7 +62,8 @@ const PrivateMessage = sequelize.define('PrivateMessage', {
   fromUser: { type: DataTypes.STRING, allowNull: false },
   toUser: { type: DataTypes.STRING, allowNull: false },
   content: { type: DataTypes.TEXT, allowNull: false },
-  time: { type: DataTypes.STRING, allowNull: false },
+  read: { type: DataTypes.BOOLEAN, defaultValue: false },
+  time: { type: DataTypes.STRING, allowNull: false }, // يمكن إزالته لاحقاً والاعتماد على timestamp
   timestamp: { type: DataTypes.BIGINT, allowNull: false }
 });
 
@@ -73,6 +75,21 @@ const UserFriend = sequelize.define('UserFriend', {
 const FriendRequest = sequelize.define('FriendRequest', {
   fromUser: { type: DataTypes.STRING, allowNull: false },
   toUser: { type: DataTypes.STRING, allowNull: false }
+});
+
+const ShopItem = sequelize.define('ShopItem', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING, allowNull: false, unique: true },
+  description: { type: DataTypes.TEXT, allowNull: false },
+  price: { type: DataTypes.INTEGER, allowNull: false },
+  itemType: { type: DataTypes.STRING, allowNull: false }, // e.g., 'rank', 'name_change_card', 'name_color'
+  itemValue: { type: DataTypes.STRING, allowNull: true } // e.g., 'بريميوم'
+});
+
+const UserInventory = sequelize.define('UserInventory', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  username: { type: DataTypes.STRING, allowNull: false, references: { model: 'Users', key: 'username' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
+  itemId: { type: DataTypes.INTEGER, allowNull: false, references: { model: 'ShopItems', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' }
 });
 const UserPoints = sequelize.define('UserPoints', {
   username: { type: DataTypes.STRING, primaryKey: true },
@@ -139,17 +156,27 @@ const io = socketIo(server, {
 // نظام الرتب
 const ranks = {
   'صاحب الموقع': { color: 'from-red-600 to-orange-400', icon: '🏆', level: 6 },
-  'منشئ': { color: 'from-yellow-400 to-orange-500', icon: '👑', level: 5 },
-  'سوبر ادمن': { color: 'from-red-500 to-pink-600', icon: '⭐', level: 4 },
-  'ادمن': { color: 'from-purple-500 to-indigo-600', icon: '🛡️', level: 3 },
+  'رئيس': { color: 'from-yellow-400 to-yellow-500', icon: '🎩', level: 5 },
+  'رئيسة': { color: 'from-yellow-400 to-yellow-500', icon: '🎩', level: 5 },
+  'منشئ': { color: 'from-yellow-400 to-orange-500', icon: '👑', level: 4 },
+  'سوبر ادمن': { color: 'from-red-500 to-pink-600', icon: '⭐', level: 3 },
+  'ادمن': { color: 'from-purple-500 to-indigo-600', icon: '🛡️', level: 2 },
   'بريميوم': { color: 'from-green-500 to-emerald-600', icon: '💎', level: 2 },
   'جيد': { color: 'from-blue-500 to-cyan-600', icon: '❇️', level: 1 }
+};
+
+// قائمة المستخدمين الخاصين (نقاط ومستوى ثابت)
+const SPECIAL_USERS_CONFIG = {
+  "Walid dz 31": { points: 99999, level: 9999 },
+  "سيد احمد": { points: 99999, level: 9999 },
+  "ميارا": { points: 99999, level: 9999 }
 };
 
 // المستخدم الخاص
 const SITE_OWNER = {
   username: "Walid dz 31",
-  rank: "صاحب الموقع"
+  rank: "صاحب الموقع",
+  password: "change_this_password" // <-- كلمة مرور افتراضية، يجب تغييرها
 };
 const Post = sequelize.define('Post', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -187,6 +214,8 @@ let privateMessages = {};
 let userFriends = {};
 let friendRequests = {};
 let userPoints = {};
+let shopItems = [];
+let userInventories = {};
 let userLastSeen = {}; // لتخزين آخر ظهور للمستخدم
 let posts = {};
 let postLikes = {};
@@ -197,6 +226,21 @@ let globalSiteBackground = {
   value: 'from-purple-900 via-blue-900 to-indigo-900'
 };
 let chatImages = {};
+
+// --- متغير للتحقق من جاهزية السيرفر ---
+let isServerReady = false;
+
+// --- دالة للتحقق من وجود عمود في جدول ---
+async function columnExists(tableName, columnName) {
+  try {
+    const queryInterface = sequelize.getQueryInterface();
+    const tableDescription = await queryInterface.describeTable(tableName);
+    return tableDescription.hasOwnProperty(columnName);
+  } catch (error) {
+    console.error(`خطأ في التحقق من العمود ${columnName} في جدول ${tableName}:`, error);
+    return false;
+  }
+}
 
 // --- إعدادات بوت مكافحة الإزعاج ---
 const userMessageHistory = {};
@@ -214,21 +258,22 @@ async function loadData() {
     
      // مزامنة آمنة للنماذج
     try {
-      // مزامنة جميع النماذد ما عدا ChatImage
-      await User.sync({ alter: true });
+      // استخدام alter: false لمعظم النماذج لتجنب التغييرات غير المقصودة
+      await User.sync({ alter: false });
       await UserRank.sync({ alter: false });
       await UserManagement.sync({ alter: false });
       await UserAvatar.sync({ alter: false });
       await UserSession.sync({ alter: false });
-      await PrivateMessage.sync({ alter: false });
       await UserFriend.sync({ alter: false });
       await FriendRequest.sync({ alter: false });
       await UserPoints.sync({ alter: false });
-      await UserLastSeen.sync({ alter: true });
+      await ShopItem.sync({ alter: false });
+      await UserInventory.sync({ alter: false });
+      await UserLastSeen.sync({ alter: false });
       await Post.sync({ alter: false });
       await PostLike.sync({ alter: false });
       await PostComment.sync({ alter: false });
-      await Notification.sync({ alter: true }); // Use alter to add the new model
+      await Notification.sync({ alter: false });
       await SiteBackground.sync({ alter: false });
       
       // مزامنة ChatImage بشكل منفصل مع معالجة الأخطاء
@@ -244,6 +289,19 @@ async function loadData() {
         }
       }
       
+      // --- معالجة يدوية لنموذج PrivateMessage ---
+      const readColumnExists = await columnExists('PrivateMessages', 'read');
+      if (!readColumnExists) {
+        console.log('عمود "read" غير موجود في جدول "PrivateMessages". جاري محاولة إضافته...');
+        try {
+          await sequelize.query('ALTER TABLE "PrivateMessages" ADD COLUMN "read" BOOLEAN DEFAULT false;');
+          console.log('تم إضافة عمود "read" إلى جدول "PrivateMessages" يدوياً.');
+        } catch (addColumnError) {
+          console.log('فشل في إضافة عمود "read" يدوياً:', addColumnError.message);
+        }
+      }
+      await PrivateMessage.sync({ alter: false }); // مزامنة آمنة بعد التأكد من وجود العمود
+
       console.log('تم مزامنة جميع النماذج بنجاح');
     } catch (syncError) {
       console.log('تحذير: هناك أخطاء في المزامنة:', syncError.message);
@@ -255,7 +313,8 @@ async function loadData() {
       users[user.username] = {
         password: user.password,
         gender: user.gender,
-        bio: user.bio
+        bio: user.bio,
+        nameColor: user.nameColor
       };
     });
     
@@ -333,6 +392,33 @@ async function loadData() {
       userLastSeen[seen.username] = parseInt(seen.lastSeen, 10);
     });
     
+    // تحميل عناصر المتجر
+    const itemsData = await ShopItem.findAll();
+    if (itemsData.length === 0) {
+      // إضافة عناصر افتراضية إذا كان المتجر فارغاً
+      await ShopItem.bulkCreate([
+        { name: 'بطاقة تغيير الاسم', description: 'تسمح لك بتغيير اسمك مرة واحدة.', price: 5000, itemType: 'name_change_card' },
+        { name: 'لون اسم أحمر', description: 'اجعل اسمك يظهر باللون الأحمر.', price: 1000, itemType: 'name_color', itemValue: 'text-red-400' },
+        { name: 'لون اسم أخضر', description: 'اجعل اسمك يظهر باللون الأخضر.', price: 1000, itemType: 'name_color', itemValue: 'text-green-400' },
+        { name: 'لون اسم أزرق', description: 'اجعل اسمك يظهر باللون الأزرق.', price: 1000, itemType: 'name_color', itemValue: 'text-blue-400' }
+      ]);
+      shopItems = await ShopItem.findAll();
+      console.log('تم إنشاء عناصر المتجر الافتراضية.');
+    } else {
+      shopItems = itemsData;
+    }
+    console.log('تم تحميل عناصر المتجر بنجاح.');
+
+    // تحميل مشتريات المستخدمين
+    const inventoriesData = await UserInventory.findAll();
+    inventoriesData.forEach(inventory => {
+      if (!userInventories[inventory.username]) {
+        userInventories[inventory.username] = [];
+      }
+      userInventories[inventory.username].push({ id: inventory.id, itemId: inventory.itemId });
+    });
+    console.log('تم تحميل مشتريات المستخدمين بنجاح.');
+
     // تحميل طلبات الصداقة
     const requestsData = await FriendRequest.findAll();
     requestsData.forEach(request => {
@@ -512,25 +598,52 @@ commentsData.forEach(comment => {
     });
     console.log('تم تنظيف صور الغرف العامة القديمة من قاعدة البيانات.');
     
-    // التأكد من وجود حساب صاحب الموقع
-    if (!users[SITE_OWNER.username]) {
-      await User.create({
+    // --- التأكد من وجود حساب صاحب الموقع (إنشاء أو تحديث) ---
+    try {
+      const hashedPassword = await bcrypt.hash(SITE_OWNER.password, 10);
+      await User.upsert({
         username: SITE_OWNER.username,
-        password: SITE_OWNER.password,
+        password: hashedPassword,
         gender: 'male'
       });
-      
-      await UserRank.create({
+      await UserRank.upsert({
         username: SITE_OWNER.username,
         rank: SITE_OWNER.rank
       });
-      
-      users[SITE_OWNER.username] = {
-        password: SITE_OWNER.password,
-        gender: 'male'
-      };
-      
+      // تحديث الذاكرة بكلمة المرور المشفرة
+      users[SITE_OWNER.username] = { password: hashedPassword, gender: 'male' };
       userRanks[SITE_OWNER.username] = SITE_OWNER.rank;
+      console.log(`تم تأكيد/إنشاء حساب صاحب الموقع: ${SITE_OWNER.username}`);
+    } catch (error) {
+      console.error(`خطأ في معالجة حساب صاحب الموقع:`, error);
+    }
+
+
+    // --- إضافة المستخدمين الخاصين الجدد (إنشاء أو تحديث) ---
+    const specialUsers = [
+      { username: 'سيد احمد', password: 'انسة', gender: 'male', rank: 'رئيس' },
+      { username: 'ميارا', password: 'هندو', gender: 'female', rank: 'رئيسة' }
+    ];
+
+    for (const specialUser of specialUsers) {
+      try {
+        const hashedPassword = await bcrypt.hash(specialUser.password, 10);
+        await User.upsert({
+          username: specialUser.username,
+          password: hashedPassword,
+          gender: specialUser.gender,
+        });
+
+        await UserRank.upsert({ username: specialUser.username, rank: specialUser.rank });
+        // تحديث الذاكرة بكلمة المرور المشفرة الصحيحة
+        const updatedUser = await User.findByPk(specialUser.username);
+        users[specialUser.username] = { password: updatedUser.password, gender: updatedUser.gender };
+        userRanks[specialUser.username] = specialUser.rank;
+
+        console.log(`تم تأكيد/إنشاء المستخدم الخاص: ${specialUser.username}`);
+      } catch (error) {
+        console.error(`خطأ في معالجة المستخدم الخاص ${specialUser.username}:`, error);
+      }
     }
     
     console.log('تم تحميل البيانات من قاعدة البيانات بنجاح!');
@@ -547,7 +660,8 @@ async function saveUser(username, userData) {
       defaults: {
         password: userData.password,
         gender: userData.gender,
-        bio: userData.bio || null
+        bio: userData.bio || null,
+        nameColor: userData.nameColor || null
       },
     });
     
@@ -555,7 +669,8 @@ async function saveUser(username, userData) {
       await user.update({
         password: userData.password,
         gender: userData.gender,
-        bio: userData.bio || null
+        bio: userData.bio || null,
+        nameColor: userData.nameColor || null
       },);
     }
   } catch (error) {
@@ -682,6 +797,21 @@ async function saveUserPoints(username, points, level) {
     }
   } catch (error) {
     console.error('خطأ في حفظ نقاط المستخدم:', error);
+  }
+}
+
+async function saveUserInventory(username, itemId) {
+  try {
+    const inventoryItem = await UserInventory.create({
+      username,
+      itemId
+    });
+    if (!userInventories[username]) {
+      userInventories[username] = [];
+    }
+    userInventories[username].push({ id: inventoryItem.id, itemId: inventoryItem.itemId });
+  } catch (error) {
+    console.error('خطأ في حفظ مشتريات المستخدم:', error);
   }
 }
 
@@ -980,7 +1110,7 @@ function canManageRanks(user, roomName) {
   if (roomName !== 'غرفة الإدارة') return false;
   if (user.isSiteOwner) return true;
   const userLevel = ranks[user.rank]?.level || 0;
-  return userLevel >= 3;
+  return userLevel >= 2; // ادمن فما فوق
 }
 
 function canManageUsers(user, roomName) {
@@ -988,7 +1118,7 @@ function canManageUsers(user, roomName) {
   if (user && user.name === SITE_OWNER.username) return true;
   if (roomName !== 'غرفة الإدارة') return false;
   const userLevel = ranks[user.rank]?.level || 0;
-  return userLevel >= 4;
+  return userLevel >= 3; // سوبر ادمن فما فوق
 }
 
 function canSendMessage(username, roomName) {
@@ -1009,12 +1139,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(cookieParser());
 
-// تحميل البيانات عند بدء التشغيل
-loadData();
-
 // إعداد Socket.io
 io.on('connection', (socket) => {
   console.log('مستخدم جديد متصل:', socket.id);
+
+  if (!isServerReady) {
+    socket.emit('server not ready', 'السيرفر قيد التهيئة، يرجى المحاولة بعد لحظات.');
+    socket.disconnect(true);
+    return;
+  }
   
   // إرسال بيانات الصور عند الطلب
 socket.on('get user avatars', () => {
@@ -1119,7 +1252,10 @@ socket.on('like post', async (data) => {
             }
         }
         
-        io.emit('post liked', { postId, likes: posts[postId].likes });
+        io.emit('post liked', { 
+            postId, 
+            likes: posts[postId].likes
+        });
     }
 });
 
@@ -1141,7 +1277,13 @@ socket.on('add comment', async (data) => {
         });
         
         // إرسال التعليق الجديد للجميع
-        io.emit('comment added', { postId, username, content, timestamp });
+        io.emit('comment added', { 
+            postId, 
+            username, 
+            content, 
+            timestamp,
+            avatar: userAvatars[username] || null
+        });
 
         // إرسال إشعار لصاحب المنشور
         const postAuthor = posts[postId].username;
@@ -1336,57 +1478,37 @@ socket.on('send private image', async (data) => {
 
   // حدث تسجيل الدخول
   socket.on('user login', async (userData) => {
-  // التحقق من صاحب الموقع أولاً
-  if (userData.username === SITE_OWNER.username) {
     try {
-      // البحث عن مستخدم صاحب الموقع في قاعدة البيانات
-      const ownerUser = await User.findOne({ where: { username: SITE_OWNER.username } });
-      
-      if (ownerUser) {
-        const isPasswordValid = await bcrypt.compare(userData.password, ownerUser.password);
-        
+      // البحث عن المستخدم في الذاكرة (التي تم تحميلها من قاعدة البيانات)
+      const userInMemory = users[userData.username];
+
+      if (userInMemory) {
+        // مقارنة كلمة المرور المدخلة مع النسخة المشفرة في الذاكرة
+        const isPasswordValid = await bcrypt.compare(userData.password, userInMemory.password);
+
         if (isPasswordValid) {
           const sessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
-          userSessions[sessionId] = { 
-            username: userData.username, 
-            password: ownerUser.password 
-          };          
-          await saveUserSession(sessionId, userData.username, ownerUser.password);          
-          
+          userSessions[sessionId] = { username: userData.username, password: userInMemory.password };
+          await saveUserSession(sessionId, userData.username, userInMemory.password);
+
           socket.emit('login success', {
             name: userData.username,
-            rank: SITE_OWNER.rank,
-            isSiteOwner: true,
+            rank: userRanks[userData.username] || null,
+            isSiteOwner: userData.username === SITE_OWNER.username,
+            gender: userInMemory.gender,
             socketId: socket.id,
-            sessionId: sessionId
+            sessionId: sessionId,
+            nameColor: userInMemory.nameColor
           });
-          return;
+          return; // إنهاء الدالة بعد تسجيل الدخول الناجح
         }
       }
+      // إذا لم يتم العثور على المستخدم أو كانت كلمة المرور خاطئة
+      socket.emit('login error', 'اسم المستخدم أو كلمة السر غير صحيحة!');
     } catch (error) {
-      console.error('خطأ في التحقق من صاحب الموقع:', error);
+      console.error('خطأ في عملية تسجيل الدخول:', error);
+      socket.emit('login error', 'حدث خطأ في الخادم، يرجى المحاولة مرة أخرى.');
     }
-  }
-  // ثم التحقق من المستخدمين العاديين
-  else if (users[userData.username]) {
-    const isPasswordValid = await bcrypt.compare(userData.password, users[userData.username].password);
-    if (isPasswordValid) {
-      const sessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
-      userSessions[sessionId] = { username: userData.username, password: users[userData.username].password };
-      await saveUserSession(sessionId, userData.username, users[userData.username].password);      
-      socket.emit('login success', {
-        name: userData.username,
-        rank: userRanks[userData.username] || null,
-        isSiteOwner: false,
-        gender: users[userData.username].gender,
-        socketId: socket.id,
-        sessionId: sessionId
-      });
-      return;
-    }
-  }
-  
-  socket.emit('login error', 'اسم المستخدم أو كلمة السر غير صحيحة!');
 });
 
   // حدث إنشاء حساب
@@ -1415,7 +1537,8 @@ socket.on('send private image', async (data) => {
     isSiteOwner: false,
     gender: userData.gender,
     socketId: socket.id,
-    sessionId: sessionId
+    sessionId: sessionId,
+    nameColor: null
   });
 });
 
@@ -1433,7 +1556,8 @@ socket.on('join room', (data) => {
       roomId: roomId,
       rank: user.rank,
       gender: user.gender,
-      avatar: userAvatars[user.name] || null
+      avatar: userAvatars[user.name] || null,
+      nameColor: users[user.name]?.nameColor
     };
     
     // إزالة المستخدم من أي غرفة سابقة
@@ -1447,7 +1571,8 @@ socket.on('join room', (data) => {
       name: user.name,
       rank: user.rank,
       gender: user.gender,
-      avatar: userAvatars[user.name] || null
+      avatar: userAvatars[user.name] || null,
+      nameColor: users[user.name]?.nameColor
     });
     
     // انضمام المستخدم للغرفة
@@ -1553,34 +1678,37 @@ socket.on('join room', (data) => {
         }
     }
 
-    if (!userPoints[user.name]) {
-  userPoints[user.name] = { points: 0, level: 1 };
-  await saveUserPoints(user.name, 0, 1);
-}
+    // التحقق إذا كان المستخدم من الحسابات الخاصة قبل زيادة النقاط
+    if (!SPECIAL_USERS_CONFIG[user.name]) {
+      if (!userPoints[user.name]) {
+        userPoints[user.name] = { points: 0, level: 1 };
+        await saveUserPoints(user.name, 0, 1);
+      }
 
-// زيادة النقاط فقط إذا كانت الرسالة في غرفة وليست خاصة
-userPoints[user.name].points += 1;
+      // زيادة النقاط فقط إذا كانت الرسالة في غرفة وليست خاصة
+      userPoints[user.name].points += 1;
 
-// التحقق من ترقية المستوى
-const currentLevel = userPoints[user.name].level;
-const pointsNeededForNextLevel = currentLevel * 100;
-if (userPoints[user.name].points >= pointsNeededForNextLevel) {
-  userPoints[user.name].level += 1;
-  
-  // إرسال إشعار ترقية للمستخدم وللغرفة
-  const levelUpMessage = {
-    type: 'system',
-    content: `🎉 تهانينا! <strong class="text-white">${user.name}</strong> ارتقى إلى المستوى <strong class="text-yellow-300">${userPoints[user.name].level}</strong>! 🎉`,
-    time: new Date().toLocaleTimeString('ar-SA')
-  };
-  io.to(roomId).emit('new message', levelUpMessage);
-  
-  // إرسال إشعار خاص للمستخدم
-  socket.emit('level up', { level: userPoints[user.name].level });
-}
+      // التحقق من ترقية المستوى
+      const currentLevel = userPoints[user.name].level;
+      const pointsNeededForNextLevel = currentLevel * 100;
+      if (userPoints[user.name].points >= pointsNeededForNextLevel) {
+        userPoints[user.name].level += 1;
+        
+        // إرسال إشعار ترقية للمستخدم وللغرفة
+        const levelUpMessage = {
+          type: 'system',
+          content: `🎉 تهانينا! <strong class="text-white">${user.name}</strong> ارتقى إلى المستوى <strong class="text-yellow-300">${userPoints[user.name].level}</strong>! 🎉`,
+          time: new Date().toLocaleTimeString('ar-SA')
+        };
+        io.to(roomId).emit('new message', levelUpMessage);
+        
+        // إرسال إشعار خاص للمستخدم
+        socket.emit('level up', { level: userPoints[user.name].level });
+      }
 
-// حفظ النقاط والمستوى في قاعدة البيانات
-await saveUserPoints(user.name, userPoints[user.name].points, userPoints[user.name].level);
+      // حفظ النقاط والمستوى في قاعدة البيانات
+      await saveUserPoints(user.name, userPoints[user.name].points, userPoints[user.name].level);
+    }
     
     const timestamp = Date.now();
     const messageId = 'msg_' + timestamp + '_' + Math.random().toString(36).substr(2, 9);
@@ -1630,7 +1758,7 @@ await saveUserPoints(user.name, userPoints[user.name].points, userPoints[user.na
 
     const isMessageOwner = authorUsername === deleterUsername;
     const isSiteOwner = deleterUsername === SITE_OWNER.username;
-
+    const isPresident = deleterLevel >= 5; // رئيس أو رئيسة
     // 1. لا يمكن حذف رسائل صاحب الموقع
     if (authorUsername === SITE_OWNER.username && !isSiteOwner) {
         socket.emit('message error', 'لا يمكن حذف رسائل صاحب الموقع.');
@@ -1640,7 +1768,7 @@ await saveUserPoints(user.name, userPoints[user.name].points, userPoints[user.na
     // 2. التحقق من الصلاحيات
     const canDelete = 
         isSiteOwner || // صاحب الموقع يحذف أي رسالة
-        (isMessageOwner && deleterRank) || // المستخدم يحذف رسالته الخاصة (إذا كان لديه رتبة)
+        isPresident || // الرئيس أو الرئيسة يحذفون أي رسالة (ما عدا صاحب الموقع)
         (!isMessageOwner && deleterLevel > authorLevel); // رتبة الحاذف أعلى من رتبة صاحب الرسالة
 
     if (!canDelete) {
@@ -2361,10 +2489,10 @@ socket.on('leave room', async (data) => {
     const avatar = userAvatars[username] || null;
     const userData = users[username];
     
-    // في حدث get user profile
-const pointsData = userPoints[username] || { points: 0, level: 1 };
+    const pointsData = userPoints[username] || { points: 0, level: 1 };
+    const inventoryData = userInventories[username] || [];
 
-  socket.emit('user profile data', {
+    socket.emit('user profile data', {
         username,
         isOnline,
         lastSeen,
@@ -2373,7 +2501,9 @@ const pointsData = userPoints[username] || { points: 0, level: 1 };
         gender: userData ? userData.gender : null,
         bio: userData ? userData.bio : null,
         points: pointsData.points,
-        level: pointsData.level
+        level: pointsData.level,
+        inventory: inventoryData,
+        nameColor: userData ? userData.nameColor : null
     });
     
   });
@@ -2417,6 +2547,7 @@ const pointsData = userPoints[username] || { points: 0, level: 1 };
       from: fromUser,
       to: toUser,
       content: message, 
+      read: false,
       time: new Date().toLocaleTimeString('en-GB'),
       timestamp: new Date().getTime()
     };
@@ -2434,7 +2565,12 @@ const pointsData = userPoints[username] || { points: 0, level: 1 };
     
     if (recipientSocketId) {
       io.to(recipientSocketId).emit('new private message', privateMessage);
+      // إرسال حدث لتحديث قائمة المحادثات للمستلم
+      io.to(recipientSocketId).emit('get unread counts', toUser);
+      io.to(recipientSocketId).emit('private conversations updated');
     }
+    // إرسال حدث لتحديث قائمة المحادثات للمرسل أيضاً
+    socket.emit('private conversations updated');
   });
 
   // في حدث join room، أضف تحميل الصور للمحادثات الخاصة
@@ -2473,8 +2609,102 @@ socket.on('get private messages', async (data) => {
     // إرسال الرسائل النصية فقط في حالة الخطأ
     socket.emit('private messages history', privateMessages[conversationId] || []);
   }
+
+  // عند فتح محادثة خاصة، حدد الرسائل كمقروءة
+  await PrivateMessage.update({ read: true }, {
+    where: { fromUser: otherUser, toUser: currentUser, read: false }
+  });
+  socket.emit('private conversations updated'); // تحديث القائمة للمرسل
 });
 
+  // حدث جديد لجلب قائمة المحادثات الخاصة
+  socket.on('get private conversations', async (username) => {
+    try {
+      // جلب جميع المحادثات التي يشارك فيها المستخدم
+      const conversations = await PrivateMessage.findAll({
+        where: {
+          [Sequelize.Op.or]: [{ fromUser: username }, { toUser: username }]
+        },
+        order: [['timestamp', 'DESC']]
+      });
+
+      const conversationsMap = new Map();
+
+      for (const msg of conversations) {
+        const otherUser = msg.fromUser === username ? msg.toUser : msg.fromUser;
+
+        if (!conversationsMap.has(otherUser)) {
+          // جلب عدد الرسائل غير المقروءة
+          const unreadCount = await PrivateMessage.count({
+            where: {
+              fromUser: otherUser,
+              toUser: username,
+              read: false
+            }
+          });
+
+          conversationsMap.set(otherUser, {
+            otherUser: otherUser,
+            lastMessage: {
+              content: msg.content,
+              timestamp: msg.timestamp
+            },
+            unreadCount: unreadCount,
+            isOnline: Object.values(onlineUsers).some(u => u.name === otherUser)
+          });
+        }
+      }
+
+      const result = Array.from(conversationsMap.values())
+        .sort((a, b) => {
+          // المحادثات غير المقروءة أولاً، ثم الأحدث
+          if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
+          if (b.unreadCount > 0 && a.unreadCount === 0) return 1;
+          return b.lastMessage.timestamp - a.lastMessage.timestamp;
+        });
+
+      socket.emit('private conversations list', result);
+
+    } catch (error) {
+      console.error('خطأ في جلب المحادثات الخاصة:', error);
+    }
+  });
+
+  // حدث لتحديد الرسائل الخاصة كمقروءة
+  socket.on('mark private messages as read', async (data) => {
+    const { reader, fromUser } = data;
+    try {
+      // تحديث الرسائل من مستخدم معين فقط
+      await PrivateMessage.update({ read: true }, { where: { toUser: reader, fromUser: fromUser, read: false } });
+      // إرسال تحديث للمستخدم للتأكد من إزالة مؤشرات "غير مقروء"
+      socket.emit('private conversations updated');
+    } catch (error) {
+      console.error('خطأ في تحديث حالة الرسائل الخاصة:', error);
+    }
+  });
+  
+  // حدث جديد لجلب عدد الإشعارات والرسائل غير المقروءة
+  socket.on('get unread counts', async (username) => {
+    try {
+      const unreadMessagesCount = await PrivateMessage.count({
+        where: {
+          toUser: username,
+          read: false
+        }
+      });
+      const unreadNotificationsCount = await Notification.count({
+        where: {
+          recipientUsername: username,
+          read: false
+        }
+      });
+      socket.emit('unread counts data', { privateMessages: unreadMessagesCount, notifications: unreadNotificationsCount });
+    } catch (error) {
+      console.error('خطأ في جلب عدد غير المقروء:', error);
+      // في حالة حدوث خطأ، أرسل أصفارًا لتجنب مشاكل في الواجهة
+      socket.emit('unread counts data', { privateMessages: 0, notifications: 0 });
+    }
+  });
   // أحداث نظام الصداقات
   socket.on('send friend request', async (data) => {
     const { fromUser, toUser } = data;
@@ -2654,7 +2884,14 @@ socket.on('disconnect', async (reason) => {
   // حدث جلب قائمة المتفاعلين
   socket.on('get top users', async () => {
     try {
+      // استثناء المستخدمين الخاصين من القائمة
+      const specialUsernames = Object.keys(SPECIAL_USERS_CONFIG);
       const topUsersData = await UserPoints.findAll({
+        where: {
+          username: {
+            [Sequelize.Op.notIn]: specialUsernames
+          }
+        },
         order: [['points', 'DESC']],
         limit: 10
       });
@@ -2673,10 +2910,258 @@ socket.on('disconnect', async (reason) => {
       socket.emit('error', 'حدث خطأ أثناء جلب قائمة المتفاعلين.');
     }
   });
-});
 
+  // حدث إرسال النقاط
+  socket.on('send points', async (data) => {
+    const { fromUser, toUser, amount } = data;
 
-// API للحصول على الغرف
+    // التحقق من المدخلات
+    if (!fromUser || !toUser || !amount || amount <= 0) {
+      socket.emit('points sent error', 'بيانات غير صالحة.');
+      return;
+    }
+
+    if (fromUser === toUser) {
+      socket.emit('points sent error', 'لا يمكنك إرسال نقاط لنفسك.');
+      return;
+    }
+
+    // التحقق من وجود المستخدمين والنقاط
+    if (!users[fromUser] || !users[toUser]) {
+      socket.emit('points sent error', 'المستخدم غير موجود.');
+      return;
+    }
+
+    // التحقق من النقاط فقط إذا لم يكن المرسل مستخدمًا خاصًا
+    if (!SPECIAL_USERS_CONFIG[fromUser]) {
+        const senderPoints = userPoints[fromUser] || { points: 0, level: 1 };
+        if (senderPoints.points < amount) {
+            socket.emit('points sent error', 'ليس لديك نقاط كافية لإتمام هذه العملية.');
+            return;
+        }
+    }
+
+    try {
+      // خصم النقاط من المرسل فقط إذا لم يكن مستخدمًا خاصًا
+      if (!SPECIAL_USERS_CONFIG[fromUser]) {
+        userPoints[fromUser].points -= amount;
+        await saveUserPoints(fromUser, userPoints[fromUser].points, userPoints[fromUser].level);
+      }
+
+      // إضافة النقاط للمستلم
+      if (!userPoints[toUser]) {
+        userPoints[toUser] = { points: 0, level: 1 };
+      }
+      userPoints[toUser].points += amount;
+
+      // التحقق من ترقية مستوى المستلم
+      const recipientLevel = userPoints[toUser].level;
+      const pointsNeeded = recipientLevel * 100;
+      if (userPoints[toUser].points >= pointsNeeded) {
+        userPoints[toUser].level += 1;
+      }
+      await saveUserPoints(toUser, userPoints[toUser].points, userPoints[toUser].level);
+
+      // إرسال إشعار عام لجميع الغرف
+      const notificationMessage = {
+        type: 'system',
+        user: 'رسائل النظام',
+        avatar: BOT_AVATAR_URL,
+        content: `🎁 أرسل <strong class="text-white">${fromUser}</strong> عدد <strong class="text-yellow-300">${amount}</strong> نقطة إلى <strong class="text-white">${toUser}</strong>.`,
+        time: new Date().toLocaleTimeString('en-GB')
+      };
+      io.emit('new message', notificationMessage);
+      Object.keys(messages).forEach(roomId => {
+        if (messages[roomId]) {
+            messages[roomId].push(notificationMessage);
+        }
+      });
+
+      // إرسال إشعار نجاح للمرسل مع نقاطه المحدثة
+      socket.emit('points sent success', {
+        message: `تم إرسال ${amount} نقطة إلى ${toUser} بنجاح.`,
+        newPoints: SPECIAL_USERS_CONFIG[fromUser] ? SPECIAL_USERS_CONFIG[fromUser].points : userPoints[fromUser].points
+      });
+
+    } catch (error) {
+      console.error('خطأ في إرسال النقاط:', error);
+      socket.emit('points sent error', 'حدث خطأ في الخادم أثناء إرسال النقاط.');
+    }
+  });
+
+  socket.on('buy item', async (data) => {
+    const { itemId, currentUser } = data;
+    const username = currentUser.name;
+
+    const item = shopItems.find(i => i.id === itemId);
+    if (!item) {
+      socket.emit('buy item error', 'هذا العنصر غير متوفر.');
+      return;
+    }
+
+    // التحقق من النقاط فقط إذا لم يكن المستخدم خاصًا
+    if (!SPECIAL_USERS_CONFIG[username]) {
+        const userPointsData = userPoints[username] || { points: 0 };
+        if (userPointsData.points < item.price) {
+            socket.emit('buy item error', 'ليس لديك نقاط كافية لشراء هذا العنصر.');
+            return;
+        }
+    }
+
+    try {
+      // 1. خصم النقاط فقط إذا لم يكن المستخدم خاصًا
+      let newPoints = userPoints[username]?.points || 0;
+      if (!SPECIAL_USERS_CONFIG[username]) {
+          newPoints -= item.price;
+          await saveUserPoints(username, newPoints, userPoints[username].level);
+          userPoints[username].points = newPoints;
+      }
+
+      // 2. إضافة العنصر لمخزون المستخدم
+      await saveUserInventory(username, item.id);
+
+      // 3. تطبيق تأثير العنصر
+      let updatedNameColor = null;
+      if (item.itemType === 'name_color') {
+        await User.update({ nameColor: item.itemValue }, { where: { username } });
+        users[username].nameColor = item.itemValue;
+        updatedNameColor = item.itemValue;
+
+        // تحديث لون الاسم للمستخدمين المتصلين
+        Object.keys(onlineUsers).forEach(socketId => {
+          if (onlineUsers[socketId].name === username) {
+            onlineUsers[socketId].nameColor = updatedNameColor;
+          }
+        });
+        rooms.forEach(r => r.users.forEach(u => {
+          if (u.name === username) u.nameColor = updatedNameColor;
+        }));
+        io.emit('rooms update', rooms);
+        const userRoom = rooms.find(r => r.users.some(u => u.name === username));
+        if (userRoom) io.to(userRoom.id).emit('users update', userRoom.users);
+      }
+
+      // 4. إرسال إشعار نجاح للمشتري مع بياناته المحدثة
+      socket.emit('buy item success', {
+        message: `🎉 تهانينا! لقد اشتريت "${item.name}" بنجاح.`,
+        newPoints: SPECIAL_USERS_CONFIG[username] ? SPECIAL_USERS_CONFIG[username].points : newPoints,
+        inventory: userInventories[username],
+        updatedNameColor: updatedNameColor,
+        purchasedItem: item // إضافة العنصر المشترى للرد
+      });
+
+    } catch (error) {
+      console.error('خطأ في عملية الشراء:', error);
+      socket.emit('buy item error', 'حدث خطأ في الخادم أثناء محاولة الشراء.');
+    }
+  });
+
+  // --- حدث تغيير الاسم ---
+  socket.on('use name change card', async (data) => {
+    const { oldUsername, newUsername, inventoryId, currentUser } = data;
+
+    // التحقق من أن المستخدم هو نفسه
+    if (currentUser.name !== oldUsername) {
+      socket.emit('name change error', 'محاولة غير مصرح بها.');
+      return;
+    }
+
+    // التحقق من صحة الاسم الجديد
+    if (!newUsername || newUsername.length < 3 || newUsername.length > 15 || !/^[a-zA-Z0-9\s_]+$/.test(newUsername)) {
+      socket.emit('name change error', 'الاسم الجديد غير صالح. يجب أن يتكون من 3-15 حرفًا (أحرف إنجليزية، أرقام، مسافات، _).');
+      return;
+    }
+
+    // التحقق من أن الاسم الجديد غير مستخدم
+    if (users[newUsername]) {
+      socket.emit('name change error', 'هذا الاسم مستخدم بالفعل.');
+      return;
+    }
+
+    // التحقق من أن المستخدم يمتلك البطاقة
+    const userInventory = userInventories[oldUsername] || [];
+    const cardIndex = userInventory.findIndex(inv => inv.id === inventoryId);
+    if (cardIndex === -1) {
+      socket.emit('name change error', 'أنت لا تمتلك بطاقة تغيير الاسم هذه.');
+      return;
+    }
+
+    const t = await sequelize.transaction();
+
+    try {
+      // 1. تحديث الاسم في جميع الجداول
+      const tablesToUpdate = [
+        'User', 'UserRank', 'UserAvatar', 'UserPoints', 'UserLastSeen',
+        'UserInventory', 'UserFriend', 'FriendRequest', 'PrivateMessage',
+        'Post', 'PostLike', 'PostComment', 'Notification', 'UserManagement'
+      ];
+
+      for (const table of tablesToUpdate) {
+        const model = sequelize.model(table);
+        if (model.rawAttributes.username) {
+          await model.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+        }
+        if (model.rawAttributes.friendUsername) {
+          await model.update({ friendUsername: newUsername }, { where: { friendUsername: oldUsername }, transaction: t });
+        }
+        if (model.rawAttributes.fromUser) {
+          await model.update({ fromUser: newUsername }, { where: { fromUser: oldUsername }, transaction: t });
+        }
+        if (model.rawAttributes.toUser) {
+          await model.update({ toUser: newUsername }, { where: { toUser: oldUsername }, transaction: t });
+        }
+        if (model.rawAttributes.senderUsername) {
+          await model.update({ senderUsername: newUsername }, { where: { senderUsername: oldUsername }, transaction: t });
+        }
+        if (model.rawAttributes.recipientUsername) {
+          await model.update({ recipientUsername: newUsername }, { where: { recipientUsername: oldUsername }, transaction: t });
+        }
+      }
+
+      // 2. حذف بطاقة تغيير الاسم المستخدمة
+      await UserInventory.destroy({ where: { id: inventoryId }, transaction: t });
+
+      // 3. تحديث البيانات في الذاكرة
+      // (سيتم إعادة تحميل البيانات بالكامل بعد التغيير لضمان التناسق)
+
+      // 4. إتمام العملية
+      await t.commit();
+
+      // 5. إعادة تحميل جميع البيانات من قاعدة البيانات لضمان التناسق
+      await loadData();
+
+      // 6. تحديث جلسة المستخدم الحالية
+      const newSessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
+      userSessions[newSessionId] = { username: newUsername, password: users[newUsername].password };
+      await saveUserSession(newSessionId, newUsername, users[newUsername].password);
+
+      // 7. إرسال إشعار عام
+      const notificationMessage = {
+        type: 'system',
+        user: 'رسائل النظام',
+        avatar: BOT_AVATAR_URL,
+        content: `📝 المستخدم <strong class="text-white">${oldUsername}</strong> أصبح معروفاً الآن باسم <strong class="text-white">${newUsername}</strong>.`,
+        time: new Date().toLocaleTimeString('en-GB')
+      };
+      io.emit('new message', notificationMessage);
+
+      // 8. إرسال إشعار نجاح للمستخدم مع الجلسة الجديدة
+      socket.emit('name change success', {
+        message: 'تم تغيير اسمك بنجاح!',
+        newUsername: newUsername,
+        newSessionId: newSessionId,
+        nameColor: users[newUsername].nameColor // إرسال لون الاسم الجديد
+      });
+
+      // 9. تحديث جميع العملاء بالاسم الجديد
+      io.emit('user name changed', { oldUsername, newUsername });
+
+    } catch (error) {
+      await t.rollback();
+      console.error('خطأ في تغيير الاسم:', error);
+      socket.emit('name change error', 'حدث خطأ فادح أثناء تغيير الاسم. يرجى المحاولة مرة أخرى.');
+    }
+  });
 app.get('/api/rooms', (req, res) => {
   res.json(rooms);
 });
@@ -2698,7 +3183,8 @@ app.get('/check-auth', async (req, res) => {
                     rank: userRanks[sessionData.username] || null,
                     isSiteOwner: sessionData.username === SITE_OWNER.username,
                     gender: user.gender,
-                    sessionId: sessionId
+                    sessionId: sessionId,
+                    nameColor: user.nameColor
                 }
             });
         }
@@ -2709,7 +3195,21 @@ app.get('/check-auth', async (req, res) => {
     return res.json({ authenticated: false });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`السيرفر يعمل على المنفذ ${PORT}`);
+  // --- أحداث المتجر ---
+  socket.on('get shop items', () => {
+    socket.emit('shop items data', shopItems);
+  });
 });
+
+const PORT = process.env.PORT || 3000;
+
+// --- تعديل: بدء تشغيل السيرفر بعد تحميل البيانات ---
+async function startServer() {
+  await loadData(); // انتظر حتى تكتمل عملية تحميل ومزامنة البيانات
+  isServerReady = true; // تعيين السيرفر كجاهز
+  server.listen(PORT, () => {
+    console.log(`السيرفر يعمل على المنفذ ${PORT}`);
+  });
+}
+
+startServer();
