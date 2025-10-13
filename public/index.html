@@ -62,7 +62,7 @@
         }
         /* تعديل خاص بالشاشات الصغيرة */
         @media (max-width: 768px) {
-            .chat-header-mobile { min-height: 110px; }
+            .chat-header-mobile { min-height: auto; }
             .chat-header-buttons { flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
         }
         .rank-badge {
@@ -128,7 +128,7 @@
                 width: 80%;
                 height: 100vh;
                 z-index: 50;
-                transition: right 0.3s ease;
+                transition: transform 0.3s ease;
                 background: rgba(15, 23, 42, 0.95);
                 backdrop-filter: blur(10px);
                 padding: 1rem;
@@ -136,6 +136,7 @@
             
             .users-container.show {
                 right: 0;
+                transform: translateX(0);
             }
             
             .users-overlay {
@@ -151,6 +152,44 @@
             
             .users-overlay.show {
                 display: block;
+            }
+        }
+
+        /* Responsive adjustments for very small screens */
+        @media (max-width: 380px) {
+            /* Reduce padding on main chat send button */
+            #messageInputContainer button {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            #messageInputContainer span {
+                display: none; /* Hide the "Send" text */
+            }
+            #messageInputContainer svg {
+                margin: auto;
+            }
+
+            /* Reduce padding on login/register form */
+            #loginPage .p-8 {
+                padding: 1.5rem;
+            }
+
+            /* Reduce font size on room cards */
+            #roomsContainer h3 {
+                font-size: 1.1rem;
+            }
+            #roomsContainer p {
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Ensure main chat area flexes correctly */
+        #chatPage > .flex-1 {
+            flex-direction: column;
+        }
+        @media (min-width: 768px) {
+            #chatPage > .flex-1 {
+                flex-direction: row;
             }
         }
 
@@ -303,14 +342,14 @@
         .friends-sidebar {
             background: rgba(15, 23, 42, 0.8);
             backdrop-filter: blur(10px);
-            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
             width: 300px;
             height: 100vh;
             position: fixed;
             top: 0;
-            right: 0;
+            left: 0;
             z-index: 40;
-            transform: translateX(100%);
+            transform: translateX(-100%);
             transition: transform 0.3s ease;
             padding: 1rem;
             overflow-y: auto;
@@ -1268,18 +1307,18 @@
 <!-- نافذة المتجر -->
 <div id="shopModal" class="profile-modal">
     <div class="profile-content custom-scrollbar" style="max-width: 500px;">
-        <!-- رأس النافذة -->
-        <div class="relative bg-white/5 p-6 text-center">
+        <!-- رأس النافذة --> 
+        <div class="relative bg-slate-800/50 p-6 text-center">
              <button onclick="closeShopModal()" class="absolute top-4 right-4 text-white hover:text-blue-200 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            <h2 class="text-2xl font-bold text-white">🛒 المتجر</h2>
-            <p class="text-blue-200 text-sm">استخدم نقاطك لشراء عناصر مميزة</p>
+            <h2 class="text-2xl font-bold text-slate-100">🛒 المتجر</h2>
+            <p class="text-slate-400 text-sm">استخدم نقاطك لشراء عناصر مميزة</p>
         </div>
 
         <!-- محتوى المتجر -->
-        <div id="shopItemsContainer" class="flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar">
-            <!-- سيتم ملء العناصر هنا -->
+        <div id="shopItemsContainer" class="flex-1 p-4 overflow-y-auto custom-scrollbar">
+            <!-- سيتم ملء العناصر هنا بالشبكة الجديدة -->
             <div class="text-center text-blue-200 p-8">
                 <div class="spinner mx-auto"></div>
                 <p class="mt-2">جاري تحميل عناصر المتجر...</p>
@@ -1443,6 +1482,44 @@
                 class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-semibold transition-colors"
             >
                 حفظ الخلفية
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- نافذة تغيير كلمة المرور -->
+<div id="changePasswordModal" class="profile-modal">
+    <div class="profile-content" style="max-width: 400px;">
+        <!-- رأس النافذة -->
+        <div class="relative bg-slate-800/50 p-6 text-center">
+             <button onclick="closeChangePasswordModal()" class="absolute top-4 right-4 text-slate-300 hover:text-sky-400 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-2xl font-bold text-slate-100">🔑 تغيير كلمة المرور</h2>
+            <p class="text-slate-400 text-sm mt-1">أدخل كلمة المرور الجديدة</p>
+        </div>
+
+        <!-- محتوى النافذة -->
+        <div class="flex-1 p-6 space-y-4">
+            <div>
+                <label for="oldPasswordInput" class="block text-slate-200 text-sm font-semibold mb-2">كلمة المرور القديمة</label>
+                <input type="password" id="oldPasswordInput" placeholder="أدخل كلمة المرور الحالية"
+                    class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
+            </div>
+            <div>
+                <label for="newPasswordInput" class="block text-slate-200 text-sm font-semibold mb-2">كلمة المرور الجديدة</label>
+                <input type="password" id="newPasswordInput" placeholder="أدخل كلمة المرور الجديدة"
+                    class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
+            </div>
+            <div>
+                <label for="confirmNewPasswordInput" class="block text-slate-200 text-sm font-semibold mb-2">تأكيد كلمة المرور الجديدة</label>
+                <input type="password" id="confirmNewPasswordInput" placeholder="أعد إدخال كلمة المرور الجديدة"
+                    class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
+            </div>
+            <button onclick="submitChangePassword()"
+                class="w-full bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 space-x-reverse">
+                <span>تأكيد التغيير</span>
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </button>
         </div>
     </div>
@@ -1771,6 +1848,7 @@ function updateUnreadBadges() {
             socket.emit('get friends list', currentUser.name);
             // طلب عدد الرسائل والإشعارات غير المقروءة عند التحقق من الجلسة
             socket.emit('get unread counts', currentUser.name);
+            socket.emit('get user avatars');
 
 
             // --- تعديل: تأخير التحقق من الغرفة المحفوظة لضمان تحميل البيانات ---
@@ -1871,6 +1949,10 @@ function updateUnreadBadges() {
         // استقبال نتائج تسجيل الدخول
         socket.on('login success', (userData) => {
             // تعيين الكوكي لجلسة الدخول
+            currentUser = userData; // تحديث المستخدم الحالي فوراً
+            currentUser.nameColor = userData.nameColor; // التأكد من تحديث لون الاسم
+            currentUser.bio = userData.bio; // التأكد من تحديث الـ bio
+
             document.cookie = `sessionId=${userData.sessionId}; path=/; max-age=31536000; SameSite=Lax`; // صلاحية لمدة سنة
             handleSessionValid(userData);
             socket.emit('get friend requests', currentUser.name);
@@ -1893,6 +1975,10 @@ function updateUnreadBadges() {
         // استقبال نتائج إنشاء الحساب
         socket.on('register success', (userData) => {
             // تعيين الكوكي لجلسة الدخول
+            currentUser = userData; // تحديث المستخدم الحالي فوراً
+            currentUser.nameColor = null; // القيمة الافتراضية للحساب الجديد
+            currentUser.bio = null; // القيمة الافتراضية للحساب الجديد
+
             document.cookie = `sessionId=${userData.sessionId}; path=/; max-age=31536000; SameSite=Lax`; // صلاحية لمدة سنة
             handleSessionValid(userData);
             socket.emit('get friend requests', currentUser.name);
@@ -2151,6 +2237,10 @@ socket.on('connect', () => {
         function closeFriendsSidebar() {
             document.getElementById('friendsSidebar').classList.remove('show');
             document.getElementById('friendsOverlay').classList.remove('show');
+            // إصلاح مشكلة التداخل في الشاشات الصغيرة
+            setTimeout(() => {
+                document.body.style.overflow = 'auto';
+            }, 300);
         }
 
         // تحديث طلبات الصداقة
@@ -3156,30 +3246,48 @@ function updateOnlineUsersList(users) {
         // --- أحداث المتجر ---
         socket.on('shop items data', (items) => {
             window.shopItems = items; // حفظ عناصر المتجر للاستخدام لاحقاً
-            const container = document.getElementById('shopItemsContainer');
-            container.innerHTML = '';
-
+            const container = document.getElementById('shopItemsContainer'); 
+            container.innerHTML = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>';
+            const gridContainer = container.querySelector('.grid');
+ 
             if (items.length === 0) {
-                container.innerHTML = '<p class="text-blue-200 text-center p-8">المتجر فارغ حالياً.</p>';
+                gridContainer.innerHTML = '<p class="text-blue-200 text-center p-8 col-span-2">المتجر فارغ حالياً.</p>';
                 return;
             }
 
             items.forEach(item => {
                 const itemDiv = document.createElement('div');
-                itemDiv.className = 'flex items-center bg-slate-800/50 p-4 rounded-lg border border-slate-700';
+                itemDiv.className = 'bg-slate-800/50 p-4 rounded-lg border border-slate-700 flex flex-col items-center text-center space-y-3';
+
+                let iconHtml = '';
+                if (item.itemType === 'name_change_card') {
+                    iconHtml = '<div class="text-4xl">🔑</div>';
+                } else if (item.itemType === 'password_change_card') {
+                    iconHtml = '<div class="text-4xl">🔐</div>';
+                } else if (item.itemType === 'name_color') {
+                    // إنشاء عنصر مؤقت لتطبيق كلاس Tailwind واستخراج اللون
+                    const tempDiv = document.createElement('div');
+                    tempDiv.className = item.itemValue;
+                    document.body.appendChild(tempDiv); // يجب إضافته للـ DOM ليتمكن من حساب النمط
+                    const cssColor = window.getComputedStyle(tempDiv).color;
+                    document.body.removeChild(tempDiv);
+                    iconHtml = `<div class="w-12 h-12 rounded-full border-2 border-slate-600" style="background-color: ${cssColor || '#ffffff'};"></div>`;
+                } else {
+                    iconHtml = `<div class="text-4xl">${ranks[item.itemValue]?.icon || '🛍️'}</div>`;
+                }
                 
                 itemDiv.innerHTML = `
-                    <div class="text-3xl ml-4">${item.itemType === 'name_change_card' ? '💳' : (ranks[item.itemValue]?.icon || '🛍️')}</div>
-                    <div class="flex-1">
-                        <h4 class="text-white font-semibold">${item.name}</h4>
-                        <p class="text-blue-200 text-xs">${item.description}</p>
+                    ${iconHtml}
+                    <div class="flex-1 w-full">
+                        <h4 class="text-white font-semibold text-md">${item.name}</h4>
+                        <p class="text-blue-200 text-xs mt-1">${item.description}</p>
                     </div>
-                    <button onclick="buyItem(${item.id})" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg flex items-center space-x-2 space-x-reverse">
+                    <button onclick="buyItem(${item.id})" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center space-x-2 space-x-reverse transition-colors">
                         <span>${item.price}</span>
                         <span class="text-yellow-300">⭐</span>
                     </button>
                 `;
-                container.appendChild(itemDiv);
+                gridContainer.appendChild(itemDiv);
             });
         });
 
@@ -3212,6 +3320,66 @@ function updateOnlineUsersList(users) {
         socket.on('buy item error', (error) => {
             showNotification(error, 'error');
         });
+
+        // --- New Password Change Functions ---
+        function usePasswordChangeCard(inventoryId) {
+            openChangePasswordModal(inventoryId);
+        }
+
+        function openChangePasswordModal(inventoryId) {
+            const modal = document.getElementById('changePasswordModal');
+            if (modal) {
+                modal.dataset.inventoryId = inventoryId;
+                modal.classList.add('show');
+                document.getElementById('oldPasswordInput').value = '';
+                document.getElementById('newPasswordInput').value = '';
+                document.getElementById('confirmNewPasswordInput').value = '';
+            }
+        }
+
+        function closeChangePasswordModal() {
+            const modal = document.getElementById('changePasswordModal');
+            if (modal) {
+                modal.classList.remove('show');
+            }
+        }
+
+        function submitChangePassword() {
+            const modal = document.getElementById('changePasswordModal');
+            const inventoryId = parseInt(modal.dataset.inventoryId, 10);
+            const oldPassword = document.getElementById('oldPasswordInput').value;
+            const newPassword = document.getElementById('newPasswordInput').value;
+            const confirmNewPassword = document.getElementById('confirmNewPasswordInput').value;
+
+            if (!oldPassword || !newPassword || !confirmNewPassword) {
+                showNotification('يرجى ملء جميع الحقول.', 'error');
+                return;
+            }
+
+            if (newPassword !== confirmNewPassword) {
+                showNotification('كلمتا المرور الجديدتان غير متطابقتين.', 'error');
+                return;
+            }
+            
+            if (newPassword.length < 4) {
+                showNotification('يجب أن تتكون كلمة المرور الجديدة من 4 أحرف على الأقل.', 'error');
+                return;
+            }
+
+            socket.emit('change password', {
+                username: currentUser.name,
+                oldPassword: oldPassword,
+                newPassword: newPassword,
+                inventoryId: inventoryId
+            });
+        }
+
+        socket.on('password change success', (message) => {
+            showNotification(message, 'success');
+            closeChangePasswordModal();
+            setTimeout(logout, 2000); 
+        });
+        // --- End New Password Change Functions ---
 
         socket.on('name change success', (data) => {
             showNotification(data.message, 'success');
@@ -3265,7 +3433,7 @@ function updateOnlineUsersList(users) {
             const profileBioInput = document.getElementById('profileBioInput');
             const editBioButton = document.getElementById('editBioButton');
             const saveBioButton = document.getElementById('saveBioButton');
-            const specialUsers = ["Walid dz 31", "سيد احمد", "ميارا"];
+            const specialUsers = ["Walid dz 31", "سيد احمد", "ميارا"]; 
             
             if (specialUsers.includes(profileData.username)) {
                 document.getElementById('profilePoints').textContent = '99999';
@@ -3275,7 +3443,7 @@ function updateOnlineUsersList(users) {
                 document.getElementById('profileLevel').textContent = profileData.level;
             }
 
-            const inventorySection = document.getElementById('inventorySection');
+            const inventorySection = document.getElementById('inventorySection'); 
             const inventoryItemsContainer = document.getElementById('inventoryItems');
             
             // تعبئة البيانات
@@ -3284,6 +3452,7 @@ function updateOnlineUsersList(users) {
                 this.src = profileData.gender === 'female' ? defaultAvatars.girl1 : defaultAvatars.boy1;
             };
             usernameElem.textContent = profileData.username;
+            usernameElem.className = `text-2xl font-bold ${profileData.nameColor || 'text-white'}`;
             
             if (profileData.rank) {
                 const rankInfo = ranks[profileData.rank];
@@ -3306,7 +3475,7 @@ function updateOnlineUsersList(users) {
             // عرض المعلومات الشخصية (Bio)
             profileBio.textContent = profileData.bio || 'لا توجد معلومات لعرضها.';
             profileBioInput.value = profileData.bio || '';
-
+ 
             // إظهار/إخفاء أزرار التعديل وقائمة الإدارة
             if (profileData.username === currentUser.name) {
                 editBioButton.classList.remove('hidden');
@@ -3320,14 +3489,14 @@ function updateOnlineUsersList(users) {
                 inventorySection.classList.remove('hidden');
                 inventoryItemsContainer.innerHTML = '';
                 if (profileData.inventory && profileData.inventory.length > 0) {
-                    profileData.inventory.forEach(invItem => {
+                    profileData.inventory.forEach(invItem => { 
                         const shopItem = shopItems.find(si => si.id === invItem.itemId);
-                        if (shopItem && shopItem.itemType === 'name_change_card') {
+                        if (shopItem && (shopItem.itemType === 'name_change_card' || shopItem.itemType === 'password_change_card')) {
                             const itemDiv = document.createElement('div');
                             itemDiv.className = 'flex items-center justify-between bg-white/10 p-2 rounded-lg';
                             itemDiv.innerHTML = `
-                                <span class="text-white text-sm">💳 ${shopItem.name}</span>
-                                <button onclick="useNameChangeCard(${invItem.id})" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md">استخدام</button>
+                                <span class="text-white text-sm">${shopItem.itemType === 'name_change_card' ? '🔑' : '🔐'} ${shopItem.name}</span>
+                                <button onclick="${shopItem.itemType === 'name_change_card' ? `useNameChangeCard(${invItem.id})` : `usePasswordChangeCard(${invItem.id})`}" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md">استخدام</button>
                             `;
                             inventoryItemsContainer.appendChild(itemDiv);
                         }
@@ -3521,7 +3690,7 @@ function updateOnlineUsersList(users) {
             const newBio = document.getElementById('profileBioInput').value.trim();
             if (newBio.length > 500) {
                 showNotification('المعلومات الشخصية يجب أن لا تتجاوز 500 حرف.', 'error');
-                return;
+                return; 
             }
             socket.emit('update user bio', { username: currentUser.name, bio: newBio, currentUser });
         }

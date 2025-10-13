@@ -398,7 +398,8 @@ async function loadData() {
       // إضافة عناصر افتراضية إذا كان المتجر فارغاً
       await ShopItem.bulkCreate([
         { name: 'بطاقة تغيير الاسم', description: 'تسمح لك بتغيير اسمك مرة واحدة.', price: 5000, itemType: 'name_change_card' },
-        { name: 'لون اسم أحمر', description: 'اجعل اسمك يظهر باللون الأحمر.', price: 1000, itemType: 'name_color', itemValue: 'text-red-400' },
+        { name: 'بطاقة تغيير كلمة المرور', description: 'تسمح لك بتغيير كلمة المرور الخاصة بك.', price: 2500, itemType: 'password_change_card' },
+        { name: 'لون اسم أحمر', description: 'اجعل اسمك يظهر باللون الأحمر.', price: 1000, itemType: 'name_color', itemValue: 'text-red-500' },
         { name: 'لون اسم أخضر', description: 'اجعل اسمك يظهر باللون الأخضر.', price: 1000, itemType: 'name_color', itemValue: 'text-green-400' },
         { name: 'لون اسم أزرق', description: 'اجعل اسمك يظهر باللون الأزرق.', price: 1000, itemType: 'name_color', itemValue: 'text-blue-400' }
       ]);
@@ -598,28 +599,46 @@ commentsData.forEach(comment => {
     });
     console.log('تم تنظيف صور الغرف العامة القديمة من قاعدة البيانات.');
     
-    // --- التأكد من وجود حساب صاحب الموقع (إنشاء أو تحديث) ---
+    // --- التأكد من وجود حساب صاحب الموقع (إنشاء فقط إذا لم يكن موجوداً) ---
     try {
-      const hashedPassword = await bcrypt.hash(SITE_OWNER.password, 10);
-      await User.upsert({
-        username: SITE_OWNER.username,
-        password: hashedPassword,
-        gender: 'male'
+      const [user, created] = await User.findOrCreate({
+        where: { username: SITE_OWNER.username },
+        defaults: {
+          password: await bcrypt.hash(SITE_OWNER.password, 10),
+          gender: 'male'
+        }
       });
-      await UserRank.upsert({
-        username: SITE_OWNER.username,
-        rank: SITE_OWNER.rank
+
+      if (created) {
+        console.log(`تم إنشاء حساب صاحب الموقع: ${SITE_OWNER.username}`);
+        // إذا تم إنشاء المستخدم، قم بتحديث الذاكرة
+        users[SITE_OWNER.username] = {
+          password: user.password,
+          gender: user.gender,
+          bio: user.bio,
+          nameColor: user.nameColor
+        };
+      }
+      
+      // التأكد من وجود الرتبة
+      const [userRank, rankCreated] = await UserRank.findOrCreate({
+          where: { username: SITE_OWNER.username },
+          defaults: { rank: SITE_OWNER.rank }
       });
-      // تحديث الذاكرة بكلمة المرور المشفرة
-      users[SITE_OWNER.username] = { password: hashedPassword, gender: 'male' };
+
+      if (!rankCreated && userRank.rank !== SITE_OWNER.rank) {
+          // تحديث الرتبة إذا كانت مختلفة
+          await userRank.update({ rank: SITE_OWNER.rank });
+      }
       userRanks[SITE_OWNER.username] = SITE_OWNER.rank;
-      console.log(`تم تأكيد/إنشاء حساب صاحب الموقع: ${SITE_OWNER.username}`);
+
+
     } catch (error) {
       console.error(`خطأ في معالجة حساب صاحب الموقع:`, error);
     }
 
 
-    // --- إضافة المستخدمين الخاصين الجدد (إنشاء أو تحديث) ---
+    // --- إضافة المستخدمين الخاصين الجدد (إنشاء فقط إذا لم يكونوا موجودين) ---
     const specialUsers = [
       { username: 'سيد احمد', password: 'انسة', gender: 'male', rank: 'رئيس' },
       { username: 'ميارا', password: 'هندو', gender: 'female', rank: 'رئيسة' }
@@ -627,20 +646,36 @@ commentsData.forEach(comment => {
 
     for (const specialUser of specialUsers) {
       try {
-        const hashedPassword = await bcrypt.hash(specialUser.password, 10);
-        await User.upsert({
-          username: specialUser.username,
-          password: hashedPassword,
-          gender: specialUser.gender,
+        const [user, created] = await User.findOrCreate({
+          where: { username: specialUser.username },
+          defaults: {
+            password: await bcrypt.hash(specialUser.password, 10),
+            gender: specialUser.gender
+          }
         });
 
-        await UserRank.upsert({ username: specialUser.username, rank: specialUser.rank });
-        // تحديث الذاكرة بكلمة المرور المشفرة الصحيحة
-        const updatedUser = await User.findByPk(specialUser.username);
-        users[specialUser.username] = { password: updatedUser.password, gender: updatedUser.gender };
+        if (created) {
+          console.log(`تم إنشاء المستخدم الخاص: ${specialUser.username}`);
+          // إذا تم إنشاء المستخدم، قم بتحديث الذاكرة
+          users[specialUser.username] = {
+            password: user.password,
+            gender: user.gender,
+            bio: user.bio,
+            nameColor: user.nameColor
+          };
+        }
+
+        // التأكد من وجود الرتبة
+        const [userRank, rankCreated] = await UserRank.findOrCreate({
+            where: { username: specialUser.username },
+            defaults: { rank: specialUser.rank }
+        });
+
+        if (!rankCreated && userRank.rank !== specialUser.rank) {
+            await userRank.update({ rank: specialUser.rank });
+        }
         userRanks[specialUser.username] = specialUser.rank;
 
-        console.log(`تم تأكيد/إنشاء المستخدم الخاص: ${specialUser.username}`);
       } catch (error) {
         console.error(`خطأ في معالجة المستخدم الخاص ${specialUser.username}:`, error);
       }
@@ -666,12 +701,12 @@ async function saveUser(username, userData) {
     });
     
     if (!created) {
+      // لا تقم بتحديث كلمة المرور هنا إلا إذا كان مقصوداً
+      // هذا يمنع إعادة تعيين كلمة المرور عند كل تسجيل دخول
       await user.update({
-        password: userData.password,
-        gender: userData.gender,
-        bio: userData.bio || null,
-        nameColor: userData.nameColor || null
-      },);
+        bio: userData.bio,
+        nameColor: userData.nameColor
+      });
     }
   } catch (error) {
     console.error('خطأ في حفظ المستخدم:', error);
@@ -2521,16 +2556,81 @@ socket.on('leave room', async (data) => {
         socket.emit('bio error', 'المعلومات الشخصية يجب أن لا تتجاوز 500 حرف.');
         return;
     }
-
+ 
     if (users[username]) {
         try {
-            users[username].bio = bio;
+            users[username].bio = bio; // تحديث الذاكرة
             await User.update({ bio }, { where: { username } });
             socket.emit('bio success', 'تم تحديث معلوماتك بنجاح.');
         } catch (error) {
             console.error('خطأ في تحديث معلومات المستخدم:', error);
             socket.emit('bio error', 'حدث خطأ أثناء تحديث المعلومات.');
         }
+    }
+  });
+
+  // حدث تغيير كلمة المرور
+  socket.on('change password', async (data) => {
+    const { username, oldPassword, newPassword, inventoryId } = data;
+
+    if (!users[username]) {
+      socket.emit('password change error', 'المستخدم غير موجود.');
+      return;
+    }
+
+    // If an inventoryId is provided, it means a card is being used.
+    if (inventoryId) {
+        const userInventory = userInventories[username] || [];
+        const cardIndex = userInventory.findIndex(inv => inv.id === inventoryId);
+        if (cardIndex === -1) {
+            socket.emit('password change error', 'أنت لا تمتلك بطاقة تغيير كلمة المرور هذه.');
+            return;
+        }
+    } else {
+        // For now, we require a card.
+        socket.emit('password change error', 'بطاقة تغيير كلمة المرور غير متوفرة.');
+        return;
+    }
+
+    const t = await sequelize.transaction();
+
+    try {
+      // التحقق من كلمة المرور القديمة
+      const isPasswordValid = await bcrypt.compare(oldPassword, users[username].password);
+      if (!isPasswordValid) {
+        await t.rollback();
+        socket.emit('password change error', 'كلمة المرور القديمة غير صحيحة.');
+        return;
+      }
+
+      // تشفير وتحديث كلمة المرور الجديدة
+      const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+      await User.update({ password: hashedNewPassword }, { where: { username }, transaction: t });
+
+      // حذف بطاقة تغيير كلمة المرور المستخدمة
+      if (inventoryId) {
+          await UserInventory.destroy({ where: { id: inventoryId }, transaction: t });
+          // Also remove from in-memory inventory
+          userInventories[username] = userInventories[username].filter(inv => inv.id !== inventoryId);
+      }
+
+      await t.commit();
+
+      // تحديث كلمة المرور في الذاكرة
+      users[username].password = hashedNewPassword;
+
+      // حذف جميع جلسات المستخدم لإجباره على تسجيل الدخول مرة أخرى
+      await UserSession.destroy({ where: { username } });
+
+      socket.emit('password change success', 'تم تغيير كلمة المرور بنجاح. سيتم تسجيل خروجك الآن.');
+      
+      // Disconnect the user to force re-login
+      socket.disconnect(true);
+
+    } catch (error) {
+      await t.rollback();
+      console.error('خطأ في تغيير كلمة المرور:', error);
+      socket.emit('password change error', 'حدث خطأ في الخادم أثناء تغيير كلمة المرور.');
     }
   });
 
@@ -3020,7 +3120,7 @@ socket.on('disconnect', async (reason) => {
       // 2. إضافة العنصر لمخزون المستخدم
       await saveUserInventory(username, item.id);
 
-      // 3. تطبيق تأثير العنصر
+      // 3. تطبيق تأثير العنصر (فقط للألوان)
       let updatedNameColor = null;
       if (item.itemType === 'name_color') {
         await User.update({ nameColor: item.itemValue }, { where: { username } });
@@ -3047,7 +3147,7 @@ socket.on('disconnect', async (reason) => {
         newPoints: SPECIAL_USERS_CONFIG[username] ? SPECIAL_USERS_CONFIG[username].points : newPoints,
         inventory: userInventories[username],
         updatedNameColor: updatedNameColor,
-        purchasedItem: item // إضافة العنصر المشترى للرد
+        purchasedItem: { ...item.get({ plain: true }), inventoryId: userInventories[username][userInventories[username].length - 1].id }
       });
 
     } catch (error) {
@@ -3127,8 +3227,90 @@ socket.on('disconnect', async (reason) => {
       // 4. إتمام العملية
       await t.commit();
 
-      // 5. إعادة تحميل جميع البيانات من قاعدة البيانات لضمان التناسق
-      await loadData();
+      // 5. تحديث البيانات في الذاكرة يدوياً
+      // نسخ البيانات إلى الاسم الجديد
+      users[newUsername] = users[oldUsername];
+      if (userRanks[oldUsername]) userRanks[newUsername] = userRanks[oldUsername];
+      if (userAvatars[oldUsername]) userAvatars[newUsername] = userAvatars[oldUsername];
+      if (userPoints[oldUsername]) userPoints[newUsername] = userPoints[oldUsername];
+      if (userLastSeen[oldUsername]) userLastSeen[newUsername] = userLastSeen[oldUsername];
+      if (userInventories[oldUsername]) userInventories[newUsername] = userInventories[oldUsername];
+      if (userFriends[oldUsername]) userFriends[newUsername] = userFriends[oldUsername];
+      if (friendRequests[oldUsername]) friendRequests[newUsername] = friendRequests[oldUsername];
+
+      // حذف البيانات القديمة
+      delete users[oldUsername];
+      delete userRanks[oldUsername];
+      delete userAvatars[oldUsername];
+      delete userPoints[oldUsername];
+      delete userLastSeen[oldUsername];
+      delete userInventories[oldUsername];
+      delete userFriends[oldUsername];
+      delete friendRequests[oldUsername];
+
+      // تحديث الاسم في قوائم الأصدقاء والطلبات
+      Object.keys(userFriends).forEach(username => {
+          const friendList = userFriends[username];
+          const index = friendList.indexOf(oldUsername);
+          if (index > -1) {
+              friendList[index] = newUsername;
+          }
+      });
+      Object.keys(friendRequests).forEach(username => {
+          const requestList = friendRequests[username];
+          const index = requestList.indexOf(oldUsername);
+          if (index > -1) {
+              requestList[index] = newUsername;
+          }
+      });
+
+      // تحديث الاسم في الرسائل الخاصة
+      Object.keys(privateMessages).forEach(conversationId => {
+          if (conversationId.includes(oldUsername)) {
+              const newConversationId = conversationId.replace(oldUsername, newUsername).split('_').sort().join('_');
+              if (privateMessages[conversationId]) {
+                  privateMessages[newConversationId] = privateMessages[conversationId].map(msg => {
+                      if (msg.from === oldUsername) msg.from = newUsername;
+                      if (msg.to === oldUsername) msg.to = newUsername;
+                      return msg;
+                  });
+                  if (conversationId !== newConversationId) {
+                      delete privateMessages[conversationId];
+                  }
+              }
+          }
+      });
+
+      // تحديث الاسم في بيانات المستخدمين المتصلين
+      Object.keys(onlineUsers).forEach(socketId => {
+          if (onlineUsers[socketId].name === oldUsername) {
+              onlineUsers[socketId].name = newUsername;
+          }
+      });
+
+      // تحديث الاسم في الغرف
+      rooms.forEach(room => {
+          room.users.forEach(user => {
+              if (user.name === oldUsername) {
+                  user.name = newUsername;
+              }
+          });
+      });
+
+      // تحديث الاسم في المنشورات والتعليقات والإعجابات
+      Object.keys(posts).forEach(postId => {
+          if (posts[postId].username === oldUsername) {
+              posts[postId].username = newUsername;
+          }
+          posts[postId].likes = posts[postId].likes.map(like => like === oldUsername ? newUsername : like);
+          posts[postId].comments.forEach(comment => {
+              if (comment.username === oldUsername) {
+                  comment.username = newUsername;
+              }
+          });
+      });
+
+      console.log(`تم تحديث الاسم من ${oldUsername} إلى ${newUsername} في الذاكرة.`);
 
       // 6. تحديث جلسة المستخدم الحالية
       const newSessionId = 'session_' + Date.now() + Math.random().toString(36).substr(2, 9);
@@ -3162,6 +3344,12 @@ socket.on('disconnect', async (reason) => {
       socket.emit('name change error', 'حدث خطأ فادح أثناء تغيير الاسم. يرجى المحاولة مرة أخرى.');
     }
   });
+  // --- أحداث المتجر ---
+  socket.on('get shop items', () => {
+    socket.emit('shop items data', shopItems);
+  });
+});
+
 app.get('/api/rooms', (req, res) => {
   res.json(rooms);
 });
@@ -3195,13 +3383,12 @@ app.get('/check-auth', async (req, res) => {
     return res.json({ authenticated: false });
 });
 
-  // --- أحداث المتجر ---
-  socket.on('get shop items', () => {
-    socket.emit('shop items data', shopItems);
-  });
-});
-
 const PORT = process.env.PORT || 3000;
+
+// يجب أن يكون هذا المسار في النهاية للتعامل مع أي طلبات أخرى غير معرفة
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // --- تعديل: بدء تشغيل السيرفر بعد تحميل البيانات ---
 async function startServer() {
