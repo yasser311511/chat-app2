@@ -1,4 +1,4 @@
-
+ 
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -223,7 +223,7 @@
         
         .profile-content {
             background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(20px);
             border-radius: 1.25rem; /* 20px */
             width: 90%;
             max-width: 400px;
@@ -231,7 +231,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             transform: scale(0.9);
             transition: transform 0.3s ease;
         }
@@ -410,17 +410,14 @@
     transform: scale(1.02);
 }
 
-/* نافذة عرض الصورة المكبرة */
 .image-modal {
     animation: fadeIn 0.3s ease;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from { opacity: 0; } to { opacity: 1; }
 }
 
-/* أزرار الصور */
 #imageButton, #privateImageButton {
     transition: all 0.3s ease;
 }
@@ -429,42 +426,67 @@
     transform: scale(1.05);
 }
 
-/* أنماط مدمجة للرسائل */
+/* --- أنماط احترافية ومدمجة للرسائل --- */
 .chat-message {
-    margin-bottom: 0.5rem !important;
+    margin-bottom: 0.25rem !important; /* تقليل المسافة بين الرسائل */
 }
-
-.chat-message .max-w-xs,
-.chat-message .max-w-md {
-    padding: 0.5rem 0.75rem !important;
-    border-radius: 1rem !important;
+/* إظهار خيارات الرسالة عند التمرير */
+.message-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
 }
-
-.chat-message .text-sm {
-    font-size: 0.875rem !important;
-    line-height: 1.25rem !important;
+.chat-message:hover .message-actions {
+    opacity: 1;
 }
-
-.chat-message .text-xs {
-    font-size: 0.75rem !important;
-}
-
-/* تقليل حجم الصور في المحادثة */
-.chat-image {
-    max-width: 200px !important;
-    max-height: 150px !important;
+/* تعديل لرسائل النظام لتجنب التأثر بـ hover */
+.chat-message.justify-center:hover .message-actions {
+    opacity: 0;
 }
 
 /* تقليل حجم الصورة الشخصية في الرسائل */
-.chat-message img.w-8.h-8 {
-    width: 1.5rem !important;
-    height: 1.5rem !important;
+.chat-message .avatar-container {
+    width: 2rem !important; /* 32px */
+    height: 2rem !important; /* 32px */
 }
 
-.chat-message .w-8.h-8 {
-    width: 1.5rem !important;
-    height: 1.5rem !important;
-    font-size: 0.75rem !important;
+/* تعديل فقاعة الرسالة */
+.chat-message .message-bubble {
+    padding: 0.5rem 0.85rem !important; /* تقليل الحشو الداخلي للفقاعة */
+    padding-left: 2.5rem !important; /* مساحة إضافية لزر الخيارات */
+    border-radius: 0.75rem !important; /* تقليل استدارة الزوايا لمظهر كلاسيكي */
+}
+
+/* تعديل حجم خط الرسالة */
+.chat-message .message-content {
+    font-size: 0.9rem !important; /* 14.4px */
+    line-height: 1.4 !important;
+    word-break: break-word; /* --- الحل لمشكلة خروج النص من الفقاعة --- */
+    /* --- الحل لمشكلة اتجاه النص --- */
+    unicode-bidi: plaintext;
+}
+
+/* تعديل حجم خط اسم المستخدم */
+.chat-message .username-text {
+    font-size: 0.8rem !important; /* 12.8px */
+}
+
+/* تعديل حجم خط الوقت */
+.chat-message .timestamp-text {
+    font-size: 0.7rem !important; /* 11.2px */
+}
+
+/* تقليل حجم الصور داخل المحادثة */
+.chat-image {
+    max-width: 220px !important;
+    max-height: 180px !important;
+    border-radius: 0.5rem !important;
+}
+
+/* تقليل حجم رتبة المستخدم */
+.rank-badge {
+    font-size: 0.65rem !important; /* 10.4px */
+    padding: 1px 5px !important;
+    margin-bottom: 2px !important;
 }
 
 /* تحسين تخطيط معلومات المستخدم */
@@ -473,18 +495,12 @@
 }
 
 .chat-message .space-x-3 > * + * {
-    margin-right: 0.5rem !important;
-}
-
-/* تقليل حجم رتبة المستخدم */
-.rank-badge {
-    font-size: 0.7rem !important;
-    padding: 1px 6px !important;
+    margin-right: 0.75rem !important;
 }
 
 /* تحسين تخطيط رسائل النظام */
 .chat-message.justify-center .max-w-md {
-    padding: 0.4rem 0.75rem !important;
+    padding: 0.3rem 0.75rem !important;
     font-size: 0.8rem !important;
 }
 
@@ -493,13 +509,26 @@
     padding: 0.5rem !important;
 }
 
-/* تحسين شريط التمرير */
-.custom-scrollbar::-webkit-scrollbar {
-    width: 4px !important;
+/* تأثير دخول المستخدمين */
+@keyframes slideInUser {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+.user-entry-animation {
+    animation: slideInUser 0.4s ease-out forwards;
+}
+
+/* أنماط شريط الإعلان المتحرك */
+@keyframes marquee-rtl {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+.animate-marquee {
+    animation: marquee-rtl 20s linear infinite;
 }
     </style>
 </head>
-<body class="bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 min-h-screen">
+<body class="bg-gray-900 text-white min-h-screen">
     <!-- سبينر التحميل -->
     <div id="loadingSpinner" class="loading-overlay hidden">
         <div class="text-center">
@@ -508,38 +537,48 @@
         </div>
     </div>
 
+    <!-- شريط الإعلان الهام -->
+    <div id="announcementBar" class="hidden fixed top-0 left-0 w-full bg-gradient-to-r from-red-600 to-red-800 text-white z-50 shadow-lg overflow-hidden h-10 flex items-center border-b border-red-400">
+        <div class="w-full overflow-hidden relative h-full flex items-center">
+            <div id="announcementText" class="whitespace-nowrap font-bold text-lg animate-marquee absolute w-full text-center"></div>
+        </div>
+        <button onclick="hideAnnouncementLocal()" class="absolute left-4 bg-black/20 hover:bg-black/40 rounded-full p-1 transition-colors z-10">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+    </div>
+
     <!-- صفحة تسجيل الدخول -->
     <div id="loginPage" class="hidden min-h-screen flex items-center justify-center px-4">
-        <div class="bg-white/10 backdrop-blur-lg rounded-3xl p-8 max-w-md w-full border border-white/20 shadow-2xl">
+        <div class="bg-gray-800 rounded-3xl p-8 max-w-md w-full border border-gray-700 shadow-2xl">
             <div class="text-center mb-8">
                 <div class="text-6xl mb-4">💬</div>
                 <h1 class="text-3xl font-bold text-white mb-2">WalChat</h1>
-                <p class="text-blue-200">سجل دخولك للانضمام إلى المحادثة</p>
+                <p class="text-slate-300">سجل دخولك للانضمام إلى المحادثة</p>
             </div>
 
             <!-- أزرار التبديل -->
-            <div class="flex bg-white/10 rounded-xl p-1 mb-6">
+            <div class="flex bg-gray-900 rounded-xl p-1 mb-6">
                 <button id="loginTab" class="tab-button flex-1 py-2 px-4 rounded-xl font-semibold bg-blue-600 text-white">تسجيل الدخول</button>
-                <button id="registerTab" class="tab-button flex-1 py-2 px-4 rounded-xl font-semibold text-blue-200">إنشاء حساب</button>
+                <button id="registerTab" class="tab-button flex-1 py-2 px-4 rounded-xl font-semibold text-slate-300">إنشاء حساب</button>
             </div>
 
             <!-- نموذج تسجيل الدخول -->
             <form id="loginForm" class="form-container space-y-4">
                 <div>
-                    <label class="block text-white text-sm font-semibold mb-2">اسم المستخدم</label>
+                    <label class="block text-slate-200 text-sm font-semibold mb-2">اسم المستخدم</label>
                     <input type="text" id="loginUsername" placeholder="أدخل اسم المستخدم" required 
-                        class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400">
                 </div>
 
                 <div>
-                    <label class="block text-white text-sm font-semibold mb-2">كلمة السر</label>
+                    <label class="block text-slate-200 text-sm font-semibold mb-2">كلمة السر</label>
                     <input type="password" id="loginPassword" placeholder="أدخل كلمة السر" required 
-                        class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400">
                 </div>
 
                 <div class="flex items-center">
                     <input type="checkbox" id="rememberMe" class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                    <label for="rememberMe" class="block text-white text-sm">تذكرني</label>
+                    <label for="rememberMe" class="block text-slate-200 text-sm">تذكرني</label>
                 </div>
 
                 <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-colors">
@@ -550,31 +589,31 @@
             <!-- نموذج إنشاء حساب -->
             <form id="registerForm" class="form-container hidden space-y-4">
                 <div>
-                    <label class="block text-white text-sm font-semibold mb-2">اسم المستخدم</label>
+                    <label class="block text-slate-200 text-sm font-semibold mb-2">اسم المستخدم</label>
                     <input type="text" id="registerUsername" placeholder="اختر اسم المستخدم" required 
-                        class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400">
                 </div>
 
                 <div>
-                    <label class="block text-white text-sm font-semibold mb-2">كلمة السر</label>
+                    <label class="block text-slate-200 text-sm font-semibold mb-2">كلمة السر</label>
                     <input type="password" id="registerPassword" placeholder="اختر كلمة السر" required 
-                        class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400">
                 </div>
 
                 <div>
-                    <label class="block text-white text-sm font-semibold mb-2">تأكيد كلمة السر</label>
+                    <label class="block text-slate-200 text-sm font-semibold mb-2">تأكيد كلمة السر</label>
                     <input type="password" id="confirmPassword" placeholder="أعد إدخال كلمة السر" required 
-                        class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400">
                 </div>
 
                 <div>
-                    <label class="block text-white text-sm font-semibold mb-2">الجنس</label>
+                    <label class="block text-slate-200 text-sm font-semibold mb-2">الجنس</label>
                     <div class="grid grid-cols-2 gap-4">
-                        <label class="flex items-center space-x-3 space-x-reverse bg-white/10 hover:bg-white/20 rounded-lg p-3 cursor-pointer transition-colors">
+                        <label class="flex items-center space-x-3 space-x-reverse bg-gray-700 hover:bg-gray-600 rounded-lg p-3 cursor-pointer transition-colors">
                             <input type="radio" name="gender" value="male" required class="text-blue-600 focus:ring-blue-500">
                             <span class="text-white">👨 ذكر</span>
                         </label>
-                        <label class="flex items-center space-x-3 space-x-reverse bg-white/10 hover:bg-white/20 rounded-lg p-3 cursor-pointer transition-colors">
+                        <label class="flex items-center space-x-3 space-x-reverse bg-gray-700 hover:bg-gray-600 rounded-lg p-3 cursor-pointer transition-colors">
                             <input type="radio" name="gender" value="female" required class="text-pink-600 focus:ring-pink-500">
                             <span class="text-white">👩 أنثى</span>
                         </label>
@@ -586,8 +625,8 @@
                 </button>
             </form>
 
-            <div class="mt-6 bg-blue-900/30 rounded-lg p-3">
-                <p class="text-xs text-blue-200 text-center">
+            <div class="mt-6 bg-gray-900/50 rounded-lg p-3">
+                <p class="text-xs text-slate-400 text-center">
                      حافظو على المرح والمتعة !💡
                      ممنوع السب والشتم !💡
                      ممنوع تكوين العلاقات هنا !💡
@@ -601,12 +640,12 @@
     <!-- الصفحة الرئيسية -->
     <div id="mainPage" class="hidden min-h-screen">
         <!-- رأس الصفحة الرئيسية -->
-        <header class="main-header flex justify-between items-center">
+        <header class="bg-gray-900/80 backdrop-blur-lg border-b border-gray-700 p-4 flex justify-between items-center">
             <div></div> <!-- عنصر فارغ للمساحة اليسرى -->
             <h1 id="welcomeMessage" class="text-2xl font-bold text-white">🏠 غرف المحادثة</h1>
 <!-- زر المنشورات في الصفحة الرئيسية - سيتم إخفاؤه -->
 <div class="relative hidden">
-    <button id="postsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
+    <button id="postsButton" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors relative">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
         </svg>
@@ -616,14 +655,14 @@
 
             <div class="flex items-center space-x-4 space-x-reverse">
                <!-- في رأس الصفحة الرئيسية - داخل <div class="flex items-center space-x-4 space-x-reverse"> -->
-<button id="changeBackgroundBtn" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors hidden">
+<button id="changeBackgroundBtn" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors hidden">
     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
     </svg>
 </button>
                 <!-- زر الإشعارات والرسائل - سيتم إخفاؤه -->
                 <div class="relative hidden">
-    <button id="messagesButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
+    <button id="messagesButton" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors relative">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
         </svg>
@@ -641,14 +680,14 @@
 </div>
                 
                 <!-- زر قائمة الأصدقاء - سيتم إخفاؤه -->
-                <button id="friendsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors hidden">
+                <button id="friendsButton" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors hidden">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                     </svg>
                 </button>
                 
                 <!-- زر الملف الشخصي -->
-                <button id="profileButton" class="user-profile-btn flex items-center space-x-2 space-x-reverse bg-white/10 hover:bg-white/20 rounded-full pl-3 pr-2 py-1 transition-colors">
+                <button id="profileButton" class="user-profile-btn flex items-center space-x-2 space-x-reverse bg-gray-800 hover:bg-gray-700 rounded-full pl-3 pr-2 py-1 transition-colors">
                     <span class="text-white text-sm font-medium" id="headerUsername"></span>
                     <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white">
                         <span id="headerAvatarInitial"></span>
@@ -667,7 +706,7 @@
        
         <div class="container mx-auto px-4 py-8">
             <div class="text-center mb-12">
-                <p class="text-xl text-blue-200">اختر غرفة المحادثة التي تريد الانضمام إليها</p>
+                <p class="text-xl text-slate-300">اختر غرفة المحادثة التي تريد الانضمام إليها</p>
             </div>
            
             <div id="roomsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
@@ -679,10 +718,10 @@
     <!-- صفحة المحادثة -->
     <div id="chatPage" class="hidden min-h-screen flex flex-col">
         <!-- رأس المحادثة -->
-        <div class="bg-white/10 backdrop-blur-lg border-b border-white/20 p-4 relative z-30 md:z-40 chat-header-mobile">
+        <div class="bg-gray-900/90 backdrop-blur-lg border-b border-gray-700 p-4 relative z-30 md:z-40 chat-header-mobile">
             <div class="container mx-auto flex items-center justify-between flex-wrap md:flex-nowrap">
                 <div class="flex items-center space-x-4 space-x-reverse">
-                    <button onclick="goBack()" class="text-white hover:text-blue-200 transition-colors">
+                    <button onclick="goBack()" class="text-slate-300 hover:text-blue-500 transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
                         </svg>
@@ -691,50 +730,50 @@
                         <div id="chatIcon" class="text-3xl"></div>
                         <div>
                             <h2 id="chatTitle" class="text-xl font-semibold text-white"></h2>
-                            <p class="text-sm text-blue-200">متصل الآن</p>
+                            <p class="text-sm text-slate-400">متصل الآن</p>
                         </div>
                     </div>
                 </div>
                 <div class="flex items-center space-x-2 space-x-reverse mt-2 md:mt-0 chat-header-buttons">
                     <!-- زر لعبة XO -->
-                    <a href="https://xo-game-6m3e.onrender.com/" target="_blank" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="لعبة XO">
+                    <a href="https://xo-game-6m3e.onrender.com/" target="_blank" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors" title="لعبة XO">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     </a>
                     <!-- زر المتجر -->
-                    <button id="shopButton" onclick="openShopModal()" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="المتجر">
+                    <button id="shopButton" onclick="openShopModal()" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors" title="المتجر">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
                         </svg>
                     </button>
 
                     <!-- في رأس صفحة المحادثة - داخل <div class="flex items-center space-x-2 space-x-reverse"> -->
-<button id="chatChangeBackgroundBtn" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors hidden">
+<button id="chatChangeBackgroundBtn" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors hidden">
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
     </svg>
 </button>
                     <!-- زر المنشورات في واجهة المحادثة -->
-<button id="chatPostsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
+<button id="chatPostsButton" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors relative">
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
     </svg>
     <span id="chatPostsBadge" class="notification-badge hidden">0</span>
 </button>
                     <!-- زر قائمة المتفاعلين -->
-                    <button id="topUsersButton" onclick="openTopUsersModal()" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="قائمة المتفاعلين">
+                    <button id="topUsersButton" onclick="openTopUsersModal()" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors" title="قائمة المتفاعلين">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"></path>
                         </svg>
                     </button>
                     <!-- زر الأصدقاء في واجهة المحادثة -->
-    <button id="chatFriendsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+    <button id="chatFriendsButton" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
         </svg>
     </button>
                     <!-- زر الرسائل الخاصة (البريد) -->
     <div class="relative" id="chatMessagesButtonContainer">
-        <button id="chatMessagesButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
+        <button id="chatMessagesButton" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors relative">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
             </svg>
@@ -751,7 +790,7 @@
     </div>
                     <!-- زر الإشعارات (الجرس) -->
     <div class="relative" id="chatNotificationsButtonContainer">
-        <button id="chatNotificationsButton" class="text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors relative">
+        <button id="chatNotificationsButton" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors relative">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
             </svg>
@@ -766,7 +805,7 @@
             </div>
         </div>
     </div>
-                    <button id="toggleUsersButton" class="md:hidden text-white p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
+                    <button id="toggleUsersButton" class="md:hidden text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
         </svg>
@@ -787,7 +826,7 @@
             </div>
 
             <!-- قائمة المستخدمين المتصلين (للشاشات الكبيرة) -->
-            <div id="onlineUsersPanel" class="hidden md:block w-80 bg-white/5 backdrop-blur-lg border-l border-white/10 p-4 users-container custom-scrollbar">
+            <div id="onlineUsersPanel" class="hidden md:block w-80 bg-gray-800/70 backdrop-blur-lg border-l border-gray-700 p-4 users-container custom-scrollbar">
                 <h3 class="text-white font-bold mb-4 flex items-center space-x-2 space-x-reverse">
                     <span class="w-3 h-3 bg-green-500 rounded-full"></span>
                     <span>المستخدمون المتصلون</span>
@@ -803,7 +842,7 @@
         </div>
 
         <!-- منطقة إرسال الرسائل -->
-        <div id="messageArea" class="bg-white/10 backdrop-blur-lg border-t border-white/20 p-4">
+        <div id="messageArea" class="bg-gray-900/90 backdrop-blur-lg border-t border-gray-700 p-4">
             <div class="container mx-auto max-w-4xl">
                 <!-- لوحة إدارة الرتب -->
                 <div id="rankManagementPanel" class="hidden mb-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-4 border border-purple-500/50">
@@ -815,45 +854,45 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label class="block text-white text-sm font-semibold mb-2">اسم المستخدم</label>
-                            <input
+                            <input 
                                 type="text"
                                 id="rankUserName"
                                 placeholder="أدخل اسم المستخدم..."
-                                class="w-full bg-white/20 border border-purple-300/50 rounded-lg px-4 py-2 text-white placeholder-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                class="w-full bg-gray-700 border border-purple-300/50 rounded-lg px-4 py-2 text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400"
                             >
                         </div>
                         <div>
                             <label class="block text-white text-sm font-semibold mb-2">الرتبة الجديدة</label>
-                            <select
+                            <select 
                                 id="rankSelect"
-                                class="w-full bg-white/20 border border-purple-300/50 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                                class="w-full bg-gray-700 border border-purple-300/50 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
                             >
-                                <option value="" class="bg-gray-800">اختر الرتبة...</option>
-                                <option value="جيد" class="bg-gray-800">❇️ جيد</option>
-                                <option value="بريميوم" class="bg-gray-800">💎 بريميوم</option>
-                                <option value="ادمن" class="bg-gray-800">🛡️ ادمن</option>
-                                <option value="سوبر ادمن" class="bg-gray-800">⭐ سوبر ادمن</option>
-                                <option value="منشئ" class="bg-gray-800">👑 منشئ</option>
+                                <option value="" class="bg-gray-900">اختر الرتبة...</option>
+                                <option value="جيد" class="bg-gray-900">❇️ جيد</option>
+                                <option value="بريميوم" class="bg-gray-900">💎 بريميوم</option>
+                                <option value="ادمن" class="bg-gray-900">🛡️ ادمن</option>
+                                <option value="سوبر ادمن" class="bg-gray-900">⭐ سوبر ادمن</option>
+                                <option value="منشئ" class="bg-gray-900">👑 منشئ</option>
                             </select>
                         </div>
                     </div>
                     
                     <div class="flex space-x-4 space-x-reverse">
-                        <button
+                        <button 
                             onclick="assignRank()"
                             class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center space-x-2 space-x-reverse"
                         >
                             <span>منح الرتبة</span>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"> 
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                             </svg>
                         </button>
-                        <button
+                        <button 
                             onclick="removeRank()"
                             class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center space-x-2 space-x-reverse"
                         >
                             <span>إزالة الرتبة</span>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"> 
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
                             </svg>
                         </button>
@@ -862,7 +901,7 @@
                             class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center space-x-2 space-x-reverse"
                         >
                             <span>عرض جميع الرتب</span>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"> 
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                             </svg>
                         </button>
@@ -879,77 +918,77 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label class="block text-white text-sm font-semibold mb-2">اسم المستخدم</label>
-                            <input
+                            <input 
                                 type="text"
                                 id="managedUserName"
                                 placeholder="أدخل اسم المستخدم..."
-                                class="w-full bg-white/20 border border-red-300/50 rounded-lg px-4 py-2 text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-red-400"
+                                class="w-full bg-gray-700 border border-red-300/50 rounded-lg px-4 py-2 text-white placeholder-red-300 focus:outline-none focus:ring-2 focus:ring-red-400"
                             >
                         </div>
                         <div>
                             <label class="block text-white text-sm font-semibold mb-2">الإجراء</label>
-                            <select
+                            <select 
                                 id="userActionSelect"
-                                class="w-full bg-white/20 border border-red-300/50 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-red-400"
+                                class="w-full bg-gray-700 border border-red-300/50 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-red-400"
                                 onchange="toggleManagementFields()"
                             >
-                                <option value="" class="bg-gray-800">اختر الإجراء...</option>
-                                <option value="mute" class="bg-gray-800">🔇 كتم</option>
-                                <option value="unmute" class="bg-gray-800">🔊 إزالة الكتم</option>
-                                <option value="banFromRoom" class="bg-gray-800">🚫 حظر من الغرفة</option>
-                                <option value="unbanFromRoom" class="bg-gray-800">✅ إزالة حظر الغرفة</option>
-                                <option value="banFromSite" class="bg-gray-800">⛔ حظر من الموقع</option>
-                                <option value="unbanFromSite" class="bg-gray-800">🌐 إزالة حظر الموقع</option>
-                                <option value="deleteUser" class="bg-gray-800">🗑️ حذف المستخدم</option>
-                                <option value="showStatus" class="bg-gray-800">📋 عرض الحالة</option>
+                                <option value="" class="bg-gray-900">اختر الإجراء...</option>
+                                <option value="mute" class="bg-gray-900">🔇 كتم</option>
+                                <option value="unmute" class="bg-gray-900">🔊 إزالة الكتم</option>
+                                <option value="banFromRoom" class="bg-gray-900">🚫 حظر من الغرفة</option>
+                                <option value="unbanFromRoom" class="bg-gray-900">✅ إزالة حظر الغرفة</option>
+                                <option value="banFromSite" class="bg-gray-900">⛔ حظر من الموقع</option>
+                                <option value="unbanFromSite" class="bg-gray-900">🌐 إزالة حظر الموقع</option>
+                                <option value="deleteUser" class="bg-gray-900">🗑️ حذف المستخدم</option>
+                                <option value="showStatus" class="bg-gray-900">📋 عرض الحالة</option>
                             </select>
                         </div>
                     </div>
                     
                     <div id="durationField" class="hidden mb-4">
                         <label class="block text-white text-sm font-semibold mb-2">مدة الكتم (دقائق)</label>
-                        <input
+                        <input 
                             type="number"
                             id="muteDuration"
                             placeholder="المدة بالدقائق..."
                             min="1"
-                            class="w-full bg-white/20 border border-red-300/50 rounded-lg px-4 py-2 text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-red-400"
+                            class="w-full bg-gray-700 border border-red-300/50 rounded-lg px-4 py-2 text-white placeholder-red-300 focus:outline-none focus:ring-2 focus:ring-red-400"
                         >
                     </div>
                     
                     <div id="reasonField" class="hidden mb-4">
                         <label class="block text-white text-sm font-semibold mb-2">سبب الحظر (اختياري)</label>
-                        <input
+                        <input 
                             type="text"
                             id="banReason"
                             placeholder="أدخل سبب الحظر..."
-                            class="w-full bg-white/20 border border-red-300/50 rounded-lg px-4 py-2 text-white placeholder-red-200 focus:outline-none focus:ring-2 focus:ring-red-400"
+                            class="w-full bg-gray-700 border border-red-300/50 rounded-lg px-4 py-2 text-white placeholder-red-300 focus:outline-none focus:ring-2 focus:ring-red-400"
                         >
                     </div>
                     
                     <div class="flex space-x-4 space-x-reverse">
-                        <button
+                        <button 
                             onclick="manageUser()"
                             class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center space-x-2 space-x-reverse"
                         >
                             <span>تنفيذ</span>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"> 
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                             </svg>
                         </button>
-                        <button
+                        <button 
                             onclick="clearManagementFields()"
                             class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors flex items-center space-x-2 space-x-reverse"
                         >
                             <span>مسح الحقول</span>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"> 
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                             </svg>
                         </button>
                     </div>
                 </div>
                 <!-- منطقة عرض الرد -->
-                <div id="replyPreview" class="hidden mb-2 bg-white/10 rounded-lg p-2 max-w-4xl mx-auto">
+                <div id="replyPreview" class="hidden mb-2 bg-gray-700 rounded-lg p-2 max-w-4xl mx-auto">
                     <div class="flex justify-between items-center">
                         <div class="text-xs text-white overflow-hidden">
                             <div class="font-semibold">الرد على <span id="replyUsername"></span></div>
@@ -999,14 +1038,14 @@
                     <div class="mb-4">
                         <label class="block text-white text-sm font-semibold mb-2">رفع صورة شخصية</label>
                         <div class="flex items-center space-x-3 space-x-reverse">
-                            <input
+                            <input 
                                 type="file"
                                 id="avatarUpload"
                                 accept="image/*"
                                 class="hidden"
                                 onchange="handleAvatarUpload()"
                             >
-                            <label for="avatarUpload" class="flex-1 bg-white/20 border border-purple-300/50 rounded-lg px-4 py-2 text-white text-center cursor-pointer hover:bg-white/30">
+                            <label for="avatarUpload" class="flex-1 bg-gray-700 border border-purple-300/50 rounded-lg px-4 py-2 text-white text-center cursor-pointer hover:bg-gray-600">
                                 اختر صورة
                             </label>
                             <button
@@ -1019,7 +1058,7 @@
                     </div>
                     
                     <div class="text-center">
-                        <div class="inline-block bg-white/20 p-2 rounded-lg mb-2">
+                        <div class="inline-block bg-gray-700 p-2 rounded-lg mb-2">
                             <img id="currentAvatarPreview" src="https://api.dicebear.com/7.x/avataaars/svg?seed=guest" class="w-16 h-16 rounded-full object-cover" alt="الصورة الحالية">
                         </div>
                         <p class="text-xs text-purple-200">الصورة الشخصية الحالية</p>
@@ -1027,17 +1066,19 @@
                 </div>
                
                 <div id="messageInputContainer" class="flex space-x-4 space-x-reverse">
-                    <input
+                    <input 
                     type="text"
                     id="messageInput"
                     placeholder="اكتب رسالتك هنا..."
-                    class="flex-1 bg-white/20 border border-white/30 rounded-full px-6 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    class="flex-1 bg-gray-800 border border-gray-700 rounded-full px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
                     onkeypress="handleKeyPress(event)"
+                    oninput="checkMessageLength()"
                     style="text-align: start; direction: rtl; padding-left: 20px; position: relative; z-index: 10;"
                 >                      
-                    <button
+                    <button 
+                        id="sendMessageButton"
                         onclick="sendMessage()"
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse"
+                        class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse disabled:bg-gray-500 disabled:cursor-not-allowed"
                     >
                         <span>إرسال</span>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1053,72 +1094,85 @@
     <div id="profileModal" class="profile-modal">
         <div class="profile-content custom-scrollbar">
             <!-- رأس الملف الشخصي -->
-            <div class="relative bg-white/5 p-6 text-center">
-                 <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-white hover:text-blue-200 transition-colors">
+            <div class="relative bg-gradient-to-b from-gray-800 to-gray-900 p-8 text-center border-b border-gray-700/50">
+                 <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-slate-300 hover:text-blue-500 transition-colors">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
                 <!-- قائمة الخيارات الإدارية -->
-                <div id="profileMenuContainer" class="absolute top-4 left-4">
+                <div id="profileMenuContainer" class="absolute top-4 left-4 z-20">
                     <!-- سيتم ملء هذه القائمة ديناميكياً -->
                 </div>
 
-                <img id="profileAvatar" src="" class="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-blue-500/50 shadow-lg">
-                <h2 id="profileUsername" class="text-2xl font-bold text-white"></h2>
-                <div id="profileRank" class="inline-block mt-2 px-3 py-1 rounded-full text-sm font-semibold text-white"></div>
-                <div id="profileStatus" class="mt-2 flex items-center justify-center space-x-2 space-x-reverse">
+                <div class="relative inline-block mx-auto mb-4 group">
+                    <img id="profileAvatar" src="" class="w-28 h-28 rounded-full object-cover border-4 border-blue-500/30 shadow-xl transition-transform duration-300 group-hover:scale-105">
+                    <!-- زر تغيير الصورة (يظهر فقط لصاحب الحساب) -->
+                    <button id="changeProfilePicBtn" onclick="openImageUploadForProfile()" class="hidden absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110 border-2 border-gray-800" title="تغيير الصورة">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </button>
+                </div>
+
+                <h2 id="profileUsername" class="text-2xl font-bold text-white mb-1 tracking-wide"></h2>
+                <div id="profileGender" class="text-sm text-slate-400 mb-2 flex items-center justify-center gap-1"></div>
+                <div id="profileRank" class="inline-block px-4 py-1.5 rounded-full text-sm font-semibold text-white shadow-sm transform hover:scale-105 transition-transform duration-200"></div>
+                
+                <div id="profileStatus" class="mt-3 flex items-center justify-center space-x-2 space-x-reverse bg-gray-800/50 inline-flex px-3 py-1 rounded-full border border-gray-700/50">
                     <span class="w-2.5 h-2.5 rounded-full"></span>
                     <span class="text-sm text-blue-200"></span>
                 </div>
             </div>
 
             <!-- محتوى الملف الشخصي القابل للتمرير -->
-            <div class="flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar">
+            <div class="flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar bg-gray-900/50">
                 <!-- النقاط والمستوى -->
                 <div class="grid grid-cols-2 gap-4 text-center">
-                    <div class="bg-white/5 rounded-lg p-3">
-                        <div class="text-yellow-400 text-2xl">⭐</div>
-                        <div class="text-white font-semibold" id="profilePoints">0</div>
-                        <div class="text-blue-200 text-xs">النقاط</div>
+                    <div class="bg-gray-800/80 rounded-xl p-4 border border-gray-700/50 hover:border-yellow-500/30 transition-colors group">
+                        <div class="text-yellow-400 text-3xl mb-1 group-hover:scale-110 transition-transform duration-200">⭐</div>
+                        <div class="text-white font-bold text-lg" id="profilePoints">0</div>
+                        <div class="text-slate-400 text-xs font-medium">النقاط</div>
                     </div>
-                    <div class="bg-white/5 rounded-lg p-3">
-                        <div class="text-green-400 text-2xl">📈</div>
-                        <div class="text-white font-semibold" id="profileLevel">1</div>
-                        <div class="text-blue-200 text-xs">المستوى</div>
+                    <div class="bg-gray-800/80 rounded-xl p-4 border border-gray-700/50 hover:border-green-500/30 transition-colors group">
+                        <div class="text-green-400 text-3xl mb-1 group-hover:scale-110 transition-transform duration-200">📈</div>
+                        <div class="text-white font-bold text-lg" id="profileLevel">1</div>
+                        <div class="text-slate-400 text-xs font-medium">المستوى</div>
                     </div>
                 </div>
 
                 <!-- قسم مخزون العناصر -->
-                <div id="inventorySection" class="hidden">
-                    <h3 class="text-lg font-semibold text-white mb-2 border-b border-white/20 pb-2">مخزوني</h3>
+                <div id="inventorySection" class="hidden bg-gray-800/40 rounded-xl p-4 border border-gray-700/30">
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
+                        <span>🎒</span> مخزوني
+                    </h3>
                     <div id="inventoryItems" class="space-y-2">
                         <!-- عناصر المخزون ستظهر هنا -->
                     </div>
                 </div>
 
                 <!-- أزرار الإجراءات -->
-                <div class="space-y-3">
-                    <button id="privateChatButton" onclick="startPrivateChat()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 space-x-reverse">
+                <div class="space-y-3 pt-2">
+                    <button id="privateChatButton" onclick="startPrivateChat()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-900/20 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 space-x-reverse">
                         <span>محادثة خاصة</span>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                     </button>
                     
-                    <button id="addFriendButton" onclick="sendFriendRequest()" class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 space-x-reverse">
+                    <button id="addFriendButton" onclick="sendFriendRequest()" class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-green-900/20 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 space-x-reverse">
                         <span>إضافة صديق</span>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
                     </button>
 
-                    <button id="sendPointsButton" onclick="sendPoints()" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 space-x-reverse">
+                    <button id="sendPointsButton" onclick="sendPoints()" class="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-purple-900/20 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 space-x-reverse">
                         <span>إرسال نقاط</span>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1m0-1V4m0 2v1m0 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                     </button>
                 </div>
 
                 <!-- قسم معلوماتي (تم نقله للأسفل) -->
-                <div class="text-center" id="bioSection">
-                    <h3 class="text-lg font-semibold text-white mb-2 border-b border-white/20 pb-2">معلوماتي</h3>
-                    <div id="bioContainer" class="relative text-blue-200 text-sm bg-white/10 rounded-lg p-3 min-h-[80px] whitespace-pre-wrap">
-                        <p id="profileBio" class="text-center"></p>
-                        <textarea id="profileBioInput" class="hidden w-full bg-white/20 border border-white/30 rounded-lg px-4 py-2 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400" rows="4" placeholder="اكتب شيئاً عن نفسك..." oninput="updateBioCharCount()"></textarea>
+                <div class="text-center bg-gray-800/40 rounded-xl p-4 border border-gray-700/30" id="bioSection">
+                    <h3 class="text-sm font-bold text-slate-300 mb-3 flex items-center justify-center gap-2">
+                        <span>📝</span> نبذة عني
+                    </h3>
+                    <div id="bioContainer" class="relative text-slate-300 text-sm bg-gray-900/50 rounded-lg p-4 min-h-[80px] whitespace-pre-wrap border border-gray-700/50">
+                        <p id="profileBio" class="text-center leading-relaxed"></p>
+                        <textarea id="profileBioInput" class="hidden w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="4" placeholder="اكتب شيئاً عن نفسك..." oninput="updateBioCharCount()"></textarea>
                         <div id="bioCharCounter" class="hidden absolute bottom-2 left-3 text-xs text-gray-400">0 / 500</div>
                     </div>
                     <div id="editBioButtons" class="mt-3 space-x-2 space-x-reverse">
@@ -1144,13 +1198,13 @@
                 <img id="privateChatAvatar" src="" class="w-8 h-8 rounded-full object-cover" onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=guest'">
                 <div>
                     <h3 id="privateChatUsername" class="text-white font-semibold"></h3>
-                    <p id="privateChatStatus" class="text-xs text-blue-200 flex items-center space-x-1 space-x-reverse">
+                    <p id="privateChatStatus" class="text-xs text-slate-400 flex items-center space-x-1 space-x-reverse">
                         <span class="w-2 h-2 rounded-full"></span>
                         <span></span>
                     </p>
                 </div>
             </div>
-            <button onclick="closePrivateChat()" class="text-white hover:text-blue-200">
+            <button onclick="closePrivateChat()" class="text-slate-300 hover:text-blue-500">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
@@ -1166,8 +1220,8 @@
                 <input
                     type="text"
                     id="privateMessageInput"
-                    placeholder="اكتب رسالتك هنا..."
-                    class="flex-1 bg-white/20 border border-white/30 rounded-full px-4 py-2 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm"
+                    placeholder="اكتب رسالتك الخاصة..."
+                    class="flex-1 bg-gray-700 border border-gray-600 rounded-full px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm"
                     onkeypress="handlePrivateKeyPress(event)"
                 >
                 <button
@@ -1187,7 +1241,7 @@
     <div id="friendsSidebar" class="friends-sidebar">
         <div class="flex justify-between items-center mb-6">
             <h2 class="text-xl font-bold text-white">👥 قائمة الأصدقاء</h2>
-            <button onclick="closeFriendsSidebar()" class="text-white hover:text-blue-200">
+            <button onclick="closeFriendsSidebar()" class="text-slate-300 hover:text-blue-500">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
@@ -1200,10 +1254,10 @@
                 <input
                     type="text"
                     id="userSearchInput"
-                    placeholder="ابحث عن مستخدمين..."
-                    class="w-full bg-white/20 border border-white/30 rounded-full px-4 py-2 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm"
+                    placeholder="ابحث عن مستخدم..."
+                    class="w-full bg-gray-700 border border-gray-600 rounded-full px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent text-sm"
                 >
-                <button onclick="searchUsers()" class="absolute left-2 top-1/2 transform -translate-y-1/2 text-blue-200 hover:text-white">
+                <button onclick="searchUsers()" class="absolute left-2 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
@@ -1244,57 +1298,61 @@
     <!-- منطقة الإشعارات العامة -->
     <div id="globalNotifications" class="fixed top-4 right-4 z-50 space-y-3 max-w-sm"></div>
 <!-- نافذة المنشورات -->
-<div id="postsSidebar" class="friends-sidebar">
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-bold text-white">📝 المنشورات</h2>
-        <button onclick="closePostsSidebar()" class="text-white hover:text-blue-200">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-        </button>
-    </div>
-    
-    <!-- منطقة إنشاء منشور جديد -->
-    <div class="mb-6 bg-white/10 rounded-xl p-4">
-        <h3 class="text-white font-semibold mb-3">إنشاء منشور جديد</h3>
-        <textarea 
-            id="newPostContent" 
-            placeholder="ماذا تريد أن تنشر؟" 
-            class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-2 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm mb-3"
-            rows="3"
-        ></textarea>
-        <button 
-            onclick="createNewPost()" 
-            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
-        >
-            نشر
-        </button>
-    </div>
-    
-    <!-- قائمة المنشورات -->
-    <div id="postsList" class="space-y-4">
-        <!-- المنشورات سيتم تحميلها هنا -->
+<div id="postsModal" class="profile-modal">
+    <div class="profile-content custom-scrollbar" style="max-width: 650px; height: 90vh;">
+        <!-- رأس النافذة -->
+        <div class="flex justify-between items-center p-4 border-b border-slate-700 flex-shrink-0">
+            <h2 class="text-xl font-bold text-white">📝 المنشورات</h2>
+            <button onclick="closePostsSidebar()" class="text-slate-300 hover:text-blue-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- محتوى النافذة القابل للتمرير -->
+        <div class="flex-1 p-4 overflow-y-auto custom-scrollbar">
+            <!-- منطقة إنشاء منشور جديد -->
+            <div class="mb-6 bg-gray-800 rounded-xl p-4 border border-gray-700">
+                <h3 class="text-white font-semibold mb-3">إنشاء منشور جديد</h3>
+                <textarea 
+                    id="newPostContent" 
+                    placeholder="بماذا تفكر يا ${currentUser?.name || ''}؟" 
+                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mb-3"
+                    rows="3"
+                ></textarea>
+                <button 
+                    onclick="createNewPost()" 
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                >
+                    نشر
+                </button>
+            </div>
+            
+            <!-- قائمة المنشورات -->
+            <div id="postsList" class="space-y-4">
+                <!-- المنشورات سيتم تحميلها هنا -->
+            </div>
+        </div>
     </div>
 </div>
-
-<div id="postsOverlay" class="friends-overlay" onclick="closePostsSidebar()"></div>
 
 <!-- نافذة قائمة المتفاعلين -->
 <div id="topUsersModal" class="profile-modal">
     <div class="profile-content custom-scrollbar">
         <!-- رأس النافذة -->
-        <div class="relative bg-white/5 p-6 text-center">
-             <button onclick="closeTopUsersModal()" class="absolute top-4 right-4 text-white hover:text-blue-200 transition-colors">
+        <div class="relative bg-gray-800 p-6 text-center">
+             <button onclick="closeTopUsersModal()" class="absolute top-4 right-4 text-slate-300 hover:text-blue-500 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             <h2 class="text-2xl font-bold text-white">🏆 المتفاعلون</h2>
-            <p class="text-blue-200 text-sm">أكثر 10 مستخدمين نشاطاً</p>
+            <p class="text-slate-400 text-sm">أكثر 10 مستخدمين نشاطاً</p>
         </div>
 
         <!-- محتوى القائمة -->
         <div id="topUsersListContainer" class="flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar">
             <!-- سيتم ملء القائمة هنا -->
-            <div class="text-center text-blue-200 p-8">
+            <div class="text-center text-slate-400 p-8">
                 <div class="spinner mx-auto"></div>
                 <p class="mt-2">جاري تحميل القائمة...</p>
             </div>
@@ -1308,18 +1366,18 @@
 <div id="shopModal" class="profile-modal">
     <div class="profile-content custom-scrollbar" style="max-width: 500px;">
         <!-- رأس النافذة --> 
-        <div class="relative bg-slate-800/50 p-6 text-center">
-             <button onclick="closeShopModal()" class="absolute top-4 right-4 text-white hover:text-blue-200 transition-colors">
+        <div class="relative bg-gray-800 p-6 text-center">
+             <button onclick="closeShopModal()" class="absolute top-4 right-4 text-slate-300 hover:text-blue-500 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            <h2 class="text-2xl font-bold text-slate-100">🛒 المتجر</h2>
+            <h2 class="text-2xl font-bold text-white">🛒 المتجر</h2>
             <p class="text-slate-400 text-sm">استخدم نقاطك لشراء عناصر مميزة</p>
         </div>
 
         <!-- محتوى المتجر -->
         <div id="shopItemsContainer" class="flex-1 p-4 overflow-y-auto custom-scrollbar">
             <!-- سيتم ملء العناصر هنا بالشبكة الجديدة -->
-            <div class="text-center text-blue-200 p-8">
+            <div class="text-center text-slate-400 p-8">
                 <div class="spinner mx-auto"></div>
                 <p class="mt-2">جاري تحميل عناصر المتجر...</p>
             </div>
@@ -1347,24 +1405,24 @@
 <div id="sendPointsModal" class="profile-modal">
     <div class="profile-content" style="max-width: 350px;">
         <!-- رأس النافذة -->
-        <div class="relative bg-white/5 p-6 text-center">
-             <button onclick="closeSendPointsModal()" class="absolute top-4 right-4 text-white hover:text-blue-200 transition-colors">
+        <div class="relative bg-gray-800 p-6 text-center">
+             <button onclick="closeSendPointsModal()" class="absolute top-4 right-4 text-slate-300 hover:text-blue-500 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             <h2 class="text-2xl font-bold text-white">🎁 إرسال نقاط</h2>
-            <p id="sendPointsToUser" class="text-blue-200 text-sm"></p>
+            <p id="sendPointsToUser" class="text-slate-400 text-sm"></p>
         </div>
 
         <!-- محتوى النافذة -->
         <div class="flex-1 p-6 space-y-4">
             <div>
-                <label for="pointsAmountInput" class="block text-white text-sm font-semibold mb-2">عدد النقاط</label>
-                <input
+                <label for="pointsAmountInput" class="block text-slate-200 text-sm font-semibold mb-2">عدد النقاط</label>
+                <input 
                     type="number"
                     id="pointsAmountInput"
                     placeholder="أدخل عدد النقاط..."
                     min="1"
-                    class="w-full bg-white/20 border border-white/30 rounded-lg px-4 py-3 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 >
             </div>
             <button
@@ -1398,13 +1456,13 @@
 <div id="backgroundModal" class="profile-modal">
     <div class="profile-content">
         <div class="text-center mb-6">
-            <button onclick="closeBackgroundModal()" class="absolute top-4 left-4 text-white hover:text-blue-200">
+            <button onclick="closeBackgroundModal()" class="absolute top-4 left-4 text-slate-300 hover:text-blue-500">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
             </button>
             <h2 class="text-2xl font-bold text-white mb-4">🎨 تغيير خلفية الموقع</h2>
-            <p class="text-blue-200 text-sm">سيتم تطبيق التغيير على جميع المستخدمين</p>
+            <p class="text-slate-400 text-sm">سيتم تطبيق التغيير على جميع المستخدمين</p>
         </div>
         
         <div class="space-y-4">
@@ -1443,14 +1501,14 @@
             <div>
                 <h3 class="text-white font-semibold mb-3">صورة مخصصة</h3>
                 <div class="flex items-center space-x-3 space-x-reverse">
-                    <input
+                    <input 
                         type="file"
                         id="backgroundUpload"
                         accept="image/*"
                         class="hidden"
                         onchange="handleBackgroundUpload()"
                     >
-                    <label for="backgroundUpload" class="flex-1 bg-white/20 border border-white/30 rounded-lg px-4 py-2 text-white text-center cursor-pointer hover:bg-white/30">
+                    <label for="backgroundUpload" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-center cursor-pointer hover:bg-gray-600">
                         اختر صورة
                     </label>
                 </div>
@@ -1460,11 +1518,11 @@
             <div>
                 <h3 class="text-white font-semibold mb-3">رابط صورة</h3>
                 <div class="flex space-x-3 space-x-reverse">
-                    <input
+                    <input 
                         type="text"
                         id="backgroundUrl"
                         placeholder="أدخل رابط الصورة..."
-                        class="flex-1 bg-white/20 border border-white/30 rounded-lg px-4 py-2 text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     >
                     <button
                         onclick="applyUrlBackground()"
@@ -1477,7 +1535,7 @@
         </div>
         
         <div class="mt-6 text-center">
-            <button
+            <button 
                 onclick="saveBackground()"
                 class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-full font-semibold transition-colors"
             >
@@ -1491,11 +1549,11 @@
 <div id="changePasswordModal" class="profile-modal">
     <div class="profile-content" style="max-width: 400px;">
         <!-- رأس النافذة -->
-        <div class="relative bg-slate-800/50 p-6 text-center">
+        <div class="relative bg-gray-800 p-6 text-center">
              <button onclick="closeChangePasswordModal()" class="absolute top-4 right-4 text-slate-300 hover:text-sky-400 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            <h2 class="text-2xl font-bold text-slate-100">🔑 تغيير كلمة المرور</h2>
+            <h2 class="text-2xl font-bold text-white">🔑 تغيير كلمة المرور</h2>
             <p class="text-slate-400 text-sm mt-1">أدخل كلمة المرور الجديدة</p>
         </div>
 
@@ -1504,17 +1562,17 @@
             <div>
                 <label for="oldPasswordInput" class="block text-slate-200 text-sm font-semibold mb-2">كلمة المرور القديمة</label>
                 <input type="password" id="oldPasswordInput" placeholder="أدخل كلمة المرور الحالية"
-                    class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
             </div>
             <div>
                 <label for="newPasswordInput" class="block text-slate-200 text-sm font-semibold mb-2">كلمة المرور الجديدة</label>
                 <input type="password" id="newPasswordInput" placeholder="أدخل كلمة المرور الجديدة"
-                    class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
             </div>
             <div>
                 <label for="confirmNewPasswordInput" class="block text-slate-200 text-sm font-semibold mb-2">تأكيد كلمة المرور الجديدة</label>
                 <input type="password" id="confirmNewPasswordInput" placeholder="أعد إدخال كلمة المرور الجديدة"
-                    class="w-full bg-slate-700 border border-slate-600 rounded-lg px-4 py-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sky-500">
             </div>
             <button onclick="submitChangePassword()"
                 class="w-full bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors flex items-center justify-center space-x-2 space-x-reverse">
@@ -1525,11 +1583,169 @@
     </div>
 </div>
 
+<!-- نافذة غرفة التحكم (Control Panel) -->
+<div id="controlPanelModal" class="profile-modal">
+    <div class="profile-content custom-scrollbar" style="max-width: 800px; height: 90vh;">
+        <!-- رأس النافذة -->
+        <div class="relative bg-gray-800 p-6 text-center border-b border-gray-700">
+            <button onclick="closeControlPanel()" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-2xl font-bold text-white">⚙️ غرفة التحكم</h2>
+            <p class="text-slate-400 text-sm">لوحة إدارة الموقع الشاملة</p>
+        </div>
+        
+        <!-- محتوى النافذة -->
+        <div class="p-6 space-y-8 overflow-y-auto custom-scrollbar">
+            <!-- قسم الإحصائيات -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="bg-gray-700/50 p-4 rounded-xl text-center border border-gray-600">
+                    <div class="text-3xl mb-2">👥</div>
+                    <div class="text-2xl font-bold text-white" id="statsTotalUsers">0</div>
+                    <div class="text-xs text-slate-400">إجمالي المستخدمين</div>
+                </div>
+                <div class="bg-gray-700/50 p-4 rounded-xl text-center border border-gray-600">
+                    <div class="text-3xl mb-2">🟢</div>
+                    <div class="text-2xl font-bold text-green-400" id="statsOnline">0</div>
+                    <div class="text-xs text-slate-400">المتصلون الآن</div>
+                </div>
+                <div class="bg-gray-700/50 p-4 rounded-xl text-center border border-gray-600">
+                    <div class="text-3xl mb-2">👨</div>
+                    <div class="text-2xl font-bold text-blue-400" id="statsMales">0</div>
+                    <div class="text-xs text-slate-400">الذكور</div>
+                </div>
+                <div class="bg-gray-700/50 p-4 rounded-xl text-center border border-gray-600">
+                    <div class="text-3xl mb-2">👩</div>
+                    <div class="text-2xl font-bold text-pink-400" id="statsFemales">0</div>
+                    <div class="text-xs text-slate-400">الإناث</div>
+                </div>
+            </div>
+
+            <!-- قسم الإعلان الهام -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <span>📢</span> إعلان هام (شريط متحرك)
+                </h3>
+                <div class="flex gap-2">
+                    <input type="text" id="announcementInput" placeholder="اكتب الإعلان هنا..." class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <button onclick="setAnnouncement()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">نشر</button>
+                    <button onclick="removeAnnouncement()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors">إزالة</button>
+                </div>
+            </div>
+
+            <!-- قسم إدارة الرتب -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <span>🌟</span> إدارة الرتب والصلاحيات
+                </h3>
+                
+                <!-- نموذج الإضافة/التعديل -->
+                <div class="bg-gray-900/50 p-4 rounded-lg mb-6 border border-gray-600">
+                    <h4 class="text-white font-semibold mb-3 text-sm" id="rankFormTitle">إضافة رتبة جديدة</h4>
+                    <input type="hidden" id="editingRankName" value="">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <input type="text" id="customRankName" placeholder="اسم الرتبة" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 col-span-2 md:col-span-1">
+                    
+                    <div class="col-span-2 md:col-span-1">
+                        <div class="flex gap-2">
+                            <input type="text" id="customRankIcon" placeholder="الأيقونة (مثال: 🚀)" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-center focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <input type="file" id="rankIconUpload" accept="image/*" class="hidden" onchange="handleRankIconUpload()">
+                            <button onclick="document.getElementById('rankIconUpload').click()" class="bg-gray-600 hover:bg-gray-500 text-white px-3 py-2 rounded-lg transition-colors" title="رفع صورة">🖼️</button>
+                        </div>
+                        <div id="rankIconPreviewContainer" class="hidden mt-2 text-center"><img id="rankIconPreview" src="" class="w-8 h-8 mx-auto object-contain"><button onclick="clearRankIconImage()" class="text-xs text-red-400 hover:text-red-300 mt-1">إزالة الصورة</button></div>
+                    </div>
+
+                    <input type="number" id="customRankLevel" placeholder="المستوى (1-99)" min="1" max="99" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500" title="المستوى الأعلى يتحكم بالمستوى الأدنى. الحد الأقصى 99.">
+                        <select id="customRankColor" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                            <option value="from-gray-500 to-gray-700">⚪ رمادي (عادي)</option>
+                            <option value="from-red-600 to-orange-400">🔴 أحمر - برتقالي (مميز)</option>
+                            <option value="from-yellow-400 to-yellow-500">🟡 ذهبي (ملكي)</option>
+                            <option value="from-green-500 to-emerald-600">🟢 أخضر (نشط)</option>
+                            <option value="from-blue-500 to-cyan-600">🔵 أزرق (إداري)</option>
+                            <option value="from-purple-500 to-indigo-600">🟣 بنفسجي (فخم)</option>
+                            <option value="from-pink-500 to-rose-500">🌸 وردي (بناتي)</option>
+                        </select>
+                        <div class="md:col-span-2">
+                            <input type="text" id="customRankTarget" placeholder="اسم المستخدم للتعيين (اختياري)" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-purple-500">
+                        </div>
+                </div>
+                    <div class="flex gap-2">
+                        <button onclick="saveRankDefinition()" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors" id="saveRankBtn">حفظ وتعيين</button>
+                        <button onclick="resetRankForm()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors hidden" id="cancelRankEditBtn">إلغاء</button>
+                    </div>
+                </div>
+
+                <!-- قائمة الرتب -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-right text-gray-400">
+                        <thead class="text-xs text-gray-200 uppercase bg-gray-700/50">
+                            <tr>
+                                <th class="px-4 py-3">الرتبة</th>
+                                <th class="px-4 py-3">المستوى (القوة)</th>
+                                <th class="px-4 py-3">اللون</th>
+                                <th class="px-4 py-3">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ranksTableBody" class="divide-y divide-gray-700">
+                            <!-- سيتم ملء الرتب هنا -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- قسم إدارة الغرف -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <span>🏠</span> إدارة الغرف
+                </h3>
+                <div class="flex flex-col md:flex-row gap-2 mb-4">
+                    <input type="text" id="newRoomName" placeholder="اسم الغرفة" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <input type="text" id="newRoomIcon" placeholder="الأيقونة (مثال: 💬)" class="w-full md:w-32 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button onclick="addNewRoom()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">إضافة</button>
+                </div>
+                <div id="controlRoomsList" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar bg-gray-900/50 p-2 rounded-lg">
+                    <!-- قائمة الغرف ستظهر هنا -->
+                </div>
+            </div>
+
+            <!-- قسم قائمة المستخدمين الشاملة -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <span>👥</span> قائمة المستخدمين الشاملة
+                    </h3>
+                    <div class="relative w-full md:w-64">
+                        <input type="text" id="controlUserSearch" placeholder="بحث عن مستخدم..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" oninput="filterControlUsers()">
+                    </div>
+                </div>
+                <div class="overflow-x-auto bg-gray-900/50 rounded-lg border border-gray-700 max-h-96 custom-scrollbar">
+                    <table class="w-full text-sm text-right text-gray-400">
+                        <thead class="text-xs text-gray-200 uppercase bg-gray-700/80 sticky top-0">
+                            <tr>
+                                <th scope="col" class="px-4 py-3">المستخدم</th>
+                                <th scope="col" class="px-4 py-3">الجنس</th>
+                                <th scope="col" class="px-4 py-3">الرتبة</th>
+                                <th scope="col" class="px-4 py-3">المستوى</th>
+                                <th scope="col" class="px-4 py-3">النقاط</th>
+                                <th scope="col" class="px-4 py-3">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="controlUsersTableBody" class="divide-y divide-gray-700">
+                            <!-- سيتم ملء الجدول هنا -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-2 text-xs text-slate-500 text-center">يتم عرض المتصلين أولاً، ثم الترتيب حسب النقاط</div>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 <!-- عناصر إدخال الملف المخفية -->
 <input type="file" id="imageUpload" accept="image/*" class="hidden">
 <input type="file" id="privateImageUpload" accept="image/*" class="hidden">
+<input type="file" id="profileImageUpload" accept="image/*" class="hidden">
 
 
 
@@ -1546,6 +1762,65 @@
         let friendsList = [];
         let userAvatars = {};
         let shopItems = [];
+        // تعريف الرتب الافتراضية (سيتم تحديثها من السيرفر)
+        let ranks = {
+            'صاحب الموقع': { color: 'from-red-600 to-orange-400', icon: '🏆', level: 6 },
+            'رئيس': { color: 'from-yellow-400 to-yellow-500', icon: '🎩', level: 5 },
+            'رئيسة': { color: 'from-yellow-400 to-yellow-500', icon: '🎩', level: 5 },
+            'منشئ': { color: 'from-yellow-400 to-orange-500', icon: '👑', level: 4 },
+            'سوبر ادمن': { color: 'from-red-500 to-pink-600', icon: '⭐', level: 3 },
+            'ادمن': { color: 'from-purple-500 to-indigo-600', icon: '🛡️', level: 2 },
+            'بريميوم': { color: 'from-green-500 to-emerald-600', icon: '💎', level: 2 },
+            'جيد': { color: 'from-blue-500 to-cyan-600', icon: '❇️', level: 1 }
+        };
+        // تعريف الأجنحة وتكوينها
+        let wingsConfig = {
+            owners: ['صاحب الموقع', 'رئيس', 'رئيسة'],
+            kings: ['منشئ', 'سوبر ادمن', 'ادمن'],
+            distinguished: ['بريميوم', 'جيد']
+        };
+        let previousOnlineUsernames = new Set();
+        let isFirstUserLoad = true;
+        const entrySound = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3');
+        entrySound.volume = 0.4;
+        
+        // --- دوال أيقونات الرتب ---
+        let tempRankIcon = null;
+
+        function handleRankIconUpload() {
+            const fileInput = document.getElementById('rankIconUpload');
+            const file = fileInput.files[0];
+            if (file) {
+                if (file.size > 500 * 1024) { // 500KB limit
+                     showNotification('حجم الصورة كبير جداً (الحد الأقصى 500KB)', 'error');
+                     return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    tempRankIcon = e.target.result;
+                    document.getElementById('rankIconPreview').src = tempRankIcon;
+                    document.getElementById('rankIconPreviewContainer').classList.remove('hidden');
+                    document.getElementById('customRankIcon').disabled = true;
+                    document.getElementById('customRankIcon').placeholder = "(تم اختيار صورة)";
+                    document.getElementById('customRankIcon').value = '';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearRankIconImage() {
+            tempRankIcon = null;
+            document.getElementById('rankIconUpload').value = '';
+            document.getElementById('rankIconPreviewContainer').classList.add('hidden');
+            document.getElementById('customRankIcon').disabled = false;
+            document.getElementById('customRankIcon').placeholder = "الأيقونة (مثال: 🚀)";
+        }
+
+        function getRankIconHtml(icon, className = "text-xl") {
+            // تم إضافة transform: translateY(2px) لإنزال الصورة قليلاً لتكون في نفس مستوى النص
+            if (icon && (icon.startsWith('data:image') || icon.startsWith('http'))) return `<img src="${icon}" class="${className} inline-block object-contain" style="width: 1.5em; height: 1.5em; vertical-align: middle; transform: translateY(2px);">`;
+            return `<span class="${className}">${icon || ''}</span>`;
+        }
 
         // --- دوال نافذة إرسال النقاط (تم نقلها إلى النطاق العام) ---
 
@@ -1739,18 +2014,6 @@ function updateUnreadBadges() {
     // تحديث الإشعارات في زر الرسائل الرئيسي
     updateMessagesBadge();
 }
-        // نظام الرتب
-        const ranks = {
-            'صاحب الموقع': { color: 'from-red-600 to-orange-400', icon: '🏆', level: 6 },
-            'رئيس': { color: 'from-yellow-400 to-yellow-500', icon: '🎩', level: 5 },
-            'رئيسة': { color: 'from-yellow-400 to-yellow-500', icon: '🎩', level: 5 },
-            'منشئ': { color: 'from-yellow-400 to-orange-500', icon: '👑', level: 4 },
-            'سوبر ادمن': { color: 'from-red-500 to-pink-600', icon: '⭐', level: 3 },
-            'ادمن': { color: 'from-purple-500 to-indigo-600', icon: '🛡️', level: 2 },
-            'بريميوم': { color: 'from-green-500 to-emerald-600', icon: '💎', level: 2 },
-            'جيد': { color: 'from-blue-500 to-cyan-600', icon: '❇️', level: 1 }
-        };
-
         // صور افتراضية
         const defaultAvatars = {
             'boy1': 'https://api.dicebear.com/7.x/avataaars/svg?seed=boy1',
@@ -1996,6 +2259,21 @@ function updateUnreadBadges() {
             showNotification(error, 'error');
             hideLoading();
         });
+
+        // دالة لتحديث تكوين الأجنحة بناءً على الرتب
+        function updateWingsConfig() {
+            // إعادة تعيين التكوين
+            wingsConfig = { owners: [], kings: [], distinguished: [] };
+            
+            // توزيع الرتب على الأجنحة
+            for (const [rankName, rankData] of Object.entries(ranks)) {
+                if (rankData.wingId === 'owners' || rankData.level >= 5) wingsConfig.owners.push(rankName);
+                else if (rankData.wingId === 'kings' || rankData.level >= 3) wingsConfig.kings.push(rankName);
+                else if (rankData.wingId === 'distinguished' || rankData.level >= 2) wingsConfig.distinguished.push(rankName);
+            }
+            // تحديث القائمة إذا كانت معروضة
+            const currentUsers = Array.from(document.querySelectorAll('#onlineUsersList > div[data-username]')).map(el => ({name: el.dataset.username, rank: ranks[el.dataset.username]?.rank})); // هذا تقريبي، الأفضل إعادة طلب القائمة
+        }
 
         // استقبال تحديث الغرف
         socket.on('rooms update', (updatedRooms) => {
@@ -2506,7 +2784,13 @@ friendsList.forEach(username => {
         function updateWelcomeMessage() {
             const welcomeElement = document.getElementById('welcomeMessage');
             if (welcomeElement && currentUser) {
-                const rankBadge = currentUser.rank ? `(${ranks[currentUser.rank].icon} ${currentUser.rank})` : '';
+                let rankBadge = '';
+                if (currentUser.rank) {
+                    const rankInfo = ranks[currentUser.rank] || { icon: '' };
+                    // استخدام دالة getRankIconHtml لتحويل كود الصورة إلى صورة فعلية
+                    const iconHtml = getRankIconHtml(rankInfo.icon, "text-xl");
+                    rankBadge = `<span class="inline-flex items-center mx-1" dir="ltr">(${currentUser.rank} ${iconHtml})</span>`;
+                }
                 welcomeElement.innerHTML = `🏠 مرحباً ${currentUser.name} ${rankBadge}`;
             }
         }
@@ -2543,11 +2827,36 @@ friendsList.forEach(username => {
                 
                 roomsContainer.appendChild(roomDiv);
             });
+
+            // إضافة غرفة التحكم لصاحب الموقع فقط
+            if (currentUser && (currentUser.isSiteOwner || currentUser.name === 'Walid dz 31')) {
+                const controlDiv = document.createElement('div');
+                controlDiv.className = 'bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-blue-500/50 rounded-2xl p-6 hover:shadow-[0_0_20px_rgba(59,130,246,0.5)] transition-all duration-300 relative group cursor-pointer';
+                controlDiv.onclick = openControlPanel;
+                
+                controlDiv.innerHTML = `
+                    <div class="absolute top-4 right-4 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+                        خاص
+                    </div>
+                    <div class="text-4xl mb-4 text-center">⚙️</div>
+                    <h3 class="text-xl font-bold text-white text-center mb-2">غرفة التحكم</h3>
+                    <p class="text-slate-400 text-center text-sm">لوحة إدارة الموقع الشاملة</p>
+                    <div class="mt-4 text-center">
+                        <span class="bg-blue-600 text-white px-3 py-1 rounded-full text-xs">دخول المالك</span>
+                    </div>
+                `;
+                roomsContainer.appendChild(controlDiv);
+            }
         }
 
         // فتح غرفة الدردشة
         function openChat(roomId, roomName, icon) {
             showLoading();
+            
+            // إعادة تعيين تتبع المستخدمين عند دخول غرفة جديدة
+            previousOnlineUsernames.clear();
+            isFirstUserLoad = true;
+
             currentRoom = { id: roomId, name: roomName, icon: icon };
             
             // حفظ الغرفة الحالية
@@ -2672,6 +2981,13 @@ window.addEventListener('beforeunload', function (e) {
         // إرسال رسالة
         function sendMessage() {
             const input = document.getElementById('messageInput');
+            
+            // التحقق من طول الرسالة قبل المعالجة
+            if (input.value.length > 200) {
+                showNotification('الرسالة طويلة جداً (الحد الأقصى 200 حرف)', 'error');
+                return;
+            }
+
             const message = input.value.trim();
             const replyPreview = document.getElementById('replyPreview');
             let replyTo = null;
@@ -2712,13 +3028,10 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
     let rankBadge = '';
    
     if (userRank) {
-        const rankInfo = ranks[userRank];
-        rankBadge = `
-            <div class="inline-flex items-center space-x-1 space-x-reverse bg-gradient-to-r ${rankInfo.color} px-2 py-1 rounded-full text-xs font-bold text-white shadow-lg mb-1">
-                <span>${rankInfo.icon}</span>
-                <span>${userRank}</span>
-            </div>
-        `;
+        const rankInfo = ranks[userRank] || {}; 
+        const iconHtml = getRankIconHtml(rankInfo.icon, "text-base");
+        // إضافة align-middle لضمان المحاذاة
+        rankBadge = `<span title="${userRank}" class="mx-1 inline-flex items-center align-middle">${iconHtml}</span>`;
     }
 
     // البحث عن لون اسم المستخدم
@@ -2738,12 +3051,12 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
     if (messageId && user) { // التأكد من وجود المستخدم لتجنب الأخطاء
         const isMessageOwner = user === currentUser.name;
         const canDelete = 
-            (currentUser.name === "Walid dz 31") || // صاحب الموقع
-            (isMessageOwner && currentUser.rank); // المستخدم يملك رسالته ولديه رتبة
+            (currentUser.isSiteOwner) || 
+            (isMessageOwner && currentUser.rank); 
 
         // زر الرد يظهر للجميع
         directActions = `
-            <button class="text-gray-400 hover:text-blue-400" title="رد" onclick="startReply('${messageId}', '${user}', '${message.replace(/'/g, "\\'")}')">↪️</button>
+            <button class="text-gray-400 hover:text-blue-400" title="رد" onclick="startReply('${messageId}', '${user}', '${message.replace(/'/g, "\\'")}')">↩️</button>
         `;
 
         // إضافة زر الحذف فقط إذا كان مسموحاً
@@ -2767,65 +3080,42 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
     let replyHtml = '';
     if (replyTo) {
         replyHtml = `
-            <a href="#${replyTo.messageId}" onclick="scrollToMessage('${replyTo.messageId}')" class="block bg-black/20 p-2 rounded-lg mb-2 text-xs border-l-2 border-blue-400">
+            <a href="#${replyTo.messageId}" onclick="scrollToMessage('${replyTo.messageId}')" class="block bg-black/25 p-2 rounded-md mb-2 text-xs border-l-2 border-blue-400">
                 <div class="font-semibold text-blue-300">رد على ${replyTo.user}</div>
-                <p class="opacity-80 truncate">${replyTo.content}</p>
+                <p class="opacity-80 truncate text-slate-200">${replyTo.content}</p>
             </a>
         `;
     }
 
 
-    if (avatarUrl) {
-        messageDiv.innerHTML = `
-            <div class="max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                isOwn
-                    ? 'bg-blue-600 text-white ml-3'
-                    : 'bg-white/20 text-white mr-3'
-            }">
-                <div class="flex items-center space-x-2 space-x-reverse mb-1">
-                    <img src="${avatarUrl}" class="w-6 h-6 rounded-full object-cover" alt="${user}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">
-                    <div>
-                        ${rankBadge}
-                        <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : nameColorClass}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
-                    </div>
-                    <div class="flex items-center space-x-2 space-x-reverse mr-auto">
-                        ${directActions}
-                        ${menuBtn}
-                    </div>
-                </div>
-                ${replyHtml}
-                <div class="text-sm leading-relaxed">${message}</div>
-                <div class="text-xs mt-1 opacity-70">${time}</div>
-            </div>
-        `;
-    } else {
-        messageDiv.innerHTML = `
-            <div class="max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                isOwn
-                    ? 'bg-blue-600 text-white ml-3'
-                    : 'bg-white/20 text-white mr-3'
-            }">
-                <div class="flex items-center space-x-2 space-x-reverse mb-1">
-                    <div class="w-6 h-6 rounded-full bg-gray-400 flex items-center justify-center text-white" onclick="showUserProfileModal('${user}')" style="cursor:pointer">
-                        ${user.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                        ${rankBadge}
-                        <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : nameColorClass}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
-                    </div>
-                    <div class="flex items-center space-x-2 space-x-reverse mr-auto">
-                        ${directActions}
-                        ${menuBtn}
-                    </div>
-                </div>
-                ${replyHtml}
-                <div class="text-sm leading-relaxed">${message}</div>
-                <div class="text-xs mt-1 opacity-70">${time}</div>
-            </div>
-        `;
-    }
+    const avatarHtml = avatarUrl 
+        ? `<img src="${avatarUrl}" class="w-full h-full rounded-full object-cover" alt="${user}">`
+        : `<div class="w-full h-full rounded-full bg-gray-400 flex items-center justify-center text-white font-bold text-sm">${user.charAt(0).toUpperCase()}</div>`;
 
-    messageDiv.className = `chat-message flex ${isOwn ? 'justify-end' : 'justify-start'}`;
+    // --- التصميم الجديد المدمج ---
+    messageDiv.innerHTML = `
+        <div class="flex items-start gap-3">
+        <div class="flex items-start gap-3 flex-row-reverse">
+            <div class="avatar-container flex-shrink-0 cursor-pointer" onclick="showUserProfileModal('${user}')">
+                ${avatarHtml}
+            </div>
+            <div class="message-bubble relative group ${isOwn ? 'bg-blue-600 text-white' : 'bg-gray-800 text-white'} rounded-lg">
+                ${replyHtml}
+                <div class="message-content leading-snug">
+                    <span class="username-text font-bold cursor-pointer ${isOwn ? 'text-blue-100' : nameColorClass}" onclick="showUserProfileModal('${user}')">${user}</span>
+                    ${rankBadge}
+                    <span class="mr-1">:</span>
+                    <span class="break-words">${message}</span>
+                </div>
+                <div class="absolute top-1 left-1 flex items-center gap-1 message-actions">
+                    <span class="timestamp-text opacity-70 text-gray-400">${time}</span> 
+                    ${directActions}
+                </div>
+            </div>
+        </div>
+    `;
+
+    messageDiv.className = `chat-message flex justify-end`;
 
     container.appendChild(messageDiv);
     container.scrollTop = container.scrollHeight;
@@ -2933,13 +3223,13 @@ function scrollToMessage(messageId) {
 function addSystemMessage(message, time) {
     const container = document.getElementById('messagesContainer');
     const messageDiv = document.createElement('div');
-    messageDiv.className = 'chat-message flex justify-center';
+    messageDiv.className = 'chat-message flex justify-center'; 
    
     messageDiv.innerHTML = `
-        <div class="max-w-md px-3 py-2 rounded-2xl bg-slate-700/80 text-white text-center border border-cyan-500/30">
+        <div class="max-w-md px-3 py-2 rounded-2xl bg-gray-800 text-white text-center border border-blue-500/30">
             <div class="flex items-center justify-center space-x-2 space-x-reverse mb-1">
                 <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=system-bot" class="w-5 h-5 rounded-full" alt="System Bot">
-                <div class="font-semibold text-sm text-cyan-300">رسائل النظام</div>
+                <div class="font-semibold text-sm text-blue-400">رسائل النظام</div>
             </div>
             <div class="text-sm leading-relaxed">${message}</div>
             <div class="text-xs mt-1 opacity-60">${time}</div>
@@ -2961,62 +3251,131 @@ function updateOnlineUsersList(users) {
     onlineUsersCount.textContent = users.length;
     onlineUsersList.innerHTML = '';
     
-    // ترتيب المستخدمين حسب الرتبة (من الأعلى إلى الأدنى)
-    const sortedUsers = users.sort((a, b) => {
-        const rankA = a.rank ? ranks[a.rank]?.level || 0 : 0;
-        const rankB = b.rank ? ranks[b.rank]?.level || 0 : 0;
-        if (a.rank === 'صاحب الموقع') return -1;
-        if (b.rank === 'صاحب الموقع') return 1;
-        return rankB - rankA;
-    });
+    // تعريف الأجنحة (Wings Configuration)
+    const wings = [
+        {
+            id: 'owners',
+            title: '👑 جناح صاحب الموقع',
+            ranks: wingsConfig.owners,
+            classes: 'bg-gradient-to-r from-red-900 via-red-800 to-orange-900 text-yellow-100 border-y border-yellow-500/50 shadow-[0_0_15px_rgba(220,38,38,0.3)]'
+        },
+        {
+            id: 'kings',
+            title: '🛡️ جناح الملوك',
+            ranks: wingsConfig.kings,
+            classes: 'bg-gradient-to-r from-indigo-900 via-purple-900 to-slate-900 text-purple-100 border-y border-purple-500/50 shadow-[0_0_15px_rgba(124,58,237,0.3)]'
+        },
+        {
+            id: 'distinguished',
+            title: '💎 جناح الاعضاء المميزين',
+            ranks: wingsConfig.distinguished,
+            classes: 'bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 text-emerald-100 border-y border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+        },
+        {
+            id: 'members',
+            title: '👥 متصلون',
+            ranks: [], // البقية
+            classes: 'bg-gray-800/80 text-gray-300 border-y border-gray-700'
+        }
+    ];
+
+    // تجميع المستخدمين في الأجنحة
+    let shouldPlaySound = false;
+    const groupedUsers = { owners: [], kings: [], distinguished: [], members: [] };
     
-    // تحديث لون اسم المستخدم في الواجهة
     users.forEach(user => {
         if (user.name === currentUser.name) {
             currentUser.nameColor = user.nameColor;
         }
-    });
 
-    sortedUsers.forEach(user => {
-        const userDiv = document.createElement('div');
-        const isOwner = user.rank === 'صاحب الموقع';
-        
-        // تحديد الكلاسات الأساسية وتأثيرات الـ hover
-        let baseClasses = 'group flex items-center space-x-3 space-x-reverse p-2.5 rounded-lg transition-all duration-200 ease-in-out cursor-pointer hover:bg-white/10';
-        if (isOwner) {
-            baseClasses += ' bg-yellow-500/10 border-r-4 border-yellow-400';
+        const rank = user.rank;
+        if (wings[0].ranks.includes(rank)) {
+            groupedUsers.owners.push(user);
+        } else if (wings[1].ranks.includes(rank)) {
+            groupedUsers.kings.push(user);
+        } else if (wings[2].ranks.includes(rank)) {
+            groupedUsers.distinguished.push(user);
         } else {
-            baseClasses += ' bg-white/5';
+            groupedUsers.members.push(user);
         }
-        userDiv.className = baseClasses;
-        userDiv.onclick = () => showUserProfileModal(user.name);
-        userDiv.setAttribute('data-username', user.name);
-        userDiv.setAttribute('data-name-color', user.nameColor || 'null');
-
-        // إنشاء شارة الرتبة
-        let rankBadge = '';
-        if (user.rank) {
-            const rankInfo = ranks[user.rank];
-            rankBadge = `<div class="inline-flex items-center space-x-1 space-x-reverse bg-gradient-to-r ${rankInfo.color} px-2 py-0.5 rounded-full text-xs font-bold text-white shadow-md">${rankInfo.icon} <span>${user.rank}</span></div>`;
-        }
-
-        // إنشاء الصورة الرمزية
-        const avatarHtml = user.avatar 
-            ? `<img src="${user.avatar}" class="w-10 h-10 rounded-full object-cover border-2 border-slate-600 group-hover:border-blue-400 transition-colors" alt="${user.name}">`
-            : `<div class="w-10 h-10 rounded-full bg-gray-500 flex items-center justify-center text-white font-bold border-2 border-slate-600 group-hover:border-blue-400 transition-colors">${user.name.charAt(0).toUpperCase()}</div>`;
-
-        userDiv.innerHTML = `
-            <div class="relative flex-shrink-0">
-                ${avatarHtml}
-                <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 border-2 border-slate-800 ring-1 ring-green-400"></span>
-            </div>
-            <div class="flex-1 min-w-0">
-                <div class="font-semibold truncate ${user.nameColor || 'text-white'}">${user.name}</div>
-                ${rankBadge}
-            </div>
-        `;
-        onlineUsersList.appendChild(userDiv);
     });
+
+    // دالة ترتيب المستخدمين داخل الجناح
+    const sortUsers = (userList) => {
+        return userList.sort((a, b) => {
+            const rankA = a.rank ? ranks[a.rank]?.level || 0 : 0; 
+            const rankB = b.rank ? ranks[b.rank]?.level || 0 : 0; 
+            if (a.rank === 'صاحب الموقع') return -1;
+            if (b.rank === 'صاحب الموقع') return 1;
+            return rankB - rankA; 
+        });
+    };
+
+    const currentOnlineUsernames = new Set();
+
+    // عرض الأجنحة
+    wings.forEach(wing => {
+        const wingUsers = sortUsers(groupedUsers[wing.id]);
+        
+        if (wingUsers.length > 0) {
+            // عنوان الجناح
+            const wingHeader = document.createElement('div');
+            wingHeader.className = `py-2 px-3 mb-2 mt-2 font-bold text-sm text-center uppercase tracking-wider rounded-lg backdrop-blur-md ${wing.classes}`;
+            wingHeader.innerHTML = wing.title;
+            onlineUsersList.appendChild(wingHeader);
+
+            // قائمة مستخدمي الجناح
+            wingUsers.forEach(user => {
+                currentOnlineUsernames.add(user.name);
+                const userDiv = document.createElement('div');
+                userDiv.className = 'group flex items-center space-x-3 space-x-reverse p-2 rounded-lg transition-all duration-200 ease-in-out cursor-pointer hover:bg-white/5 mb-1 border border-transparent hover:border-white/10';
+                
+                // إضافة تأثير الحركة إذا كان المستخدم جديداً
+                if (!previousOnlineUsernames.has(user.name)) {
+                    userDiv.classList.add('user-entry-animation');
+                    shouldPlaySound = true;
+                }
+
+                userDiv.onclick = () => showUserProfileModal(user.name);
+                userDiv.setAttribute('data-username', user.name);
+                userDiv.setAttribute('data-name-color', user.nameColor || 'null');
+
+                // شارة الرتبة (مصغرة)
+                let rankBadge = '';
+                if (user.rank) {
+                    const rankInfo = ranks[user.rank] || { icon: '' };
+                    const iconHtml = getRankIconHtml(rankInfo.icon, "text-[10px]");
+                    rankBadge = `<span class="text-[10px] opacity-80 mr-2 flex items-center gap-1">${iconHtml} ${user.rank}</span>`;
+                }
+
+                // الصورة الرمزية
+                const avatarHtml = user.avatar
+                    ? `<img src="${user.avatar}" class="w-9 h-9 rounded-full object-cover border border-gray-600 group-hover:border-blue-400 transition-colors" alt="${user.name}">`
+                    : `<div class="w-9 h-9 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold text-xs border border-gray-500 group-hover:border-blue-400 transition-colors">${user.name.charAt(0).toUpperCase()}</div>`;
+
+                userDiv.innerHTML = `
+                    <div class="relative flex-shrink-0">
+                        ${avatarHtml}
+                        <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-gray-800"></span>
+                    </div>
+                    <div class="flex-1 min-w-0 flex flex-col justify-center">
+                        <div class="flex items-center justify-between">
+                            <div class="font-semibold truncate ${user.nameColor || 'text-gray-200'} text-sm">${user.name}</div>
+                        </div>
+                        ${rankBadge ? `<div class="text-gray-400 leading-none">${rankBadge}</div>` : ''}
+                    </div>
+                `;
+                onlineUsersList.appendChild(userDiv);
+            });
+        }
+    });
+
+    if (shouldPlaySound && !isFirstUserLoad) {
+        entrySound.play().catch(e => console.log('Audio play failed:', e));
+    }
+    isFirstUserLoad = false;
+
+    previousOnlineUsernames = currentOnlineUsernames;
     
     document.getElementById('onlineUsersPanel').classList.remove('hidden');
 }
@@ -3249,15 +3608,15 @@ function updateOnlineUsersList(users) {
             const container = document.getElementById('shopItemsContainer'); 
             container.innerHTML = '<div class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>';
             const gridContainer = container.querySelector('.grid');
- 
+  
             if (items.length === 0) {
-                gridContainer.innerHTML = '<p class="text-blue-200 text-center p-8 col-span-2">المتجر فارغ حالياً.</p>';
+                gridContainer.innerHTML = '<p class="text-slate-400 text-center p-8 col-span-2">المتجر فارغ حالياً.</p>';
                 return;
             }
 
             items.forEach(item => {
                 const itemDiv = document.createElement('div');
-                itemDiv.className = 'bg-slate-800/50 p-4 rounded-lg border border-slate-700 flex flex-col items-center text-center space-y-3';
+                itemDiv.className = 'bg-gray-800 p-4 rounded-lg border border-gray-700 flex flex-col items-center text-center space-y-3';
 
                 let iconHtml = '';
                 if (item.itemType === 'name_change_card') {
@@ -3267,20 +3626,25 @@ function updateOnlineUsersList(users) {
                 } else if (item.itemType === 'name_color') {
                     // إنشاء عنصر مؤقت لتطبيق كلاس Tailwind واستخراج اللون
                     const tempDiv = document.createElement('div');
-                    tempDiv.className = item.itemValue;
+                    tempDiv.className = item.itemValue; 
                     document.body.appendChild(tempDiv); // يجب إضافته للـ DOM ليتمكن من حساب النمط
                     const cssColor = window.getComputedStyle(tempDiv).color;
                     document.body.removeChild(tempDiv);
                     iconHtml = `<div class="w-12 h-12 rounded-full border-2 border-slate-600" style="background-color: ${cssColor || '#ffffff'};"></div>`;
                 } else {
-                    iconHtml = `<div class="text-4xl">${ranks[item.itemValue]?.icon || '🛍️'}</div>`;
+                    const rIcon = ranks[item.itemValue]?.icon;
+                    if (rIcon && (rIcon.startsWith('data:image') || rIcon.startsWith('http'))) {
+                        iconHtml = `<div class="w-12 h-12"><img src="${rIcon}" class="w-full h-full object-contain"></div>`;
+                    } else {
+                        iconHtml = `<div class="text-4xl">${rIcon || '🛍️'}</div>`;
+                    }
                 }
                 
                 itemDiv.innerHTML = `
                     ${iconHtml}
                     <div class="flex-1 w-full">
                         <h4 class="text-white font-semibold text-md">${item.name}</h4>
-                        <p class="text-blue-200 text-xs mt-1">${item.description}</p>
+                        <p class="text-slate-400 text-xs mt-1">${item.description}</p>
                     </div>
                     <button onclick="buyItem(${item.id})" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center space-x-2 space-x-reverse transition-colors">
                         <span>${item.price}</span>
@@ -3318,6 +3682,10 @@ function updateOnlineUsersList(users) {
         });
 
         socket.on('buy item error', (error) => {
+            showNotification(error, 'error');
+        });
+
+        socket.on('control error', (error) => {
             showNotification(error, 'error');
         });
 
@@ -3422,6 +3790,7 @@ function updateOnlineUsersList(users) {
             const avatar = document.getElementById('profileAvatar');
             const usernameElem = document.getElementById('profileUsername');
             const rankElem = document.getElementById('profileRank');
+            const genderElem = document.getElementById('profileGender');
             const statusElem = document.getElementById('profileStatus');
             const statusDot = statusElem.querySelector('span:first-child'); // تعديل: اختيار العنصر الأول بشكل موثوق
             const statusText = statusElem.querySelector('span:last-child'); // تعديل: اختيار العنصر الثاني بشكل موثوق
@@ -3433,6 +3802,7 @@ function updateOnlineUsersList(users) {
             const profileBioInput = document.getElementById('profileBioInput');
             const editBioButton = document.getElementById('editBioButton');
             const saveBioButton = document.getElementById('saveBioButton');
+            const changeProfilePicBtn = document.getElementById('changeProfilePicBtn');
             const specialUsers = ["Walid dz 31", "سيد احمد", "ميارا"]; 
             
             if (specialUsers.includes(profileData.username)) {
@@ -3454,9 +3824,14 @@ function updateOnlineUsersList(users) {
             usernameElem.textContent = profileData.username;
             usernameElem.className = `text-2xl font-bold ${profileData.nameColor || 'text-white'}`;
             
+            // عرض الجنس
+            const genderIcon = profileData.gender === 'male' ? '👨 ذكر' : '👩 أنثى';
+            genderElem.textContent = genderIcon;
+
             if (profileData.rank) {
-                const rankInfo = ranks[profileData.rank];
-                rankElem.textContent = `${rankInfo.icon} ${profileData.rank}`;
+                const rankInfo = ranks[profileData.rank] || { icon: '', color: 'from-gray-500 to-gray-600' };
+                const iconHtml = getRankIconHtml(rankInfo.icon, "text-base");
+                rankElem.innerHTML = `${iconHtml} ${profileData.rank}`;
                 rankElem.className = `inline-block mt-2 px-3 py-1 rounded-full text-sm font-semibold text-white bg-gradient-to-r ${rankInfo.color}`;
                 rankElem.style.display = 'inline-block';
             } else {
@@ -3466,7 +3841,7 @@ function updateOnlineUsersList(users) {
             if (profileData.isOnline) {
                 statusDot.className = 'w-2.5 h-2.5 rounded-full bg-green-500';
                 statusText.textContent = 'متصل الآن';
-            } else {
+            } else { 
                 statusDot.className = 'w-2.5 h-2.5 rounded-full bg-gray-500';
                 const lastSeenText = profileData.lastSeen ? `آخر ظهور ${getTimeAgo(new Date(profileData.lastSeen))}` : 'غير متصل';
                 statusText.textContent = lastSeenText;
@@ -3478,6 +3853,7 @@ function updateOnlineUsersList(users) {
  
             // إظهار/إخفاء أزرار التعديل وقائمة الإدارة
             if (profileData.username === currentUser.name) {
+                changeProfilePicBtn.classList.remove('hidden'); // إظهار زر تغيير الصورة
                 editBioButton.classList.remove('hidden');
                 saveBioButton.classList.add('hidden');
                 privateChatButton.style.display = 'none';
@@ -3493,7 +3869,7 @@ function updateOnlineUsersList(users) {
                         const shopItem = shopItems.find(si => si.id === invItem.itemId);
                         if (shopItem && (shopItem.itemType === 'name_change_card' || shopItem.itemType === 'password_change_card')) {
                             const itemDiv = document.createElement('div');
-                            itemDiv.className = 'flex items-center justify-between bg-white/10 p-2 rounded-lg';
+                            itemDiv.className = 'flex items-center justify-between bg-gray-700 p-2 rounded-lg';
                             itemDiv.innerHTML = `
                                 <span class="text-white text-sm">${shopItem.itemType === 'name_change_card' ? '🔑' : '🔐'} ${shopItem.name}</span>
                                 <button onclick="${shopItem.itemType === 'name_change_card' ? `useNameChangeCard(${invItem.id})` : `usePasswordChangeCard(${invItem.id})`}" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md">استخدام</button>
@@ -3502,10 +3878,11 @@ function updateOnlineUsersList(users) {
                         }
                     });
                 } else {
-                    inventoryItemsContainer.innerHTML = '<p class="text-blue-200 text-xs text-center">المخزون فارغ.</p>';
+                    inventoryItemsContainer.innerHTML = '<p class="text-slate-400 text-xs text-center">المخزون فارغ.</p>';
                 }
 
             } else {
+                changeProfilePicBtn.classList.add('hidden'); // إخفاء زر تغيير الصورة
                 editBioButton.classList.add('hidden');
                 saveBioButton.classList.add('hidden');
                 privateChatButton.style.display = 'flex';
@@ -3547,7 +3924,7 @@ function updateOnlineUsersList(users) {
                 const canManage = isSiteOwner || managerLevel > targetLevel;
 
                 if (canManage && currentUser.name !== profileData.username) {
-                    profileMenuContainer.innerHTML = `
+                    profileMenuContainer.innerHTML = ` 
                         <div class="relative inline-block">
                             <button class="menu-btn text-gray-400 hover:text-blue-400 text-xl font-bold" title="خيارات إدارية" onclick="toggleProfileMenu(event, '${profileData.username}')">⋮</button>
                             <div id="profileActionMenu" class="message-menu hidden absolute left-0 z-50 bg-slate-800 text-white rounded shadow-lg mt-2 min-w-[160px] text-sm border border-slate-700">
@@ -3556,7 +3933,7 @@ function updateOnlineUsersList(users) {
                                 <div class="border-t border-slate-600 my-1"></div>
                                 <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" onclick="handleProfileBanRoom('${profileData.username}')">🚫 حظر من الغرفة</button>
                                 <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" onclick="handleProfileUnbanRoom('${profileData.username}')">✅ إلغاء حظر الغرفة</button>
-                                ${isSiteOwner ? `
+                                ${isSiteOwner ? ` 
                                     <div class="border-t border-slate-600 my-1"></div>
                                     <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" onclick="handleProfileBanSite('${profileData.username}')">⛔ حظر من الموقع</button>
                                     <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" onclick="handleProfileUnbanSite('${profileData.username}')">🌐 إلغاء حظر الموقع</button>
@@ -3648,7 +4025,7 @@ function updateOnlineUsersList(users) {
             const charCounter = document.getElementById('bioCharCounter');
             const currentLength = bioInput.value.length;
             const maxLength = 500;
-            charCounter.textContent = `${currentLength} / ${maxLength}`;
+            charCounter.textContent = `${currentLength} / ${maxLength}`; 
             if (currentLength > maxLength) {
                 charCounter.classList.add('text-red-500');
                 charCounter.classList.remove('text-gray-400');
@@ -3657,7 +4034,7 @@ function updateOnlineUsersList(users) {
                 charCounter.classList.add('text-gray-400');
             }
         }
-
+ 
         function toggleBioEdit(isEditing) {
             const bioText = document.getElementById('profileBio');
             const bioInput = document.getElementById('profileBioInput');
@@ -3665,7 +4042,7 @@ function updateOnlineUsersList(users) {
             const saveButton = document.getElementById('saveBioButton');
             const cancelButton = document.getElementById('cancelBioButton');
             const charCounter = document.getElementById('bioCharCounter');
-
+ 
             if (isEditing) {
                 bioText.classList.add('hidden');
                 bioInput.classList.remove('hidden');
@@ -3705,7 +4082,7 @@ function updateOnlineUsersList(users) {
         socket.on('bio error', (error) => {
             showNotification(error, 'error');
         });
-
+ 
         function startPrivateChat() {
             const privateChatButton = document.getElementById('privateChatButton');
             const username = privateChatButton.getAttribute('data-username');
@@ -3848,7 +4225,7 @@ function makeDraggable(element, handle) {
         <div class="max-w-xs px-4 py-3 rounded-xl ${
             isOwn
                 ? 'bg-blue-600 text-white'
-                : 'bg-white/20 text-white'
+                : 'bg-gray-700 text-white'
         }">
             <div class="font-semibold text-sm mb-1">${isOwn ? 'أنت' : message.from}</div>
             <div class="text-sm">${message.content}</div>
@@ -3859,7 +4236,7 @@ function makeDraggable(element, handle) {
     container.appendChild(messageDiv);
     container.scrollTop = container.scrollHeight;
 }
-
+ 
         // وظيفة لعرض الإشعارات
         function showNotification(message, type = 'info') {
             const notificationsContainer = document.getElementById('globalNotifications');
@@ -3869,7 +4246,7 @@ function makeDraggable(element, handle) {
             if (type === 'error') bgColor = 'bg-red-600';
             if (type === 'success') bgColor = 'bg-green-600';
             if (type === 'warning') bgColor = 'bg-yellow-600';
-            
+             
             notification.className = `${bgColor} text-white p-4 rounded-lg shadow-lg notification`;
             notification.innerHTML = `
                 <div class="flex items-center space-x-3 space-x-reverse">
@@ -3877,7 +4254,7 @@ function makeDraggable(element, handle) {
                     <span>${message}</span>
                 </div>
             `;
-            
+             
             notificationsContainer.appendChild(notification);
             
             // إزالة الإشعار تلقائياً بعد 5 ثوانٍ
@@ -3927,14 +4304,14 @@ document.getElementById('chatFriendsButton')?.addEventListener('click', () => {
 });
 
 function openPostsSidebar() {
-    document.getElementById('postsSidebar').classList.add('show');
-    document.getElementById('postsOverlay').classList.add('show');
+    document.getElementById('postsModal').classList.add('show');
     loadPosts();
 }
 
 function closePostsSidebar() {
-    document.getElementById('postsSidebar').classList.remove('show');
-    document.getElementById('postsOverlay').classList.remove('show');
+    const modal = document.getElementById('postsModal');
+    modal.classList.remove('show');
+    modal.querySelector('#postsList').innerHTML = ''; // تفريغ المحتوى عند الإغلاق لتوفير الموارد
 }
 
 function createNewPost() {
@@ -3961,7 +4338,7 @@ function displayPosts(posts, prepend = false) {
     }
 
     if (posts.length === 0 && !prepend) {
-        container.innerHTML = '<p class="text-blue-200 text-sm text-center">لا توجد منشورات بعد.</p>';
+        container.innerHTML = '<p class="text-slate-400 text-sm text-center">لا توجد منشورات بعد.</p>';
         return;
     }
 
@@ -3971,7 +4348,7 @@ function displayPosts(posts, prepend = false) {
         const isLiked = post.likes && post.likes.includes(currentUser.name);
 
         return `
-            <div class="bg-slate-800/50 rounded-xl p-4 border border-slate-700" id="post-card-${post.id}">
+            <div class="bg-gray-800 rounded-xl p-4 border border-gray-700" id="post-card-${post.id}">
                 <!-- Post Header -->
                 <div class="flex items-center space-x-3 space-x-reverse mb-4">
                     <img src="${post.avatar || defaultAvatars.guest}" class="w-11 h-11 rounded-full object-cover cursor-pointer border-2 border-slate-600" onclick="showUserProfileModal('${post.username}')" alt="${post.username}">
@@ -3990,7 +4367,7 @@ function displayPosts(posts, prepend = false) {
                 <p class="text-slate-200 text-sm mb-4 whitespace-pre-wrap">${post.content}</p>
 
                 <!-- Post Actions -->
-                <div class="flex items-center justify-between text-slate-400 border-t border-slate-700 pt-2">
+                <div class="flex items-center justify-between text-slate-400 border-t border-gray-700 pt-2">
                     <button id="like-btn-${post.id}" onclick="likePost(${post.id})" class="flex items-center space-x-2 space-x-reverse hover:text-pink-500 transition-colors ${isLiked ? 'text-pink-500' : ''}">
                         <svg class="w-5 h-5" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.5l1.318-1.182a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"></path>
@@ -4006,10 +4383,10 @@ function displayPosts(posts, prepend = false) {
                 </div>
 
                 <!-- Comments Section -->
-                <div id="comments-section-${post.id}" class="hidden mt-4 pt-3 border-t border-slate-700">
+                <div id="comments-section-${post.id}" class="hidden mt-4 pt-3 border-t border-gray-700">
                     <div id="comments-list-${post.id}" class="space-y-3 mb-3 max-h-60 overflow-y-auto custom-scrollbar">
                         ${post.comments ? post.comments.map(comment => `
-                            <div class="bg-slate-700/50 rounded-lg p-3 text-sm">
+                            <div class="bg-gray-700/50 rounded-lg p-3 text-sm">
                                 <div class="flex items-center space-x-2 space-x-reverse mb-1">
                                     <p class="font-semibold text-blue-300">${comment.username}</p>
                                     <p class="text-xs text-slate-400">${new Date(comment.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
@@ -4019,7 +4396,7 @@ function displayPosts(posts, prepend = false) {
                         `).join('') : ''}
                     </div>
                     <div class="flex space-x-2 space-x-reverse mt-2">
-                        <input type="text" id="comment-input-${post.id}" placeholder="اكتب تعليقك..." class="flex-1 bg-slate-700 border border-slate-600 rounded-full px-4 py-2 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" onkeypress="if(event.key === 'Enter') addComment(${post.id})">
+                        <input type="text" id="comment-input-${post.id}" placeholder="اكتب تعليقك..." class="flex-1 bg-gray-700 border border-gray-600 rounded-full px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" onkeypress="if(event.key === 'Enter') addComment(${post.id})">
                         <button onclick="addComment(${post.id})" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-full transition-colors text-sm">
                             إرسال
                         </button>
@@ -4123,7 +4500,7 @@ socket.on('comment added', ({ postId, username, content, timestamp }) => {
 
     if (commentsList && commentCountElem) {
         const newComment = document.createElement('div');
-        newComment.className = 'bg-slate-700/50 rounded-lg p-3 text-sm';
+        newComment.className = 'bg-gray-700/50 rounded-lg p-3 text-sm';
         newComment.innerHTML = `
             <div class="flex items-center space-x-2 space-x-reverse mb-1">
                 <p class="font-semibold text-blue-300">${username}</p>
@@ -4237,7 +4614,7 @@ socket.on('notifications list', (notifications) => {
             text = `✍️ نشر <strong class="text-white">${notif.senderUsername}</strong> منشوراً جديداً.`;
         }
 
-        notifDiv.innerHTML = `<p class="text-blue-200">${text}</p>`;
+        notifDiv.innerHTML = `<p class="text-slate-300">${text}</p>`;
         container.appendChild(notifDiv);
     });
 });
@@ -4248,7 +4625,7 @@ socket.on('private conversations list', (conversations) => {
     let totalUnread = 0;
 
     if (conversations.length === 0) {
-        container.innerHTML = '<p class="text-blue-200 text-sm text-center p-4">لا توجد محادثات خاصة بعد.</p>';
+        container.innerHTML = '<p class="text-slate-400 text-sm text-center p-4">لا توجد محادثات خاصة بعد.</p>';
         return;
     }
 
@@ -4277,7 +4654,7 @@ socket.on('private conversations list', (conversations) => {
                     <p class="text-white font-semibold truncate">${otherUser}</p>
                 </div>
                 <div class="flex justify-between items-center">
-                    <p class="text-blue-200 text-sm truncate">${conv.lastMessage.content}</p>
+                    <p class="text-slate-400 text-sm truncate">${conv.lastMessage.content}</p>
                     ${conv.unreadCount > 0 ? `<span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">${conv.unreadCount}</span>` : ''}
                 </div>
             </div>
@@ -4379,13 +4756,13 @@ socket.on('top users list', (users) => {
     container.innerHTML = '';
 
     if (users.length === 0) {
-        container.innerHTML = '<p class="text-blue-200 text-center p-8">لا يوجد متفاعلون لعرضهم بعد.</p>';
+        container.innerHTML = '<p class="text-slate-400 text-center p-8">لا يوجد متفاعلون لعرضهم بعد.</p>';
         return;
     }
 
     users.forEach((user, index) => {
         const userDiv = document.createElement('div');
-        userDiv.className = 'flex items-center bg-white/5 p-3 rounded-lg hover:bg-white/10 transition-colors cursor-pointer';
+        userDiv.className = 'flex items-center bg-gray-800 p-3 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer';
         userDiv.onclick = () => showUserProfileModal(user.username);
 
         userDiv.innerHTML = `
@@ -4396,7 +4773,7 @@ socket.on('top users list', (users) => {
             }
             <div class="flex-1 min-w-0 mx-3">
                 <div class="text-white font-semibold truncate">${user.username}</div>
-                <div class="text-xs text-blue-200">📈 المستوى ${user.level}</div>
+                <div class="text-xs text-slate-400">📈 المستوى ${user.level}</div>
             </div>
             <div class="text-yellow-400 font-bold text-sm">⭐ ${user.points}</div>
         `;
@@ -4511,7 +4888,7 @@ function applyBackground(backgroundData) {
     
     // إزالة جميع فئات الخلفية الموجودة
     const gradientClasses = [
-        'from-purple-900', 'via-blue-900', 'to-indigo-900',
+        'from-purple-900', 'via-blue-900', 'to-indigo-900', 
         'from-green-900', 'to-purple-900',
         'from-pink-900', 'via-red-900', 'to-orange-900',
         'from-teal-900', 'via-cyan-900', 'to-blue-900',
@@ -4562,7 +4939,7 @@ function applyBackground(backgroundData) {
         
     } else {
         // إذا كانت تدرج لوني
-        body.classList.add('bg-gradient-to-br');
+        body.classList.add('bg-gradient-to-br'); 
         const gradientClasses = backgroundData.value.split(' ');
         gradientClasses.forEach(className => {
             body.classList.add(className);
@@ -4635,6 +5012,38 @@ function openImageUpload() {
 function openPrivateImageUpload() {
     document.getElementById('privateImageUpload').click();
 }
+
+function openImageUploadForProfile() {
+    document.getElementById('profileImageUpload').click();
+}
+
+// معالجة تحميل صورة الملف الشخصي
+document.getElementById('profileImageUpload').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith('image/')) {
+        showNotification('يرجى اختيار ملف صورة فقط', 'error');
+        return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+        showNotification('حجم الصورة يجب أن يكون أقل من 5MB', 'error');
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const imageData = e.target.result;
+        socket.emit('update avatar', {
+            username: currentUser.name,
+            avatarUrl: imageData,
+            currentUser: { ...currentUser, roomId: currentRoom ? currentRoom.id : null }
+        });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = ''; // إعادة تعيين الحقل
+});
 
 // معالجة تحميل الصور للمحادثة العامة
 document.getElementById('imageUpload').addEventListener('change', function(e) {
@@ -4780,43 +5189,34 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
     }
     messageDiv.setAttribute('data-message-id', messageId);
     
-    let rankBadge = '';
-    if (userRank) {
-        const rankInfo = ranks[userRank];
-        rankBadge = `
-            <div class="inline-flex items-center space-x-1 space-x-reverse bg-gradient-to-r ${rankInfo.color} px-2 py-1 rounded-full text-xs font-bold text-white shadow-lg mb-1">
-                <span>${rankInfo.icon}</span>
-                <span>${userRank}</span>
-            </div>
-        `;
-    }
     // زر الحذف: يظهر دائماً للاختبار
     let deleteBtn = '';
     if (messageId) {
         deleteBtn = `<button class=\"ml-2 text-red-400 hover:text-red-600 text-xs font-bold\" title=\"حذف الرسالة\" onclick=\"deleteRoomMessage('${messageId}')\">🗑️</button>`;
     }
 
+    const avatarHtml = avatarUrl 
+        ? `<img src="${avatarUrl}" class="w-full h-full rounded-full object-cover" alt="${user}">`
+        : `<div class="w-full h-full rounded-full bg-gray-400 flex items-center justify-center text-white font-bold text-sm">${user.charAt(0).toUpperCase()}</div>`;
+
+    const nameColorClass = document.querySelector(`#onlineUsersList [data-username="${user}"]`)?.dataset.nameColor || 'text-blue-200';
+
     messageDiv.innerHTML = `
-        <div class="max-w-xs lg:max-w-md px-3 py-2 rounded-2xl ${
-            isOwn ? 'bg-blue-600 text-white ml-3' : 'bg-white/20 text-white mr-3'
-        }">
-            <div class="flex items-center space-x-2 space-x-reverse mb-1">
-                ${avatarUrl ? 
-                    `<img src="${avatarUrl}" class="w-6 h-6 rounded-full object-cover" alt="${user}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">` :
-                    `<div class="w-6 h-6 rounded-full bg-gray-400 flex items-center justify-center text-white" onclick="showUserProfileModal('${user}')" style="cursor:pointer">
-                        ${user.charAt(0).toUpperCase()}
-                    </div>`
-                }
-                <div>
-                    ${rankBadge}
-                    <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : 'text-blue-200'}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
+        <div class="flex items-start gap-3">
+        <div class="flex items-start gap-3 flex-row-reverse">
+            <div class="avatar-container flex-shrink-0 cursor-pointer" onclick="showUserProfileModal('${user}')">
+                ${avatarHtml}
+            </div>
+            <div class="message-bubble ${isOwn ? 'bg-blue-600 text-white' : 'bg-gray-800 text-white'} rounded-lg">
+                <div class="flex items-center justify-between gap-4 mb-1">
+                    <div class="username-text font-semibold ${isOwn ? 'text-blue-100' : nameColorClass}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
+                    ${deleteBtn}
                 </div>
-                ${deleteBtn}
+                <div class="mb-1">
+                    <img src="${imageData}" class="max-w-full h-auto rounded-lg cursor-pointer chat-image" onclick="openImageModal('${imageData}')" alt="صورة محادثة">
+                </div>
+                <div class="timestamp-text opacity-70 text-gray-400 text-right">${time}</div>
             </div>
-            <div class="mb-1">
-                <img src="${imageData}" class="max-w-full h-auto rounded-lg cursor-pointer chat-image" onclick="openImageModal('${imageData}')" alt="صورة محادثة">
-            </div>
-            <div class="text-xs opacity-70">${time}</div>
         </div>
     `;
     
@@ -4858,11 +5258,11 @@ function addPrivateImageMessage(message, isOwn) {
     
     messageDiv.innerHTML = `
         <div class="max-w-xs px-4 py-3 rounded-xl ${
-            isOwn ? 'bg-blue-600 text-white' : 'bg-white/20 text-white'
+            isOwn ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-800'
         }">
-            <div class="font-semibold text-sm mb-1">${isOwn ? 'أنت' : message.from}</div>
+            <div class="font-semibold text-sm mb-1">${isOwn ? 'أنت' : message.from}</div> 
             <div class="mb-2">
-                <img src="${message.imageData}" class="max-w-full h-auto rounded-lg cursor-pointer" onclick="openImageModal('${message.imageData}')" alt="صورة محادثة">
+                <img src="${message.imageData}" class="max-w-full h-auto rounded-lg cursor-pointer" onclick="openImageModal('${message.imageData}')" alt="صورة محادثة"> 
             </div>
             <div class="text-xs opacity-70 mt-1 text-left">${message.time}</div>
         </div>
@@ -4983,9 +5383,10 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
     let rankBadge = '';
     if (userRank) {
         const rankInfo = ranks[userRank];
+        const iconHtml = getRankIconHtml(rankInfo.icon, "text-xs");
         rankBadge = `
             <div class="inline-flex items-center space-x-1 space-x-reverse bg-gradient-to-r ${rankInfo.color} px-2 py-1 rounded-full text-xs font-bold text-white shadow-lg mb-1">
-                <span>${rankInfo.icon}</span>
+                <span>${iconHtml}</span>
                 <span>${userRank}</span>
             </div>
         `;
@@ -4996,7 +5397,7 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
     
     messageDiv.innerHTML = `
         <div class="max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-            isOwn ? 'bg-blue-600 text-white ml-4' : 'bg-white/20 text-white mr-4'
+            isOwn ? 'bg-blue-600 text-white ml-4' : 'bg-gray-800 text-white mr-4'
         }">
             <div class="flex items-center space-x-3 space-x-reverse mb-2">
                 ${avatarUrl ? 
@@ -5007,7 +5408,7 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
                 }
                 <div>
                     ${rankBadge}
-                    <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : 'text-blue-200'}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
+                    <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : 'text-blue-300'}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
                 </div>
             </div>
             <div class="mb-2">
@@ -5096,11 +5497,11 @@ function addPrivateImageMessage(message, isOwn) {
     
     messageDiv.innerHTML = `
         <div class="max-w-xs px-4 py-3 rounded-xl ${
-            isOwn ? 'bg-blue-600 text-white' : 'bg-white/20 text-white'
+            isOwn ? 'bg-blue-600 text-white' : 'bg-gray-700 text-white'
         }">
-            <div class="font-semibold text-sm mb-1">${isOwn ? 'أنت' : message.from}</div>
+            <div class="font-semibold text-sm mb-1">${isOwn ? 'أنت' : message.from}</div> 
             <div class="mb-2">
-                <img src="${loadingImage}" data-src="${message.imageData}" class="max-w-full h-auto rounded-lg cursor-pointer chat-image" onclick="openImageModal('${message.imageData}')" alt="صورة محادثة" onload="handleImageLoad(this)" onerror="handleImageError(this)">
+                <img src="${loadingImage}" data-src="${message.imageData}" class="max-w-full h-auto rounded-lg cursor-pointer chat-image" onclick="openImageModal('${message.imageData}')" alt="صورة محادثة" onload="handleImageLoad(this)" onerror="handleImageError(this)"> 
             </div>
             <div class="text-xs opacity-70 mt-1 text-left">${message.time}</div>
         </div>
@@ -5140,6 +5541,290 @@ openPrivateChat = function(username) {
         });
     }, 500);
 };
+
+// --- دوال غرفة التحكم (Control Panel) ---
+function openControlPanel() {
+    const modal = document.getElementById('controlPanelModal');
+    modal.classList.add('show');
+    
+    // طلب الإحصائيات
+    socket.emit('get control stats', { currentUser });
+    socket.emit('get all users stats', { currentUser });
+    
+    // تحديث قائمة الغرف في لوحة التحكم
+    updateControlRoomsList();
+    updateRanksTable(); // تحديث جدول الرتب
+}
+
+function closeControlPanel() {
+    document.getElementById('controlPanelModal').classList.remove('show');
+}
+
+function updateControlRoomsList() {
+    const container = document.getElementById('controlRoomsList');
+    container.innerHTML = '';
+    
+    rooms.forEach(room => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between bg-gray-800 p-3 rounded-lg border border-gray-700';
+        div.innerHTML = `
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">${room.icon}</span>
+                <div>
+                    <div class="font-bold text-white">${room.name}</div>
+                    <div class="text-xs text-slate-400">${room.description}</div>
+                </div>
+            </div>
+            ${room.name !== 'غرفة الإدارة' ? `
+            <button onclick="deleteRoom(${room.id})" class="text-red-400 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-lg transition-colors" title="حذف الغرفة">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>` : '<span class="text-xs text-gray-500 px-2">ثابتة</span>'}
+        `;
+        container.appendChild(div);
+    });
+}
+
+function addNewRoom() {
+    const name = document.getElementById('newRoomName').value.trim();
+    const icon = document.getElementById('newRoomIcon').value.trim();
+    
+    if (!name || !icon) {
+        showNotification('يرجى إدخال اسم الغرفة والأيقونة', 'error');
+        return;
+    }
+    
+    socket.emit('add room', { name, icon, currentUser });
+    document.getElementById('newRoomName').value = '';
+    document.getElementById('newRoomIcon').value = '';
+}
+
+function deleteRoom(roomId) {
+    if (confirm('هل أنت متأكد من حذف هذه الغرفة؟')) {
+        socket.emit('delete room', { roomId, currentUser });
+    }
+}
+
+// دوال الإعلان الهام
+function setAnnouncement() {
+    const message = document.getElementById('announcementInput').value.trim();
+    if (!message) return;
+    socket.emit('set announcement', { message, currentUser });
+}
+
+function updateRanksTable() {
+    const tbody = document.getElementById('ranksTableBody');
+    tbody.innerHTML = '';
+
+    // تحويل كائن الرتب إلى مصفوفة وترتيبها حسب المستوى تنازلياً
+    const sortedRanks = Object.entries(ranks).map(([name, data]) => ({
+        name,
+        ...data
+    })).sort((a, b) => b.level - a.level);
+
+    sortedRanks.forEach(rank => {
+        const isOwner = rank.name === 'صاحب الموقع';
+        const iconHtml = getRankIconHtml(rank.icon);
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-700/30 transition-colors';
+        tr.innerHTML = `
+            <td class="px-4 py-3 font-medium text-white flex items-center gap-2">
+                ${iconHtml}
+                ${rank.name}
+                ${isOwner ? '<span class="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">ثابتة</span>' : ''}
+            </td>
+            <td class="px-4 py-3 font-bold text-blue-300">${rank.level}</td>
+            <td class="px-4 py-3">
+                <div class="w-6 h-6 rounded bg-gradient-to-r ${rank.color}"></div>
+            </td>
+            <td class="px-4 py-3">
+                ${!isOwner ? `
+                <div class="flex gap-2">
+                    <button onclick="editRank('${rank.name}')" class="text-blue-400 hover:text-blue-300 p-1 hover:bg-blue-500/10 rounded" title="تعديل">✏️</button>
+                    <button onclick="deleteRankDefinition('${rank.name}')" class="text-red-400 hover:text-red-300 p-1 hover:bg-red-500/10 rounded" title="حذف">🗑️</button>
+                </div>
+                ` : '<span class="text-slate-600 text-xs">لا يمكن التعديل</span>'}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function saveRankDefinition() {
+    const name = document.getElementById('customRankName').value.trim();
+    const iconText = document.getElementById('customRankIcon').value.trim();
+    const icon = tempRankIcon || iconText;
+    const level = document.getElementById('customRankLevel').value;
+    const color = document.getElementById('customRankColor').value;
+    const originalName = document.getElementById('editingRankName').value;
+    const targetUsername = document.getElementById('customRankTarget').value.trim();
+
+    if (!name || !icon || !level) {
+        showNotification('يرجى ملء حقول الرتبة (الاسم، الأيقونة، المستوى)', 'error');
+        return;
+    }
+
+    socket.emit('save rank', {
+        originalName,
+        name,
+        icon,
+        level,
+        color,
+        targetUsername,
+        currentUser
+    });
+    resetRankForm();
+}
+
+function editRank(rankName) {
+    const rank = ranks[rankName];
+    if (!rank) return;
+
+    document.getElementById('customRankName').value = rankName;
+    
+    if (rank.icon.startsWith('data:image') || rank.icon.startsWith('http')) {
+        tempRankIcon = rank.icon;
+        document.getElementById('rankIconPreview').src = tempRankIcon;
+        document.getElementById('rankIconPreviewContainer').classList.remove('hidden');
+        document.getElementById('customRankIcon').disabled = true;
+        document.getElementById('customRankIcon').value = '';
+    } else {
+        clearRankIconImage();
+        document.getElementById('customRankIcon').value = rank.icon;
+    }
+
+    document.getElementById('customRankLevel').value = rank.level;
+    document.getElementById('customRankColor').value = rank.color;
+    document.getElementById('editingRankName').value = rankName;
+    document.getElementById('rankFormTitle').textContent = `تعديل الرتبة: ${rankName}`;
+    document.getElementById('saveRankBtn').textContent = 'حفظ وتعيين';
+    document.getElementById('cancelRankEditBtn').classList.remove('hidden');
+}
+
+function deleteRankDefinition(rankName) {
+    if (confirm(`هل أنت متأكد من حذف الرتبة "${rankName}"؟ سيتم إزالتها من جميع المستخدمين.`)) {
+        socket.emit('delete rank definition', { rankName, currentUser });
+    }
+}
+
+function resetRankForm() {
+    document.getElementById('customRankName').value = '';
+    clearRankIconImage();
+    document.getElementById('customRankLevel').value = '';
+    document.getElementById('customRankTarget').value = '';
+    document.getElementById('editingRankName').value = '';
+    document.getElementById('rankFormTitle').textContent = 'إضافة رتبة جديدة';
+    document.getElementById('saveRankBtn').textContent = 'حفظ وتعيين';
+    document.getElementById('cancelRankEditBtn').classList.add('hidden');
+}
+
+function removeAnnouncement() {
+    if (confirm('هل أنت متأكد من إزالة الإعلان؟')) {
+        socket.emit('set announcement', { message: '', currentUser });
+        document.getElementById('announcementInput').value = '';
+    }
+}
+
+function hideAnnouncementLocal() {
+    document.getElementById('announcementBar').classList.add('hidden');
+}
+
+socket.on('announcement update', (message) => {
+    const bar = document.getElementById('announcementBar');
+    const text = document.getElementById('announcementText');
+    
+    if (message && message.trim() !== '') {
+        text.textContent = message;
+        bar.classList.remove('hidden');
+        // إضافة مسافة علوية للصفحة لكي لا يغطي الشريط المحتوى
+        document.body.style.paddingTop = '40px';
+    } else {
+        bar.classList.add('hidden');
+        document.body.style.paddingTop = '0';
+    }
+});
+
+// استقبال بيانات الإحصائيات
+socket.on('control stats data', (stats) => {
+    document.getElementById('statsTotalUsers').textContent = stats.totalUsers;
+    document.getElementById('statsOnline').textContent = stats.onlineCount;
+    document.getElementById('statsMales').textContent = stats.males;
+    document.getElementById('statsFemales').textContent = stats.females;
+});
+
+// استقبال بيانات قائمة المستخدمين الشاملة
+socket.on('all users stats data', (usersList) => {
+    window.allControlUsers = usersList; // تخزين القائمة للبحث
+    renderControlUsers(usersList);
+});
+
+function renderControlUsers(list) {
+    const tbody = document.getElementById('controlUsersTableBody');
+    tbody.innerHTML = '';
+    
+    if (list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-4 text-center text-slate-500">لا توجد نتائج</td></tr>';
+        return;
+    }
+
+    list.forEach(user => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-700/50 transition-colors';
+        tr.innerHTML = `
+            <td class="px-4 py-3 font-medium text-white flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full ${user.isOnline ? 'bg-green-500' : 'bg-gray-500'}"></div>
+                ${user.username}
+            </td>
+            <td class="px-4 py-3">${user.gender === 'male' ? '👨 ذكر' : '👩 أنثى'}</td>
+            <td class="px-4 py-3"><span class="bg-gray-700 px-2 py-1 rounded text-xs">${user.rank}</span></td>
+            <td class="px-4 py-3 text-blue-300 font-bold">${user.level}</td>
+            <td class="px-4 py-3 text-yellow-400 font-bold">⭐ ${user.points}</td>
+            <td class="px-4 py-3">
+                <span class="${user.isOnline ? 'text-green-400 bg-green-400/10' : 'text-slate-400 bg-slate-400/10'} text-xs px-2 py-1 rounded-full border ${user.isOnline ? 'border-green-400/20' : 'border-slate-400/20'}">
+                    ${user.isOnline ? 'متصل' : 'غير متصل'}
+                </span>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function filterControlUsers() {
+    const query = document.getElementById('controlUserSearch').value.toLowerCase();
+    if (!window.allControlUsers) return;
+    
+    const filtered = window.allControlUsers.filter(u => u.username.toLowerCase().includes(query));
+    renderControlUsers(filtered);
+}
+
+// تحديث قائمة الغرف في لوحة التحكم عند حدوث تغيير
+socket.on('rooms update', (updatedRooms) => {
+    rooms = updatedRooms;
+    loadRooms(); // تحديث القائمة الرئيسية
+    
+    // إذا كانت لوحة التحكم مفتوحة، قم بتحديث قائمتها أيضاً
+    if (document.getElementById('controlPanelModal').classList.contains('show')) {
+        updateControlRoomsList();
+    }
+});
+
+socket.on('ranks update', (updatedRanks) => {
+    ranks = updatedRanks;
+    updateWingsConfig();
+    if (document.getElementById('controlPanelModal').classList.contains('show')) {
+        updateRanksTable();
+    }
+    // تحديث رسالة الترحيب إذا كانت معروضة لضمان ظهور أيقونة الرتبة
+    if (currentUser) {
+        updateWelcomeMessage();
+    }
+});
+
+// استقبال خطأ الانضمام للغرفة (مثل وجود اسم مكرر)
+socket.on('join error', (error) => {
+    showNotification(error, 'error');
+    hideLoading();
+    goBack(); // إعادة المستخدم للصفحة الرئيسية
+});
     </script>
 </body>
 </html>

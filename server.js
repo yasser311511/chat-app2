@@ -12,13 +12,20 @@ const { Sequelize, DataTypes } = require('sequelize');
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   protocol: 'postgres',
+  pool: {
+    max: 10,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
+  },
   dialectOptions: {
     ssl: {
       require: true,
       rejectUnauthorized: false
-    }
+    },
+    keepAlive: true
   },
-  logging: false
+  logging: false // يمكنك تفعيل هذا لرؤية استعلامات SQL عند الحاجة
 });
 
 // تعريف نماذج قاعدة البيانات
@@ -33,6 +40,14 @@ const User = sequelize.define('User', {
 const UserRank = sequelize.define('UserRank', {
   username: { type: DataTypes.STRING, primaryKey: true },
   rank: { type: DataTypes.STRING, allowNull: false }
+});
+
+const RankDefinition = sequelize.define('RankDefinition', {
+  name: { type: DataTypes.STRING, primaryKey: true },
+  color: { type: DataTypes.STRING, allowNull: false },
+  icon: { type: DataTypes.TEXT, allowNull: false }, // تغيير إلى TEXT لدعم الصور الكبيرة
+  level: { type: DataTypes.INTEGER, allowNull: false },
+  wingId: { type: DataTypes.STRING, allowNull: true }
 });
 
 const UserManagement = sequelize.define('UserManagement', {
@@ -154,8 +169,8 @@ const io = socketIo(server, {
 });
 
 // نظام الرتب
-const ranks = {
-  'صاحب الموقع': { color: 'from-red-600 to-orange-400', icon: '🏆', level: 6 },
+let ranks = {
+  'صاحب الموقع': { color: 'from-red-600 to-orange-400', icon: '🏆', level: 100 }, // مستوى 100 ليكون الأعلى دائماً
   'رئيس': { color: 'from-yellow-400 to-yellow-500', icon: '🎩', level: 5 },
   'رئيسة': { color: 'from-yellow-400 to-yellow-500', icon: '🎩', level: 5 },
   'منشئ': { color: 'from-yellow-400 to-orange-500', icon: '👑', level: 4 },
@@ -167,9 +182,9 @@ const ranks = {
 
 // قائمة المستخدمين الخاصين (نقاط ومستوى ثابت)
 const SPECIAL_USERS_CONFIG = {
-  "Walid dz 31": { points: 99999, level: 9999 },
-  "سيد احمد": { points: 99999, level: 9999 },
-  "ميارا": { points: 99999, level: 9999 }
+  "Walid dz 31": { points: 999999, level: 999999 },
+  "سيد احمد": { points: 999999, level: 999999 },
+  "ميارا": { points: 999999, level: 999999 }
 };
 
 // المستخدم الخاص
@@ -249,6 +264,9 @@ const SPAM_TIME_WINDOW_MS = 15000; // 15 ثانية
 const SPAM_MUTE_DURATION_MIN = 10;
 const BOT_AVATAR_URL = 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=system-bot';
 
+// --- متغير لتتبع آخر نشاط للمستخدم لمنع التكرار (Debounce) ---
+const userLastAction = {};
+
 
 // تحميل البيانات من قاعدة البيانات
 async function loadData() {
@@ -261,6 +279,7 @@ async function loadData() {
       // استخدام alter: false لمعظم النماذج لتجنب التغييرات غير المقصودة
       await User.sync({ alter: false });
       await UserRank.sync({ alter: false });
+      await RankDefinition.sync({ alter: false });
       await UserManagement.sync({ alter: false });
       await UserAvatar.sync({ alter: false });
       await UserSession.sync({ alter: false });
@@ -323,6 +342,43 @@ async function loadData() {
     ranksData.forEach(rank => {
       userRanks[rank.username] = rank.rank;
     });
+
+    // تحميل تعاريف الرتب من قاعدة البيانات
+    const storedRankDefinitions = await RankDefinition.findAll();
+    if (storedRankDefinitions.length > 0) {
+        ranks = {}; // إعادة تعيين الرتب في الذاكرة
+        storedRankDefinitions.forEach(r => {
+            ranks[r.name] = { 
+                color: r.color, 
+                icon: r.icon, 
+                level: r.level, 
+                wingId: r.wingId 
+            };
+        });
+        console.log('تم تحميل تعاريف الرتب من قاعدة البيانات');
+    } else {
+        console.log('تهيئة الرتب الافتراضية في قاعدة البيانات...');
+        for (const [name, data] of Object.entries(ranks)) {
+             const wingId = data.level >= 5 ? 'owners' : (data.level >= 3 ? 'kings' : 'distinguished');
+             try {
+                 await RankDefinition.create({
+                    name,
+                    color: data.color,
+                    icon: data.icon,
+                    level: data.level,
+                    wingId
+                 });
+                 ranks[name].wingId = wingId; // تحديث الذاكرة لتشمل الجناح
+             } catch (e) {
+                 console.error(`Error saving default rank ${name}:`, e.message);
+             }
+        }
+    }
+
+    // التأكد من أن مستوى صاحب الموقع هو 100 دائماً
+    if (ranks['صاحب الموقع']) {
+        ranks['صاحب الموقع'].level = 100;
+    }
     
     // تحميل إدارة المستخدمين
     const mutedUsers = await UserManagement.findAll({ where: { type: 'mute' } });
@@ -1137,8 +1193,17 @@ let rooms = [
   { id: 11, name: 'غرفة الإدارة', icon: '👑', description: 'غرفة خاصة للإدارة والمشرفين', users: [], protected: true }
 ];
 
+let globalAnnouncement = ''; // متغير لتخزين الإعلان الهام
 let messages = {};
 let onlineUsers = {};
+
+// دالة مساعدة لتنسيق أيقونة الرتبة (صورة أو نص)
+function getRankIconHtml(icon) {
+    if (icon && (icon.startsWith('data:image') || icon.startsWith('http'))) {
+        return `<img src="${icon}" class="w-5 h-5 inline-block align-middle object-contain" alt="rank">`;
+    }
+    return icon;
+}
 
 // دوال التحقق من الصلاحيات
 function canManageRanks(user, roomName) {
@@ -1148,12 +1213,22 @@ function canManageRanks(user, roomName) {
   return userLevel >= 2; // ادمن فما فوق
 }
 
-function canManageUsers(user, roomName) {
-  // صاحب الموقع يمكنه إدارة المستخدمين من أي غرفة
-  if (user && user.name === SITE_OWNER.username) return true;
-  if (roomName !== 'غرفة الإدارة') return false;
-  const userLevel = ranks[user.rank]?.level || 0;
-  return userLevel >= 3; // سوبر ادمن فما فوق
+// دالة عامة للتحقق من صلاحية الإدارة بناءً على المستوى
+function canManageTargetUser(manager, targetUsername) {
+    if (!manager || !manager.name) return false;
+    
+    // صاحب الموقع لديه صلاحية مطلقة (إلا على نفسه، يتم التعامل معها في المنطق الخاص)
+    if (manager.name === SITE_OWNER.username) return true;
+
+    const managerRank = userRanks[manager.name];
+    const targetRank = userRanks[targetUsername];
+
+    const managerLevel = managerRank ? (ranks[managerRank]?.level || 0) : 0;
+    const targetLevel = targetRank ? (ranks[targetRank]?.level || 0) : 0;
+
+    // المدير يجب أن يكون لديه مستوى أعلى تماماً من الهدف
+    // وأيضاً يجب أن يكون لديه حد أدنى من الصلاحيات (مثلاً مستوى 2 أو 3)
+    return managerLevel > targetLevel && managerLevel >= 2;
 }
 
 function canSendMessage(username, roomName) {
@@ -1183,6 +1258,10 @@ io.on('connection', (socket) => {
     socket.disconnect(true);
     return;
   }
+
+  // إرسال الإعلان الحالي للمستخدم الجديد
+  socket.emit('announcement update', globalAnnouncement);
+  socket.emit('ranks update', ranks); // إرسال الرتب فور الاتصال لضمان تحميل الرتب الخاصة
   
   // إرسال بيانات الصور عند الطلب
 socket.on('get user avatars', () => {
@@ -1191,6 +1270,14 @@ socket.on('get user avatars', () => {
 socket.on('create post', async (data) => {
     const { content, username } = data;
     const timestamp = Date.now();
+    
+    // منع التكرار السريع (Debounce) - 2 ثانية
+    if (userLastAction[username] && userLastAction[username].type === 'create_post' && 
+        userLastAction[username].content === content && 
+        (timestamp - userLastAction[username].timestamp) < 2000) {
+        return;
+    }
+    userLastAction[username] = { type: 'create_post', content, timestamp };
     
     try {
         const postId = await savePost(username, content, timestamp);
@@ -1255,6 +1342,14 @@ socket.on('get posts', () => {
 socket.on('like post', async (data) => {
     const { postId, username } = data;
     
+    // منع التكرار السريع للإعجابات (Debounce) - 1 ثانية
+    const now = Date.now();
+    if (userLastAction[username] && userLastAction[username].type === 'like_post' && 
+        userLastAction[username].postId === postId && (now - userLastAction[username].timestamp) < 1000) {
+        return;
+    }
+    userLastAction[username] = { type: 'like_post', postId, timestamp: now };
+    
     if (posts[postId]) {
         const postAuthor = posts[postId].username;
 
@@ -1297,6 +1392,13 @@ socket.on('like post', async (data) => {
 socket.on('add comment', async (data) => {
     const { postId, username, content } = data;
     const timestamp = Date.now();
+    
+    // منع التكرار السريع للتعليقات (Debounce) - 2 ثانية
+    if (userLastAction[username] && userLastAction[username].type === 'add_comment' && 
+        userLastAction[username].content === content && (timestamp - userLastAction[username].timestamp) < 2000) {
+        return;
+    }
+    userLastAction[username] = { type: 'add_comment', content, timestamp };
     
     if (posts[postId]) {
         await savePostComment(postId, username, content, timestamp);
@@ -1344,7 +1446,8 @@ socket.on('add comment', async (data) => {
 socket.on('delete post', async (data) => {
     const { postId, username } = data;
 
-    if (posts[postId] && posts[postId].username === username) {
+    // السماح لصاحب المنشور أو صاحب الموقع بالحذف
+    if (posts[postId] && (posts[postId].username === username || username === SITE_OWNER.username)) {
         const deleted = await deletePost(postId, username);
         if (deleted) {
             delete posts[postId];
@@ -1514,6 +1617,12 @@ socket.on('send private image', async (data) => {
   // حدث تسجيل الدخول
   socket.on('user login', async (userData) => {
     try {
+      // --- التحقق من الحظر من الموقع ---
+      if (userManagement.bannedFromSite[userData.username]) {
+        socket.emit('login error', 'عذراً، لقد تم حظرك من الموقع.');
+        return;
+      }
+
       // البحث عن المستخدم في الذاكرة (التي تم تحميلها من قاعدة البيانات)
       const userInMemory = users[userData.username];
 
@@ -1535,6 +1644,7 @@ socket.on('send private image', async (data) => {
             sessionId: sessionId,
             nameColor: userInMemory.nameColor
           });
+          socket.emit('ranks update', ranks); // إرسال الرتب الحالية عند تسجيل الدخول
           return; // إنهاء الدالة بعد تسجيل الدخول الناجح
         }
       }
@@ -1569,12 +1679,13 @@ socket.on('send private image', async (data) => {
   socket.emit('register success', {
     name: userData.username,
     rank: null,
-    isSiteOwner: false,
+    isSiteOwner: userData.username === SITE_OWNER.username,
     gender: userData.gender,
     socketId: socket.id,
     sessionId: sessionId,
     nameColor: null
   });
+  socket.emit('ranks update', ranks);
 });
 
   // في حدث join room - البحث عن هذا الجزء واستبداله
@@ -1582,7 +1693,22 @@ socket.on('join room', (data) => {
     const { roomId, user } = data;
     
     const room = rooms.find(r => r.id === roomId);
-    if (!room) return;
+    if (!room) {
+        socket.emit('join error', 'الغرفة غير موجودة.');
+        return;
+    }
+    // --- التحقق من الحظر من الغرفة ---
+    if (userManagement.bannedFromRoom[room.name] && userManagement.bannedFromRoom[room.name][user.name]) {
+        socket.emit('banned from room', { room: room.name, reason: userManagement.bannedFromRoom[room.name][user.name].reason });
+        return;
+    }
+
+    // --- التحقق من عدم وجود اسم مكرر في الغرفة ---
+    const isNameInRoom = room.users.some(u => u.name === user.name);
+    if (isNameInRoom) {
+        socket.emit('join error', 'عذراً، لا يمكنك الدخول لوجود مستخدم بنفس الاسم داخل هذه الغرفة.');
+        return;
+    }
     
     // تخزين بيانات المستخدم
     onlineUsers[socket.id] = {
@@ -1620,13 +1746,16 @@ socket.on('join room', (data) => {
     io.to(roomId).emit('users update', room.users);
     
     // إرسال رسالة ترحيب - الجزء المعدل
-    let welcomeContent = `🚪 انضم <strong class="text-white">${user.name}</strong> إلى الغرفة.`;
+    const userNameWithColor = `<strong style="color: ${users[user.name]?.nameColor || 'white'}">${user.name}</strong>`;
+    let welcomeContent = `🚪 انضم ${userNameWithColor} إلى الغرفة.`;
     if (user.rank) {
-        welcomeContent = `🚪 انضم ${ranks[user.rank].icon} <strong class="text-white">${user.rank} ${user.name}</strong> إلى الغرفة.`;
+        const rankInfo = ranks[user.rank];
+        const iconHtml = getRankIconHtml(rankInfo.icon);
+        welcomeContent = `🚪 انضم ${iconHtml} <span class="font-bold bg-clip-text text-transparent bg-gradient-to-r ${rankInfo.color}">${user.rank}</span> ${userNameWithColor} إلى الغرفة.`;
     }
     const welcomeMessage = {
       type: 'system',
-      content: welcomeContent,
+      content: welcomeContent, // المحتوى الآن يتضمن HTML للتنسيق
       time: new Date().toLocaleTimeString('en-GB'),
     };
     
@@ -1669,6 +1798,13 @@ socket.on('join room', (data) => {
   
   socket.on('send message', async (data) => {
     const { roomId, message, user, replyTo } = data;
+
+    // التحقق من طول الرسالة في السيرفر
+    if (message && message.length > 200) {
+        socket.emit('message error', 'الرسالة طويلة جداً (الحد الأقصى 200 حرف).');
+        return;
+    }
+
     const room = rooms.find(r => r.id === roomId);
     
     if (!room || !canSendMessage(user.name, room.name)) {
@@ -1784,27 +1920,17 @@ socket.on('join room', (data) => {
     const authorUsername = msg.user;
     const deleterUsername = currentUser.name;
 
-    // التحقق من صلاحيات الحذف
-    const authorRank = userRanks[authorUsername] || null;
-    const deleterRank = currentUser.rank || null;
-
-    const authorLevel = authorRank ? ranks[authorRank]?.level || 0 : 0;
-    const deleterLevel = deleterRank ? ranks[deleterRank]?.level || 0 : 0;
-
     const isMessageOwner = authorUsername === deleterUsername;
     const isSiteOwner = deleterUsername === SITE_OWNER.username;
-    const isPresident = deleterLevel >= 5; // رئيس أو رئيسة
-    // 1. لا يمكن حذف رسائل صاحب الموقع
+
+    // 1. لا يمكن حذف رسائل صاحب الموقع إلا من قبله
     if (authorUsername === SITE_OWNER.username && !isSiteOwner) {
         socket.emit('message error', 'لا يمكن حذف رسائل صاحب الموقع.');
         return;
     }
-
     // 2. التحقق من الصلاحيات
-    const canDelete = 
-        isSiteOwner || // صاحب الموقع يحذف أي رسالة
-        isPresident || // الرئيس أو الرئيسة يحذفون أي رسالة (ما عدا صاحب الموقع)
-        (!isMessageOwner && deleterLevel > authorLevel); // رتبة الحاذف أعلى من رتبة صاحب الرسالة
+    // يمكن الحذف إذا كان هو صاحب الرسالة، أو إذا كان لديه صلاحية إدارة المستخدم صاحب الرسالة
+    const canDelete = isMessageOwner || canManageTargetUser(currentUser, authorUsername);
 
     if (!canDelete) {
         socket.emit('message error', 'رتبتك لا تسمح بحذف هذه الرسالة.');
@@ -1827,28 +1953,14 @@ socket.on('join room', (data) => {
   // أيضًا في حدث leave room - البحث عن هذا الجزء واستبداله
 socket.on('leave room', async (data) => {
     const { roomId, user } = data;
+    if (!user || !user.name) return;
+
     const room = rooms.find(r => r.id === roomId);
     
     if (room) {
       room.users = room.users.filter(u => u.id !== socket.id);
       io.emit('rooms update', rooms);
       io.to(roomId).emit('users update', room.users);
-    }
-    
-    // رسالة المغادرة - الجزء المعدل
-    let leaveContent = `🚪 غادر <strong class="text-white">${user.name}</strong> الغرفة.`;
-    if (user.rank) {
-        leaveContent = `🚪 غادر ${ranks[user.rank].icon} <strong class="text-white">${user.rank} ${user.name}</strong> الغرفة.`;
-    }
-    const leaveMessage = {
-      type: 'system',
-      content: leaveContent,
-      time: new Date().toLocaleTimeString('en-GB'),
-    };
-    
-    if (messages[roomId]) {
-      messages[roomId].push(leaveMessage);
-      io.to(roomId).emit('new message', leaveMessage);
     }
     
     // تحديث آخر ظهور للمستخدم وحفظه
@@ -1895,11 +2007,12 @@ socket.on('leave room', async (data) => {
     
     // إرسال إشعار للجميع
     const rankInfo = ranks[rank];
+    const iconHtml = getRankIconHtml(rankInfo.icon);
     const notificationMessage = {
       type: 'system',
       user: 'رسائل النظام',
       avatar: BOT_AVATAR_URL,
-      content: `👑 تم منح رتبة ${rankInfo.icon} ${rank} للمستخدم ${username} من قبل ${currentUser.name}`, 
+      content: `👑 تم منح رتبة ${iconHtml} ${rank} للمستخدم ${username} من قبل ${currentUser.name}`, 
       time: new Date().toLocaleTimeString('en-GB')
     };
     
@@ -1992,7 +2105,8 @@ socket.on('leave room', async (data) => {
       
       sortedUsers.forEach(([username, rank]) => {
         const rankInfo = ranks[rank];
-        ranksList += `${rankInfo.icon} ${username} - ${rank}\n`;
+        const iconDisplay = (rankInfo.icon.startsWith('data:image') || rankInfo.icon.startsWith('http')) ? '[صورة]' : rankInfo.icon;
+        ranksList += `${iconDisplay} ${username} - ${rank}\n`;
       });
     }
     
@@ -2008,23 +2122,12 @@ socket.on('leave room', async (data) => {
   // أحداث إدارة المستخدمين
   socket.on('mute user', async (data) => {
     const { username, duration, currentUser } = data;
-    const userRoomId = onlineUsers[socket.id]?.roomId;
-    const room = rooms.find(r => r.id === userRoomId);
     
-    // التحقق من صلاحيات الإدارة
-    const targetRank = userRanks[username] || null;
-    const managerRank = currentUser.rank || null;
-    const targetLevel = targetRank ? ranks[targetRank]?.level || 0 : 0;
-    const managerLevel = managerRank ? ranks[managerRank]?.level || 0 : 0;
-    const isSiteOwner = currentUser.name === SITE_OWNER.username;
-
-    if (!isSiteOwner && managerLevel <= targetLevel) {
-        socket.emit('management error', 'رتبتك لا تسمح بإدارة هذا المستخدم.');
-        return;
-    }
-
-    if (!canManageUsers(currentUser, room.name)) {
-      socket.emit('management error', 'ليس لديك صلاحية لإدارة المستخدمين');
+    // التحقق من الصلاحيات باستخدام الدالة الجديدة
+    // ملاحظة: canManageTargetUser تتحقق من أن مستوى المدير > مستوى الهدف
+    if (!canManageTargetUser(currentUser, username)) {
+      // رسالة خطأ أكثر وضوحاً
+      socket.emit('management error', 'عذراً، لا يمكنك كتم هذا المستخدم لأن رتبته مساوية أو أعلى منك.');
       return;
     }
     
@@ -2062,26 +2165,14 @@ socket.on('leave room', async (data) => {
 
   socket.on('unmute user', async (data) => {
     const { username, currentUser } = data;
-    const userRoomId = onlineUsers[socket.id]?.roomId;
-    const room = rooms.find(r => r.id === userRoomId);
     
-    // التحقق من صلاحيات الإدارة
-    const targetRank = userRanks[username] || null;
-    const managerRank = currentUser.rank || null;
-    const targetLevel = targetRank ? ranks[targetRank]?.level || 0 : 0;
-    const managerLevel = managerRank ? ranks[managerRank]?.level || 0 : 0;
-    const isSiteOwner = currentUser.name === SITE_OWNER.username;
-
-    if (!isSiteOwner && managerLevel <= targetLevel) {
-        socket.emit('management error', 'رتبتك لا تسمح بإدارة هذا المستخدم.');
-        return;
-    }
-
-    if (!canManageUsers(currentUser, room.name)) {
-      socket.emit('management error', 'ليس لديك صلاحية لإدارة المستخدمين');
+    // التحقق من الصلاحية أولاً
+    if (!canManageTargetUser(currentUser, username)) {
+      socket.emit('management error', 'عذراً، لا يمكنك إلغاء كتم هذا المستخدم لأن رتبته مساوية أو أعلى منك.');
       return;
     }
     
+    // التحقق إذا كان المستخدم مكتوماً بالفعل
     if (userManagement.mutedUsers[username]) {
       delete userManagement.mutedUsers[username];
       await removeMuteUser(username);
@@ -2101,7 +2192,7 @@ socket.on('leave room', async (data) => {
       
       socket.emit('management success', `تم إلغاء كتم المستخدم ${username} في جميع الغرف بنجاح`);
     } else {
-      socket.emit('management error', 'المستخدم غير مكتوم');
+      socket.emit('management error', 'المستخدم غير مكتوم حالياً.');
     }
   });
 
@@ -2110,20 +2201,8 @@ socket.on('leave room', async (data) => {
     const userRoomId = onlineUsers[socket.id]?.roomId;
     const room = rooms.find(r => r.id === userRoomId);
     
-    // التحقق من صلاحيات الإدارة
-    const targetRank = userRanks[username] || null;
-    const managerRank = currentUser.rank || null;
-    const targetLevel = targetRank ? ranks[targetRank]?.level || 0 : 0;
-    const managerLevel = managerRank ? ranks[managerRank]?.level || 0 : 0;
-    const isSiteOwner = currentUser.name === SITE_OWNER.username;
-
-    if (!isSiteOwner && managerLevel <= targetLevel) {
-        socket.emit('management error', 'رتبتك لا تسمح بإدارة هذا المستخدم.');
-        return;
-    }
-
-    if (!canManageUsers(currentUser, room.name)) {
-      socket.emit('management error', 'ليس لديك صلاحية لإدارة المستخدمين');
+    if (!canManageTargetUser(currentUser, username)) {
+      socket.emit('management error', 'عذراً، لا يمكنك إلغاء حظر هذا المستخدم لأن رتبته مساوية أو أعلى منك.');
       return;
     }
     
@@ -2188,7 +2267,7 @@ socket.on('leave room', async (data) => {
         return;
     }
 
-    if (!canManageUsers(currentUser, room.name)) {
+    if (!canManageTargetUser(currentUser, username)) {
       socket.emit('management error', 'ليس لديك صلاحية لإدارة المستخدمين');
       return;
     }
@@ -2216,24 +2295,11 @@ socket.on('leave room', async (data) => {
 
   socket.on('ban from site', async (data) => {
     const { username, reason, currentUser } = data;
-    const userRoomId = onlineUsers[socket.id]?.roomId;
-    const room = rooms.find(r => r.id === userRoomId);
     
-    // التحقق من صلاحيات الإدارة
-    const targetRank = userRanks[username] || null;
-    const managerRank = currentUser.rank || null;
-    const targetLevel = targetRank ? ranks[targetRank]?.level || 0 : 0;
-    const managerLevel = managerRank ? ranks[managerRank]?.level || 0 : 0;
-    const isSiteOwner = currentUser.name === SITE_OWNER.username;
-
-    if (!isSiteOwner && managerLevel <= targetLevel) {
-        socket.emit('management error', 'رتبتك لا تسمح بإدارة هذا المستخدم.');
+    // الحظر من الموقع حصري لصاحب الموقع فقط
+    if (currentUser.name !== SITE_OWNER.username) {
+        socket.emit('management error', 'عذراً، ميزة الحظر من الموقع متاحة فقط لصاحب الموقع.');
         return;
-    }
-
-    if (!canManageUsers(currentUser, room.name)) {
-      socket.emit('management error', 'ليس لديك صلاحية لإدارة المستخدمين');
-      return;
     }
     
     // منع حظر صاحب الموقع
@@ -2279,24 +2345,11 @@ socket.on('leave room', async (data) => {
 
   socket.on('unban from site', async (data) => {
     const { username, currentUser } = data;
-    const userRoomId = onlineUsers[socket.id]?.roomId;
-    const room = rooms.find(r => r.id === userRoomId);
     
-    // التحقق من صلاحيات الإدارة
-    const targetRank = userRanks[username] || null;
-    const managerRank = currentUser.rank || null;
-    const targetLevel = targetRank ? ranks[targetRank]?.level || 0 : 0;
-    const managerLevel = managerRank ? ranks[managerRank]?.level || 0 : 0;
-    const isSiteOwner = currentUser.name === SITE_OWNER.username;
-
-    if (!isSiteOwner && managerLevel <= targetLevel) {
-        socket.emit('management error', 'رتبتك لا تسمح بإدارة هذا المستخدم.');
+    // إلغاء الحظر من الموقع حصري لصاحب الموقع فقط
+    if (currentUser.name !== SITE_OWNER.username) {
+        socket.emit('management error', 'عذراً، ميزة إلغاء الحظر من الموقع متاحة فقط لصاحب الموقع.');
         return;
-    }
-
-    if (!canManageUsers(currentUser, room.name)) {
-      socket.emit('management error', 'ليس لديك صلاحية لإدارة المستخدمين');
-      return;
     }
     
     if (userManagement.bannedFromSite[username]) {
@@ -2325,10 +2378,9 @@ socket.on('leave room', async (data) => {
   socket.on('delete user', async (data) => {
     const { username, currentUser } = data;
     const userRoomId = onlineUsers[socket.id]?.roomId;
-    const room = rooms.find(r => r.id === userRoomId);
     
-    if (!room || !canManageUsers(currentUser, room.name)) {
-      socket.emit('management error', 'ليس لديك صلاحية لإدارة المستخدمين');
+    if (!canManageTargetUser(currentUser, username)) {
+      socket.emit('management error', 'عذراً، لا يمكنك حذف هذا المستخدم لأن رتبته مساوية أو أعلى منك.');
       return;
     }
     
@@ -2401,10 +2453,11 @@ socket.on('leave room', async (data) => {
   socket.on('get user status', (data) => {
     const { username, currentUser } = data;
     const userRoomId = onlineUsers[socket.id]?.roomId;
-    const room = rooms.find(r => r.id === userRoomId);
     
-    if (!room || !canManageUsers(currentUser, room.name)) {
-      socket.emit('management error', 'ليس لديك صلاحية لعرض حالة المستخدمين');
+    // أي شخص لديه صلاحية إدارة (مستوى 2 فما فوق) يمكنه رؤية الحالة، 
+    // لكن لا يشترط أن يكون أعلى من الهدف لرؤية الحالة فقط
+    if ((ranks[currentUser.rank]?.level || 0) < 2) {
+      socket.emit('management error', 'ليس لديك صلاحية لعرض حالة المستخدمين.');
       return;
     }
     
@@ -2475,7 +2528,7 @@ socket.on('leave room', async (data) => {
     // السماح بتعديل الصورة في غرفة تخصيص المظهر أو غرفة الإدارة
     const canEdit = (room && room.name === 'غرفة تخصيص المظهر') || 
                    (username === currentUser.name) || 
-                   (room && room.name === 'غرفة الإدارة' && canManageUsers(currentUser, room.name));
+                   (room && room.name === 'غرفة الإدارة' && canManageTargetUser(currentUser, username));
     
     if (!canEdit) {
       socket.emit('avatar error', 'ليس لديك صلاحية لتعديل هذه الصورة');
@@ -2952,25 +3005,6 @@ socket.on('disconnect', async (reason) => {
         io.to(roomId).emit('users update', room.users);
       }
       
-      // رسالة المغادرة - تم تعديلها لتوضيح سبب الخروج
-      let leaveContent = `🔌 فقد <strong class="text-white">${user.name}</strong> الاتصال بالغرفة.`;
-      if (reason === 'ping timeout') {
-          leaveContent = `🔌 فقد <strong class="text-white">${user.name}</strong> الاتصال بسبب الخمول.`;
-      }
-      if (user.rank) {
-          leaveContent = `🚪 غادر ${ranks[user.rank].icon} <strong class="text-white">${user.rank} ${user.name}</strong> الغرفة.`;
-      }
-      const leaveMessage = {
-        type: 'system',
-        content: leaveContent, 
-        time: new Date().toLocaleTimeString('en-GB'),
-      };
-      
-      if (messages[roomId]) {
-        messages[roomId].push(leaveMessage);
-        io.to(roomId).emit('new message', leaveMessage);
-      }
-      
       // تحديث آخر ظهور للمستخدم
       const lastSeenTime = Date.now();
       userLastSeen[user.name] = lastSeenTime;
@@ -3348,6 +3382,254 @@ socket.on('disconnect', async (reason) => {
   socket.on('get shop items', () => {
     socket.emit('shop items data', shopItems);
   });
+
+  // --- أحداث غرفة التحكم (Control Room) ---
+  
+  // 1. جلب الإحصائيات
+  socket.on('get control stats', async (data) => {
+    if (data.currentUser.name !== SITE_OWNER.username) return;
+
+    try {
+      const totalUsers = await User.count();
+      const males = await User.count({ where: { gender: 'male' } });
+      const females = await User.count({ where: { gender: 'female' } });
+      const onlineCount = Object.keys(onlineUsers).length;
+
+      socket.emit('control stats data', {
+        totalUsers,
+        males,
+        females,
+        onlineCount,
+        roomsCount: rooms.length
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  });
+
+  // 2. إدارة الغرف (إضافة/حذف)
+  socket.on('add room', (data) => {
+    if (data.currentUser.name !== SITE_OWNER.username) return;
+    
+    const newId = rooms.length > 0 ? Math.max(...rooms.map(r => r.id)) + 1 : 1;
+    const newRoom = {
+      id: newId,
+      name: data.name,
+      icon: data.icon,
+      description: data.description || 'غرفة جديدة',
+      users: []
+    };
+    
+    rooms.push(newRoom);
+    io.emit('rooms update', rooms);
+    socket.emit('control success', 'تم إنشاء الغرفة بنجاح');
+  });
+
+  socket.on('delete room', (data) => {
+    if (data.currentUser.name !== SITE_OWNER.username) return;
+    
+    const roomIndex = rooms.findIndex(r => r.id === data.roomId);
+    if (roomIndex !== -1) {
+      // لا يمكن حذف غرفة الإدارة
+      if (rooms[roomIndex].name === 'غرفة الإدارة') {
+        socket.emit('control error', 'لا يمكن حذف غرفة الإدارة');
+        return;
+      }
+      rooms.splice(roomIndex, 1);
+      io.emit('rooms update', rooms);
+      socket.emit('control success', 'تم حذف الغرفة بنجاح');
+    }
+  });
+
+  // 3. إدارة الرتب (إضافة رتبة خاصة)
+  socket.on('add custom rank', (data) => {
+    if (data.currentUser.name !== SITE_OWNER.username) return;
+    
+    const { rankName, rankIcon, rankColor, rankLevel, wingId } = data;
+    
+    ranks[rankName] = {
+      color: rankColor,
+      icon: rankIcon,
+      level: parseInt(rankLevel) || 1,
+      wingId: wingId // لتحديد الجناح في الواجهة
+    };
+    
+    io.emit('ranks update', ranks); // تحديث الرتب للجميع
+    socket.emit('control success', `تم إضافة الرتبة "${rankName}" بنجاح`);
+  });
+
+  // 4. إدارة الإعلان الهام
+  socket.on('set announcement', (data) => {
+    const { message, currentUser } = data;
+    if (currentUser.name !== SITE_OWNER.username) return;
+
+    globalAnnouncement = message;
+    io.emit('announcement update', globalAnnouncement);
+    socket.emit('control success', message ? 'تم نشر الإعلان بنجاح' : 'تم إزالة الإعلان');
+  });
+
+  // 5. جلب قائمة المستخدمين الشاملة للوحة التحكم
+  socket.on('get all users stats', (data) => {
+    if (data.currentUser.name !== SITE_OWNER.username) return;
+
+    const usersList = Object.keys(users).map(username => {
+      const pointsData = userPoints[username] || { points: 0, level: 1 };
+      return {
+        username: username,
+        gender: users[username].gender,
+        rank: userRanks[username] || 'عضو',
+        points: pointsData.points,
+        level: pointsData.level,
+        isOnline: Object.values(onlineUsers).some(u => u.name === username)
+      };
+    });
+    
+    // ترتيب القائمة: المتصلين أولاً، ثم حسب النقاط
+    usersList.sort((a, b) => {
+        if (a.isOnline !== b.isOnline) return b.isOnline - a.isOnline;
+        return b.points - a.points;
+    });
+
+    socket.emit('all users stats data', usersList);
+  });
+
+  // 7. حفظ تعريف الرتبة (إنشاء أو تعديل)
+  socket.on('save rank', async (data) => {
+    const { originalName, name, icon, level, color, targetUsername, currentUser } = data;
+    
+    if (!currentUser || currentUser.name !== SITE_OWNER.username) return;
+
+    // منع تعديل اسم رتبة صاحب الموقع أو إنشاء رتبة بهذا الاسم
+    if (originalName === 'صاحب الموقع' && name !== 'صاحب الموقع') {
+        socket.emit('control error', 'لا يمكن تغيير اسم رتبة صاحب الموقع');
+        return;
+    }
+    if (name === 'صاحب الموقع' && originalName !== 'صاحب الموقع') {
+        socket.emit('control error', 'لا يمكن إنشاء رتبة أخرى باسم صاحب الموقع');
+        return;
+    }
+
+    // منع إنشاء أو تعديل رتبة بمستوى أعلى من 99
+    if (parseInt(level) > 99) {
+        socket.emit('control error', 'لا يمكن تعيين مستوى قوة أعلى من 99.');
+        return;
+    }
+
+    // إذا كان تعديل لاسم الرتبة، نحذف القديمة (مع الحفاظ على البيانات إذا أمكن)
+    if (originalName && originalName !== name) {
+        delete ranks[originalName];
+        // ملاحظة: تحديث المستخدمين الذين يملكون الاسم القديم يتطلب منطقاً إضافياً معقداً
+        // للتبسيط هنا سنقوم بتحديث الرتبة الجديدة فقط، المستخدمون بالرتبة القديمة قد يحتاجون إعادة تعيين
+    }
+    const wingId = parseInt(level) >= 100 ? 'owners' : (parseInt(level) >= 5 ? 'owners' : (parseInt(level) >= 3 ? 'kings' : 'distinguished'));
+
+    ranks[name] = {
+        color: color,
+        icon: icon,
+        level: parseInt(level),
+        wingId: parseInt(level) >= 5 ? 'owners' : (parseInt(level) >= 3 ? 'kings' : 'distinguished')
+    };
+    try {
+        // إذا كان تعديل لاسم الرتبة، نحذف القديمة من قاعدة البيانات
+        if (originalName && originalName !== name) {
+            await RankDefinition.destroy({ where: { name: originalName } });
+            delete ranks[originalName];
+        }
+
+        // حفظ أو تحديث الرتبة في قاعدة البيانات
+        await RankDefinition.upsert({
+            name,
+            color,
+            icon,
+            level: parseInt(level),
+            wingId
+        });
+
+        ranks[name] = {
+            color: color,
+            icon: icon,
+            level: parseInt(level),
+            wingId: wingId
+        };
+    } catch (error) {
+        console.error('Error saving rank:', error);
+        socket.emit('control error', 'حدث خطأ أثناء حفظ الرتبة في قاعدة البيانات');
+        return;
+    }
+    
+    io.emit('ranks update', ranks);
+
+    // إذا تم توفير اسم مستخدم، قم بتعيين الرتبة له
+    if (targetUsername) {
+        if (!users[targetUsername]) {
+            socket.emit('control error', 'المستخدم المستهدف غير موجود');
+            return;
+        }
+
+        userRanks[targetUsername] = name;
+        await saveUserRank(targetUsername, name);
+
+        // تحديث بيانات المستخدمين المتصلين
+        Object.keys(onlineUsers).forEach(socketId => {
+            if (onlineUsers[socketId].name === targetUsername) {
+                onlineUsers[socketId].rank = name;
+            }
+        });
+        rooms.forEach(r => {
+            r.users.forEach(u => {
+                if (u.name === targetUsername) u.rank = name;
+            });
+        });
+
+        io.emit('rooms update', rooms);
+
+        const notificationMessage = {
+            type: 'system',
+            user: 'رسائل النظام',
+            avatar: BOT_AVATAR_URL,
+            content: `🌟 تم منح رتبة "${name}" للمستخدم ${targetUsername} بواسطة ${currentUser.name}`,
+            time: new Date().toLocaleTimeString('en-GB')
+        };
+        io.emit('new message', notificationMessage);
+
+        socket.emit('control success', `تم حفظ الرتبة ومنحها لـ ${targetUsername} بنجاح`);
+    } else {
+        socket.emit('control success', `تم حفظ الرتبة "${name}" بنجاح`);
+    }
+  });
+
+  // 8. حذف تعريف الرتبة
+  socket.on('delete rank definition', async (data) => {
+    const { rankName, currentUser } = data;
+    
+    if (!currentUser || currentUser.name !== SITE_OWNER.username) return;
+    
+    if (rankName === 'صاحب الموقع') {
+        socket.emit('control error', 'لا يمكن حذف رتبة صاحب الموقع');
+        return;
+    }
+
+    if (ranks[rankName]) {
+        delete ranks[rankName];
+        try {
+            await RankDefinition.destroy({ where: { name: rankName } });
+            delete ranks[rankName];
+        } catch (error) {
+            console.error('Error deleting rank:', error);
+            socket.emit('control error', 'حدث خطأ أثناء حذف الرتبة من قاعدة البيانات');
+            return;
+        }
+        
+        // إزالة الرتبة من المستخدمين المتصلين الذين يحملونها
+        Object.values(onlineUsers).forEach(u => {
+            if (u.rank === rankName) u.rank = null;
+        });
+
+        io.emit('ranks update', ranks);
+        io.emit('rooms update', rooms); // لتحديث القوائم
+        socket.emit('control success', `تم حذف الرتبة "${rankName}"`);
+    }
+  });
 });
 
 app.get('/api/rooms', (req, res) => {
@@ -3361,6 +3643,13 @@ app.get('/check-auth', async (req, res) => {
     if (sessionId && userSessions[sessionId]) {
         const sessionData = userSessions[sessionId];
         const user = users[sessionData.username];
+
+        // --- التحقق من الحظر من الموقع عند التحقق من الجلسة ---
+        if (userManagement.bannedFromSite[sessionData.username]) {
+            res.clearCookie('sessionId');
+            await removeUserSession(sessionId);
+            return res.json({ authenticated: false, banned: true, reason: userManagement.bannedFromSite[sessionData.username].reason });
+        }
 
         if (user && user.password === sessionData.password) {
             // الجلسة صالحة
