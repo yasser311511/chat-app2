@@ -34,7 +34,12 @@ const User = sequelize.define('User', {
   password: { type: DataTypes.STRING, allowNull: false },
   gender: { type: DataTypes.STRING, allowNull: false },
   bio: { type: DataTypes.TEXT, allowNull: true },
-  nameColor: { type: DataTypes.STRING, allowNull: true }
+  nameColor: { type: DataTypes.STRING, allowNull: true },
+  nameBackground: { type: DataTypes.STRING, allowNull: true },
+  avatarFrame: { type: DataTypes.STRING, allowNull: true },
+  userCardBackground: { type: DataTypes.STRING, allowNull: true },
+  profileBackground: { type: DataTypes.STRING, allowNull: true },
+  profileCover: { type: DataTypes.TEXT, allowNull: true }
 });
 
 const UserRank = sequelize.define('UserRank', {
@@ -333,7 +338,12 @@ async function loadData() {
         password: user.password,
         gender: user.gender,
         bio: user.bio,
-        nameColor: user.nameColor
+        nameColor: user.nameColor,
+        nameBackground: user.nameBackground,
+        avatarFrame: user.avatarFrame,
+        userCardBackground: user.userCardBackground,
+        profileBackground: user.profileBackground,
+        profileCover: user.profileCover
       };
     });
     
@@ -449,22 +459,23 @@ async function loadData() {
     });
     
     // تحميل عناصر المتجر
-    const itemsData = await ShopItem.findAll();
-    if (itemsData.length === 0) {
-      // إضافة عناصر افتراضية إذا كان المتجر فارغاً
-      await ShopItem.bulkCreate([
-        { name: 'بطاقة تغيير الاسم', description: 'تسمح لك بتغيير اسمك مرة واحدة.', price: 5000, itemType: 'name_change_card' },
-        { name: 'بطاقة تغيير كلمة المرور', description: 'تسمح لك بتغيير كلمة المرور الخاصة بك.', price: 2500, itemType: 'password_change_card' },
-        { name: 'لون اسم أحمر', description: 'اجعل اسمك يظهر باللون الأحمر.', price: 1000, itemType: 'name_color', itemValue: 'text-red-500' },
-        { name: 'لون اسم أخضر', description: 'اجعل اسمك يظهر باللون الأخضر.', price: 1000, itemType: 'name_color', itemValue: 'text-green-400' },
-        { name: 'لون اسم أزرق', description: 'اجعل اسمك يظهر باللون الأزرق.', price: 1000, itemType: 'name_color', itemValue: 'text-blue-400' }
-      ]);
-      shopItems = await ShopItem.findAll();
-      console.log('تم إنشاء عناصر المتجر الافتراضية.');
-    } else {
-      shopItems = itemsData;
+    // إعادة تهيئة المتجر بالرتب الجديدة (تنفيذ طلب المستخدم)
+    try {
+        await UserInventory.destroy({ where: {}, truncate: true }); // تفريغ المخزون بالكامل
+        await ShopItem.destroy({ where: {}, truncate: true, cascade: true }); // تفريغ المتجر بالكامل
+        
+        await ShopItem.bulkCreate([
+            { name: 'رتبة جيد', description: 'شراء رتبة جيد', price: 1000, itemType: 'rank', itemValue: 'جيد' },
+            { name: 'رتبة بريميوم', description: 'شراء رتبة بريميوم', price: 3000, itemType: 'rank', itemValue: 'بريميوم' },
+            { name: 'رتبة ادمن', description: 'شراء رتبة ادمن', price: 10000, itemType: 'rank', itemValue: 'ادمن' },
+            { name: 'رتبة سوبر ادمن', description: 'شراء رتبة سوبر ادمن', price: 20000, itemType: 'rank', itemValue: 'سوبر ادمن' },
+            { name: 'رتبة منشئ', description: 'شراء رتبة منشئ', price: 50000, itemType: 'rank', itemValue: 'منشئ' }
+        ]);
+        shopItems = await ShopItem.findAll({ order: [['price', 'ASC']] });
+        console.log('تم تحديث المتجر بنظام الرتب الجديد.');
+    } catch (e) {
+        console.error('Error resetting shop:', e);
     }
-    console.log('تم تحميل عناصر المتجر بنجاح.');
 
     // تحميل مشتريات المستخدمين
     const inventoriesData = await UserInventory.findAll();
@@ -1566,8 +1577,8 @@ socket.on('send image message', async (data) => {
   };
   
   if (!messages[roomId]) messages[roomId] = [];
-  if (messages[roomId].length > 150) {
-    messages[roomId] = messages[roomId].slice(-150);
+  if (messages[roomId].length > 300) {
+    messages[roomId] = messages[roomId].slice(-300);
   }
   messages[roomId].push(newMessage);
   
@@ -1642,7 +1653,12 @@ socket.on('send private image', async (data) => {
             gender: userInMemory.gender,
             socketId: socket.id,
             sessionId: sessionId,
-            nameColor: userInMemory.nameColor
+            nameColor: userInMemory.nameColor,
+            nameBackground: userInMemory.nameBackground,
+            avatarFrame: userInMemory.avatarFrame,
+            userCardBackground: userInMemory.userCardBackground,
+            profileBackground: userInMemory.profileBackground,
+            profileCover: userInMemory.profileCover
           });
           socket.emit('ranks update', ranks); // إرسال الرتب الحالية عند تسجيل الدخول
           return; // إنهاء الدالة بعد تسجيل الدخول الناجح
@@ -1718,7 +1734,10 @@ socket.on('join room', (data) => {
       rank: user.rank,
       gender: user.gender,
       avatar: userAvatars[user.name] || null,
-      nameColor: users[user.name]?.nameColor
+      nameColor: users[user.name]?.nameColor,
+      nameBackground: users[user.name]?.nameBackground,
+      avatarFrame: users[user.name]?.avatarFrame,
+      userCardBackground: users[user.name]?.userCardBackground
     };
     
     // إزالة المستخدم من أي غرفة سابقة
@@ -1733,7 +1752,10 @@ socket.on('join room', (data) => {
       rank: user.rank,
       gender: user.gender,
       avatar: userAvatars[user.name] || null,
-      nameColor: users[user.name]?.nameColor
+      nameColor: users[user.name]?.nameColor,
+      nameBackground: users[user.name]?.nameBackground,
+      avatarFrame: users[user.name]?.avatarFrame,
+      userCardBackground: users[user.name]?.userCardBackground
     });
     
     // انضمام المستخدم للغرفة
@@ -1750,8 +1772,10 @@ socket.on('join room', (data) => {
     let welcomeContent = `🚪 انضم ${userNameWithColor} إلى الغرفة.`;
     if (user.rank) {
         const rankInfo = ranks[user.rank];
-        const iconHtml = getRankIconHtml(rankInfo.icon);
-        welcomeContent = `🚪 انضم ${iconHtml} <span class="font-bold bg-clip-text text-transparent bg-gradient-to-r ${rankInfo.color}">${user.rank}</span> ${userNameWithColor} إلى الغرفة.`;
+        if (rankInfo) {
+            const iconHtml = getRankIconHtml(rankInfo.icon);
+            welcomeContent = `🚪 انضم ${iconHtml} <span class="font-bold bg-clip-text text-transparent bg-gradient-to-r ${rankInfo.color}">${user.rank}</span> ${userNameWithColor} إلى الغرفة.`;
+        }
     }
     const welcomeMessage = {
       type: 'system',
@@ -1761,8 +1785,8 @@ socket.on('join room', (data) => {
     
     // إضافة الرسالة للسجل قبل إرسالها
     if (!messages[roomId]) messages[roomId] = [];
-    if (messages[roomId].length > 150) {
-      messages[roomId] = messages[roomId].slice(-150);
+    if (messages[roomId].length > 300) {
+      messages[roomId] = messages[roomId].slice(-300);
     }
     messages[roomId].push(welcomeMessage);
     
@@ -1772,7 +1796,9 @@ socket.on('join room', (data) => {
     // إرسال تاريخ المحادثة للمستخدم الجديد (الرسائل الحديثة فقط)
     // تأكد أن كل رسالة لديها messageId (لنتمكن من التعامل معها في الواجهة)
     const roomMessages = messages[roomId] || [];
-    const formattedMessages = roomMessages.map((msg, idx) => {
+    // إرسال آخر 25 رسالة فقط لتسريع التحميل
+    const initialMessages = roomMessages.slice(-25);
+    const formattedMessages = initialMessages.map((msg, idx) => {
       // اعطِ معرفًا فريداً إن لم يكن موجودًا لأي رسالة (نصية أو صورة)
       if (!msg.messageId) {
         msg.messageId = 'msg_' + (msg.timestamp || Date.now()) + '_' + idx;
@@ -1786,7 +1812,9 @@ socket.on('join room', (data) => {
           time: msg.time,
           timestamp: msg.timestamp,
           rank: userRanks[msg.user] || null,
-          avatar: userAvatars[msg.user] || null
+          avatar: userAvatars[msg.user] || null,
+          nameBackground: msg.nameBackground,
+          avatarFrame: msg.avatarFrame
         };
       } else {
         return msg;
@@ -1796,6 +1824,45 @@ socket.on('join room', (data) => {
     socket.emit('chat history', formattedMessages);
 });
   
+  // حدث تحميل المزيد من الرسائل
+  socket.on('load more messages', (data) => {
+    const { roomId, firstMessageId } = data;
+    if (!messages[roomId]) return;
+    
+    const roomMsgs = messages[roomId];
+    const msgIndex = roomMsgs.findIndex(m => m.messageId === firstMessageId);
+    
+    if (msgIndex === -1) return; // الرسالة غير موجودة
+    
+    // جلب 25 رسالة قبل الرسالة المحددة
+    const startIndex = Math.max(0, msgIndex - 25);
+    const olderMessages = roomMsgs.slice(startIndex, msgIndex);
+    
+    const formattedMessages = olderMessages.map((msg, idx) => {
+      if (!msg.messageId) {
+        msg.messageId = 'msg_' + (msg.timestamp || Date.now()) + '_old_' + idx;
+      }
+      if (msg.type === 'image') {
+        return {
+          type: 'image',
+          messageId: msg.messageId,
+          user: msg.user,
+          imageData: msg.imageData,
+          time: msg.time,
+          timestamp: msg.timestamp,
+          rank: userRanks[msg.user] || null,
+          avatar: userAvatars[msg.user] || null,
+          nameBackground: msg.nameBackground,
+          avatarFrame: msg.avatarFrame
+        };
+      } else {
+        return msg;
+      }
+    });
+    
+    socket.emit('more chat history', formattedMessages);
+  });
+
   socket.on('send message', async (data) => {
     const { roomId, message, user, replyTo } = data;
 
@@ -1814,7 +1881,10 @@ socket.on('join room', (data) => {
     // ... (كود النقاط والمستويات يبقى كما هو)
 
     // --- Anti-Spam Bot Logic ---
-    if (user.name !== SITE_OWNER.username) {
+    const userLevel = ranks[user.rank]?.level || 0;
+
+    // لا تطبق نظام مكافحة الإزعاج على صاحب الموقع أو الرتب التي مستواها 10 أو أعلى
+    if (user.name !== SITE_OWNER.username && userLevel < 10) {
         const now = Date.now();
         if (!userMessageHistory[roomId]) {
             userMessageHistory[roomId] = {};
@@ -1871,7 +1941,7 @@ socket.on('join room', (data) => {
           content: `🎉 تهانينا! <strong class="text-white">${user.name}</strong> ارتقى إلى المستوى <strong class="text-yellow-300">${userPoints[user.name].level}</strong>! 🎉`,
           time: new Date().toLocaleTimeString('ar-SA')
         };
-        io.to(roomId).emit('new message', levelUpMessage);
+        // io.to(roomId).emit('new message', levelUpMessage); // تم إيقاف الإشعار العام
         
         // إرسال إشعار خاص للمستخدم
         socket.emit('level up', { level: userPoints[user.name].level });
@@ -1893,12 +1963,14 @@ socket.on('join room', (data) => {
       timestamp: timestamp,
       gender: user.gender,
       rank: user.rank,
-      avatar: userAvatars[user.name] || null
+      avatar: userAvatars[user.name] || null,
+      nameBackground: users[user.name]?.nameBackground,
+      avatarFrame: users[user.name]?.avatarFrame
     };
     
     if (!messages[roomId]) messages[roomId] = [];
-    if (messages[roomId].length > 150) {
-      messages[roomId] = messages[roomId].slice(-150);
+    if (messages[roomId].length > 300) {
+      messages[roomId] = messages[roomId].slice(-300);
     }
     messages[roomId].push(newMessage);
     
@@ -2025,6 +2097,12 @@ socket.on('leave room', async (data) => {
     });
     
     socket.emit('rank success', `تم منح الرتبة ${rank} للمستخدم ${username} بنجاح`);
+
+    // تحديث صفحة المستخدم المستهدف تلقائياً
+    const targetSocketId = Object.keys(onlineUsers).find(id => onlineUsers[id].name === username);
+    if (targetSocketId) {
+        io.to(targetSocketId).emit('force reload');
+    }
   });
 
   socket.on('remove rank', async (data) => {
@@ -2077,6 +2155,12 @@ socket.on('leave room', async (data) => {
       });
       
       socket.emit('rank success', `تم إزالة الرتبة من المستخدم ${username} بنجاح`);
+
+      // تحديث صفحة المستخدم المستهدف تلقائياً
+      const targetSocketId = Object.keys(onlineUsers).find(id => onlineUsers[id].name === username);
+      if (targetSocketId) {
+          io.to(targetSocketId).emit('force reload');
+      }
     } else {
       socket.emit('rank error', 'المستخدم لا يملك رتبة');
     }
@@ -2450,6 +2534,72 @@ socket.on('leave room', async (data) => {
     }
   });
 
+  socket.on('delete account', async (data) => {
+    const { username } = data;
+    const userSocketId = socket.id;
+    const onlineUser = onlineUsers[userSocketId];
+
+    // Security check: ensure the user deleting is the one connected
+    if (!onlineUser || onlineUser.name !== username) {
+        socket.emit('delete account error', 'محاولة غير مصرح بها.');
+        return;
+    }
+
+    // Prevent deleting the site owner account
+    if (username === SITE_OWNER.username) {
+        socket.emit('delete account error', 'لا يمكن حذف حساب صاحب الموقع.');
+        return;
+    }
+
+    try {
+        console.log(`بدء عملية حذف المستخدم: ${username}`);
+
+        // 1. Remove from database using the existing comprehensive function
+        await removeUser(username);
+
+        // 2. Remove from in-memory stores
+        delete users[username];
+        if (userRanks[username]) delete userRanks[username];
+        if (userAvatars[username]) delete userAvatars[username];
+        if (userPoints[username]) delete userPoints[username];
+        if (userLastSeen[username]) delete userLastSeen[username];
+        if (userInventories[username]) delete userInventories[username];
+        if (userFriends[username]) {
+            // Also remove from other users' friend lists
+            userFriends[username].forEach(friendName => {
+                if (userFriends[friendName]) {
+                    userFriends[friendName] = userFriends[friendName].filter(f => f !== username);
+                }
+            });
+            delete userFriends[username];
+        }
+        if (friendRequests[username]) delete friendRequests[username];
+        // Remove pending requests sent by this user to others
+        Object.keys(friendRequests).forEach(key => {
+            friendRequests[key] = friendRequests[key].filter(req => req !== username);
+        });
+
+        // Remove from management lists
+        if (userManagement.mutedUsers[username]) delete userManagement.mutedUsers[username];
+        if (userManagement.bannedFromSite[username]) delete userManagement.bannedFromSite[username];
+        Object.keys(userManagement.bannedFromRoom).forEach(roomName => {
+            if (userManagement.bannedFromRoom[roomName]?.[username]) {
+                delete userManagement.bannedFromRoom[roomName][username];
+            }
+        });
+
+        // 3. Notify client and disconnect
+        socket.emit('account deleted');
+        socket.disconnect(true);
+
+        console.log(`تم حذف المستخدم ${username} بنجاح.`);
+
+    } catch (error) {
+        console.error(`خطأ في حذف المستخدم ${username}:`, error);
+        socket.emit('delete account error', 'حدث خطأ في الخادم أثناء حذف الحساب.');
+    }
+  });
+
   socket.on('get user status', (data) => {
     const { username, currentUser } = data;
     const userRoomId = onlineUsers[socket.id]?.roomId;
@@ -2578,7 +2728,14 @@ socket.on('leave room', async (data) => {
     const userData = users[username];
     
     const pointsData = userPoints[username] || { points: 0, level: 1 };
-    const inventoryData = userInventories[username] || [];
+
+    // جلب قائمة الأصدقاء مع تفاصيلهم
+    const friendsList = userFriends[username] || [];
+    const friendsDetails = friendsList.map(fName => ({
+        username: fName,
+        avatar: userAvatars[fName] || null,
+        isOnline: Object.values(onlineUsers).some(u => u.name === fName)
+    }));
 
     socket.emit('user profile data', {
         username,
@@ -2590,10 +2747,258 @@ socket.on('leave room', async (data) => {
         bio: userData ? userData.bio : null,
         points: pointsData.points,
         level: pointsData.level,
-        inventory: inventoryData,
-        nameColor: userData ? userData.nameColor : null
+        nameColor: userData ? userData.nameColor : null,
+        nameBackground: userData ? userData.nameBackground : null,
+        avatarFrame: userData ? userData.avatarFrame : null,
+        userCardBackground: userData ? userData.userCardBackground : null,
+        profileBackground: userData ? userData.profileBackground : null,
+        profileCover: userData ? userData.profileCover : null,
+        friends: friendsDetails
     });
     
+  });
+
+  // حدث تفعيل لون الاسم من المخزن
+  socket.on('equip color', async (data) => {
+    const { inventoryId, currentUser } = data;
+    const username = currentUser.name;
+    
+    const userInv = userInventories[username] || [];
+    const invItem = userInv.find(i => i.id === inventoryId);
+    
+    if (!invItem) {
+        socket.emit('equip error', 'العنصر غير موجود في مخزونك.');
+        return;
+    }
+    
+    const shopItem = shopItems.find(i => i.id === invItem.itemId);
+    if (!shopItem || shopItem.itemType !== 'name_color') {
+        socket.emit('equip error', 'هذا العنصر ليس لوناً.');
+        return;
+    }
+    
+    try {
+        await User.update({ nameColor: shopItem.itemValue }, { where: { username } });
+        users[username].nameColor = shopItem.itemValue;
+        
+        // تحديث المستخدمين المتصلين
+        Object.keys(onlineUsers).forEach(socketId => {
+          if (onlineUsers[socketId].name === username) {
+            onlineUsers[socketId].nameColor = shopItem.itemValue;
+          }
+        });
+        
+        // تحديث الغرف
+        rooms.forEach(r => r.users.forEach(u => {
+          if (u.name === username) u.nameColor = shopItem.itemValue;
+        }));
+        
+        io.emit('rooms update', rooms);
+        
+        // تحديث قائمة المستخدمين في الغرفة الحالية
+        const userRoom = rooms.find(r => r.users.some(u => u.name === username));
+        if (userRoom) io.to(userRoom.id).emit('users update', userRoom.users);
+        
+        socket.emit('equip success', { message: 'تم تفعيل اللون بنجاح', newColor: shopItem.itemValue });
+        
+    } catch (error) {
+        console.error('Error equipping color:', error);
+        socket.emit('equip error', 'حدث خطأ أثناء تفعيل اللون.');
+    }
+  });
+
+  // حدث تحديث الميزات الخاصة (للرتب العالية)
+  socket.on('update user feature', async (data) => {
+    const { feature, value, currentUser } = data;
+    const username = currentUser.name;
+
+    // التحقق من الرتبة (مستوى 4 أو أعلى) أو صاحب الموقع
+    const userRank = userRanks[username];
+    const level = ranks[userRank]?.level || 0;
+    
+    if (level < 4 && username !== SITE_OWNER.username) {
+        socket.emit('feature error', 'هذه الميزة متاحة فقط للرتب العالية.');
+        return;
+    }
+
+    try {
+        if (feature === 'nameColor') {
+            await User.update({ nameColor: value }, { where: { username } });
+            users[username].nameColor = value;
+        } else if (feature === 'nameBackground') {
+            await User.update({ nameBackground: value }, { where: { username } });
+            users[username].nameBackground = value;
+        } else if (feature === 'avatarFrame') {
+            await User.update({ avatarFrame: value }, { where: { username } });
+            users[username].avatarFrame = value;
+        } else if (feature === 'userCardBackground') {
+            await User.update({ userCardBackground: value }, { where: { username } });
+            users[username].userCardBackground = value;
+        } else if (feature === 'profileBackground') {
+            await User.update({ profileBackground: value }, { where: { username } });
+            users[username].profileBackground = value;
+        }
+
+        // تحديث المستخدمين المتصلين والغرف ليعكس التغيير فوراً
+        Object.keys(onlineUsers).forEach(id => {
+            if (onlineUsers[id].name === username) onlineUsers[id][feature] = value;
+        });
+        
+        socket.emit('feature success', 'تم تحديث الميزة بنجاح');
+        // نرسل تحديث الغرف لتحديث القوائم
+        io.emit('rooms update', rooms);
+    } catch (error) {
+        console.error('Error updating feature:', error);
+        socket.emit('feature error', 'حدث خطأ أثناء تحديث الميزة.');
+    }
+  });
+
+  // حدث تحديث غلاف الملف الشخصي
+  socket.on('update profile cover', async (data) => {
+    const { username, coverUrl, currentUser } = data;
+
+    if (username !== currentUser.name) {
+        socket.emit('cover error', 'لا يمكنك تغيير غلاف مستخدم آخر.');
+        return;
+    }
+
+    try {
+        await User.update({ profileCover: coverUrl }, { where: { username } });
+        if (users[username]) {
+            users[username].profileCover = coverUrl;
+        }
+        socket.emit('cover success', 'تم تحديث غلاف الملف الشخصي بنجاح.');
+    } catch (error) {
+        console.error('Error updating profile cover:', error);
+        socket.emit('cover error', 'حدث خطأ أثناء تحديث الغلاف.');
+    }
+  });
+
+  socket.on('change username', async (data) => {
+    const { newUsername, currentUser } = data;
+    const oldUsername = currentUser.name;
+
+    // 1. Security Check
+    const userRank = userRanks[oldUsername];
+    const level = ranks[userRank]?.level || 0;
+    if (level < 4 && oldUsername !== SITE_OWNER.username) {
+        return socket.emit('username change error', 'هذه الميزة متاحة فقط للرتب العالية.');
+    }
+
+    // 2. Validation
+    if (!newUsername || newUsername.length < 3 || newUsername.length > 15) {
+        return socket.emit('username change error', 'الاسم الجديد يجب أن يتكون من 3 إلى 15 حرفًا.');
+    }
+    if (!/^[a-zA-Z0-9\s_]+$/.test(newUsername)) {
+        return socket.emit('username change error', 'الاسم الجديد يحتوي على رموز غير مسموح بها.');
+    }
+    if (newUsername.toLowerCase() === oldUsername.toLowerCase()) {
+        return socket.emit('username change error', 'الاسم الجديد مطابق للاسم القديم.');
+    }
+    const existingUser = await User.findOne({ where: { username: newUsername } });
+    if (existingUser) {
+        return socket.emit('username change error', 'هذا الاسم مستخدم بالفعل.');
+    }
+
+    const t = await sequelize.transaction();
+    try {
+        // This is a very sensitive operation. Updating a Primary Key is not directly supported
+        // and requires cascading updates. We will update all tables manually within a transaction.
+        // This assumes no `ON UPDATE CASCADE` is set on the DB level.
+
+        // The order of updates can be tricky. We'll disable foreign key checks during the transaction.
+        await sequelize.query('SET CONSTRAINTS ALL DEFERRED;', { transaction: t });
+
+        // Update all tables referencing the username
+        await User.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+        await UserRank.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+        await UserAvatar.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+        await UserPoints.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+        await UserLastSeen.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+        await UserInventory.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+        await UserFriend.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+        await UserFriend.update({ friendUsername: newUsername }, { where: { friendUsername: oldUsername }, transaction: t });
+        await FriendRequest.update({ fromUser: newUsername }, { where: { fromUser: oldUsername }, transaction: t });
+        await FriendRequest.update({ toUser: newUsername }, { where: { toUser: oldUsername }, transaction: t });
+        await PrivateMessage.update({ fromUser: newUsername }, { where: { fromUser: oldUsername }, transaction: t });
+        await PrivateMessage.update({ toUser: newUsername }, { where: { toUser: oldUsername }, transaction: t });
+        await Post.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+        await PostLike.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+        await PostComment.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+        await Notification.update({ recipientUsername: newUsername }, { where: { recipientUsername: oldUsername }, transaction: t });
+        await Notification.update({ senderUsername: newUsername }, { where: { senderUsername: oldUsername }, transaction: t });
+        await UserManagement.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+        await UserManagement.update({ mutedBy: newUsername }, { where: { mutedBy: oldUsername }, transaction: t });
+        await UserManagement.update({ bannedBy: newUsername }, { where: { bannedBy: oldUsername }, transaction: t });
+        await UserSession.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+        await ChatImage.update({ fromUser: newUsername }, { where: { fromUser: oldUsername }, transaction: t });
+        await ChatImage.update({ toUser: newUsername }, { where: { toUser: oldUsername }, transaction: t });
+
+        await t.commit();
+
+        // --- Update in-memory data ---
+        const updateMemoryKey = (obj, oldKey, newKey) => {
+            if (obj.hasOwnProperty(oldKey)) {
+                obj[newKey] = obj[oldKey];
+                delete obj[oldKey];
+            }
+        };
+
+        updateMemoryKey(users, oldUsername, newUsername);
+        updateMemoryKey(userRanks, oldUsername, newUsername);
+        updateMemoryKey(userAvatars, oldUsername, newUsername);
+        updateMemoryKey(userPoints, oldUsername, newUsername);
+        updateMemoryKey(userLastSeen, oldUsername, newUsername);
+        updateMemoryKey(userInventories, oldUsername, newUsername);
+        updateMemoryKey(userFriends, oldUsername, newUsername);
+        updateMemoryKey(friendRequests, oldUsername, newUsername);
+
+        Object.keys(userFriends).forEach(key => {
+            userFriends[key] = userFriends[key].map(friend => friend === oldUsername ? newUsername : friend);
+        });
+        Object.keys(friendRequests).forEach(key => {
+            friendRequests[key] = friendRequests[key].map(req => req === oldUsername ? newUsername : req);
+        });
+        Object.keys(privateMessages).forEach(convId => {
+            if (convId.includes(oldUsername)) {
+                const newConvId = convId.replace(oldUsername, newUsername).split('_').sort().join('_');
+                privateMessages[newConvId] = privateMessages[convId].map(msg => {
+                    if (msg.from === oldUsername) msg.from = newUsername;
+                    if (msg.to === oldUsername) msg.to = newUsername;
+                    return msg;
+                });
+                if (convId !== newConvId) delete privateMessages[convId];
+            }
+        });
+        Object.keys(posts).forEach(postId => {
+            if (posts[postId].username === oldUsername) posts[postId].username = newUsername;
+            posts[postId].likes = posts[postId].likes.map(like => like === oldUsername ? newUsername : like);
+            posts[postId].comments.forEach(comment => {
+                if (comment.username === oldUsername) comment.username = newUsername;
+            });
+        });
+
+        // Notify all clients of the change
+        io.emit('user name changed', { oldUsername, newUsername });
+
+        // Send success and disconnect the user
+        socket.emit('username change success', 'تم تغيير اسمك بنجاح. سيتم تسجيل خروجك الآن.');
+        
+        // Disconnect the user's socket after a short delay
+        setTimeout(() => {
+            const userSocket = Object.values(onlineUsers).find(u => u.name === newUsername);
+            if (userSocket && io.sockets.sockets.get(userSocket.id)) {
+                io.sockets.sockets.get(userSocket.id).disconnect(true);
+            } else {
+                socket.disconnect(true);
+            }
+        }, 500);
+
+    } catch (error) {
+        await t.rollback();
+        console.error('Error changing username:', error);
+        socket.emit('username change error', 'حدث خطأ فادح أثناء تغيير الاسم. قد تكون هناك مشكلة في قاعدة البيانات.');
+    }
   });
 
   socket.on('update user bio', async (data) => {
@@ -3137,13 +3542,13 @@ socket.on('disconnect', async (reason) => {
     if (!SPECIAL_USERS_CONFIG[username]) {
         const userPointsData = userPoints[username] || { points: 0 };
         if (userPointsData.points < item.price) {
-            socket.emit('buy item error', 'ليس لديك نقاط كافية لشراء هذا العنصر.');
+            socket.emit('buy item error', 'ليس لديك نقاط كافية لشراء هذه الرتبة.');
             return;
         }
     }
 
     try {
-      // 1. خصم النقاط فقط إذا لم يكن المستخدم خاصًا
+      // 1. خصم النقاط
       let newPoints = userPoints[username]?.points || 0;
       if (!SPECIAL_USERS_CONFIG[username]) {
           newPoints -= item.price;
@@ -3151,37 +3556,26 @@ socket.on('disconnect', async (reason) => {
           userPoints[username].points = newPoints;
       }
 
-      // 2. إضافة العنصر لمخزون المستخدم
-      await saveUserInventory(username, item.id);
-
-      // 3. تطبيق تأثير العنصر (فقط للألوان)
-      let updatedNameColor = null;
-      if (item.itemType === 'name_color') {
-        await User.update({ nameColor: item.itemValue }, { where: { username } });
-        users[username].nameColor = item.itemValue;
-        updatedNameColor = item.itemValue;
-
-        // تحديث لون الاسم للمستخدمين المتصلين
-        Object.keys(onlineUsers).forEach(socketId => {
-          if (onlineUsers[socketId].name === username) {
-            onlineUsers[socketId].nameColor = updatedNameColor;
-          }
-        });
-        rooms.forEach(r => r.users.forEach(u => {
-          if (u.name === username) u.nameColor = updatedNameColor;
-        }));
-        io.emit('rooms update', rooms);
-        const userRoom = rooms.find(r => r.users.some(u => u.name === username));
-        if (userRoom) io.to(userRoom.id).emit('users update', userRoom.users);
+      // 2. منح الرتبة مباشرة
+      if (item.itemType === 'rank') {
+          const newRank = item.itemValue;
+          userRanks[username] = newRank;
+          await saveUserRank(username, newRank);
+          
+          // تحديث المستخدمين المتصلين والغرف
+          Object.keys(onlineUsers).forEach(socketId => {
+              if (onlineUsers[socketId].name === username) onlineUsers[socketId].rank = newRank;
+          });
+          rooms.forEach(r => r.users.forEach(u => {
+              if (u.name === username) u.rank = newRank;
+          }));
+          io.emit('rooms update', rooms);
       }
 
-      // 4. إرسال إشعار نجاح للمشتري مع بياناته المحدثة
+      // 3. إرسال إشعار نجاح وطلب تحديث الصفحة
       socket.emit('buy item success', {
-        message: `🎉 تهانينا! لقد اشتريت "${item.name}" بنجاح.`,
-        newPoints: SPECIAL_USERS_CONFIG[username] ? SPECIAL_USERS_CONFIG[username].points : newPoints,
-        inventory: userInventories[username],
-        updatedNameColor: updatedNameColor,
-        purchasedItem: { ...item.get({ plain: true }), inventoryId: userInventories[username][userInventories[username].length - 1].id }
+        message: `🎉 تهانينا! لقد اشتريت "${item.name}" بنجاح. سيتم تحديث الصفحة.`,
+        reload: true
       });
 
     } catch (error) {
@@ -3661,7 +4055,12 @@ app.get('/check-auth', async (req, res) => {
                     isSiteOwner: sessionData.username === SITE_OWNER.username,
                     gender: user.gender,
                     sessionId: sessionId,
-                    nameColor: user.nameColor
+                    nameColor: user.nameColor,
+                    nameBackground: user.nameBackground,
+                    avatarFrame: user.avatarFrame,
+                    userCardBackground: user.userCardBackground,
+                    profileBackground: user.profileBackground,
+                    profileCover: user.profileCover
                 }
             });
         }

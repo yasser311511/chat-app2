@@ -76,12 +76,12 @@
             margin-left: 5px;
         }
         .messages-container {
-            height: calc(100vh - 200px);
+            height: 100%;
             overflow-y: auto;
         }
     
         .users-container {
-            height: calc(100vh - 200px);
+            height: 100%;
             overflow-y: auto;
         }
     
@@ -224,16 +224,13 @@
         .profile-content {
             background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(20px);
-            border-radius: 1.25rem; /* 20px */
             width: 90%;
-            max-width: 400px;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+            max-width: 550px;
+            display: block;
             border: 1px solid rgba(255, 255, 255, 0.1);
             transform: scale(0.9);
             transition: transform 0.3s ease;
+            margin: auto;
         }
         
         .profile-modal.show .profile-content {
@@ -251,11 +248,13 @@
             background: rgba(0, 0, 0, 0.7);
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             z-index: 10000;
             opacity: 0;
             visibility: hidden;
             transition: all 0.3s ease;
+            overflow-y: auto;
+            padding: 2rem 0;
         }
         .profile-modal.show {
             opacity: 1;
@@ -526,6 +525,33 @@
 .animate-marquee {
     animation: marquee-rtl 20s linear infinite;
 }
+
+/* الأنماط الجديدة لأقسام الملف الشخصي */
+.profile-tab-btn {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    color: #94a3b8; /* text-slate-400 */
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+.profile-tab-btn.active, .profile-tab-btn:hover {
+    color: #3b82f6; /* text-blue-500 */
+    border-bottom-color: #3b82f6;
+}
+
+/* أنماط إطارات الصور */
+.frame-none { border: none; }
+.frame-gold { border: 3px solid #FFD700; box-shadow: 0 0 5px #FFD700; }
+.frame-silver { border: 3px solid #C0C0C0; box-shadow: 0 0 5px #C0C0C0; }
+.frame-red-glow { border: 2px solid #FF4500; box-shadow: 0 0 8px #FF4500; }
+.frame-blue-glow { border: 2px solid #00BFFF; box-shadow: 0 0 8px #00BFFF; }
+.frame-double { border: 4px double #ffffff; }
+.frame-dashed { border: 3px dashed #ffffff; }
+
+/* خيارات الألوان في الميزات */
+.color-option { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; }
+.color-option:hover { transform: scale(1.2); }
+.color-option.selected { border-color: white; transform: scale(1.1); }
     </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen">
@@ -716,9 +742,9 @@
     </div>
 
     <!-- صفحة المحادثة -->
-    <div id="chatPage" class="hidden min-h-screen flex flex-col">
+    <div id="chatPage" class="hidden h-screen flex flex-col overflow-hidden">
         <!-- رأس المحادثة -->
-        <div class="bg-gray-900/90 backdrop-blur-lg border-b border-gray-700 p-4 relative z-30 md:z-40 chat-header-mobile">
+        <div class="bg-gray-900/90 backdrop-blur-lg border-b border-gray-700 py-2 px-4 relative z-30 md:z-40 chat-header-mobile">
             <div class="container mx-auto flex items-center justify-between flex-wrap md:flex-nowrap">
                 <div class="flex items-center space-x-4 space-x-reverse">
                     <button onclick="goBack()" class="text-slate-300 hover:text-blue-500 transition-colors">
@@ -819,8 +845,8 @@
         <!-- المحتوى الرئيسي -->
         <div class="flex-1 flex overflow-hidden">
             <!-- منطقة الرسائل -->
-            <div class="flex-1 flex flex-col overflow-hidden p-4 relative">
-                <div id="messagesContainer" class="container mx-auto max-w-4xl space-y-4 messages-container custom-scrollbar">
+            <div class="flex-1 flex flex-col overflow-hidden px-4 pt-4 relative">
+                <div id="messagesContainer" class="container mx-auto max-w-4xl space-y-4 messages-container custom-scrollbar pb-4">
                     <!-- الرسائل ستظهر هنا -->
                 </div>
             </div>
@@ -842,7 +868,7 @@
         </div>
 
         <!-- منطقة إرسال الرسائل -->
-        <div id="messageArea" class="bg-gray-900/90 backdrop-blur-lg border-t border-gray-700 p-4">
+        <div id="messageArea" class="bg-gray-900/90 backdrop-blur-lg border-t border-gray-700 py-2 px-4">
             <div class="container mx-auto max-w-4xl">
                 <!-- لوحة إدارة الرتب -->
                 <div id="rankManagementPanel" class="hidden mb-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-4 border border-purple-500/50">
@@ -1092,101 +1118,233 @@
 
     <!-- نافذة الملف الشخصي -->
     <div id="profileModal" class="profile-modal">
-        <div class="profile-content custom-scrollbar">
+        <div id="profileContent" class="profile-content custom-scrollbar relative">
             <!-- رأس الملف الشخصي -->
-            <div class="relative bg-gradient-to-b from-gray-800 to-gray-900 p-8 text-center border-b border-gray-700/50">
-                 <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-slate-300 hover:text-blue-500 transition-colors">
+            <div id="profileHeader" class="relative h-64 w-full bg-gray-800 border-b border-gray-700/50 overflow-hidden">
+                 <!-- صورة الغلاف -->
+                 <div class="absolute inset-0 z-0">
+                    <img id="profileCoverDisplay" src="" class="w-full h-full object-cover opacity-60 hidden">
+                    <div class="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent"></div>
+                 </div>
+
+                 <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-slate-300 hover:text-blue-500 transition-colors z-20 bg-black/20 rounded-full p-1">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
+                
                 <!-- قائمة الخيارات الإدارية -->
                 <div id="profileMenuContainer" class="absolute top-4 left-4 z-20">
                     <!-- سيتم ملء هذه القائمة ديناميكياً -->
                 </div>
 
-                <div class="relative inline-block mx-auto mb-4 group">
-                    <img id="profileAvatar" src="" class="w-28 h-28 rounded-full object-cover border-4 border-blue-500/30 shadow-xl transition-transform duration-300 group-hover:scale-105">
-                    <!-- زر تغيير الصورة (يظهر فقط لصاحب الحساب) -->
-                    <button id="changeProfilePicBtn" onclick="openImageUploadForProfile()" class="hidden absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110 border-2 border-gray-800" title="تغيير الصورة">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                    </button>
-                </div>
+                <!-- حاوية المعلومات السفلية -->
+                <div class="absolute bottom-0 right-0 w-full p-4 flex items-end space-x-4 space-x-reverse z-10">
+                    <!-- الصورة الشخصية -->
+                    <div class="relative group flex-shrink-0">
+                        <img id="profileAvatar" src="" class="w-24 h-24 rounded-full object-cover border-4 border-gray-800 shadow-xl transition-transform duration-300 group-hover:scale-105">
+                        <!-- زر تغيير الصورة (يظهر فقط لصاحب الحساب) -->
+                        <button id="changeProfilePicBtn" onclick="openImageUploadForProfile()" class="hidden absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110 border-2 border-gray-800" title="تغيير الصورة">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        </button>
+                        <!-- زر تغيير الغلاف (جديد) -->
+                        <button id="changeCoverBtn" onclick="openCoverUpload()" class="hidden absolute top-0 right-0 -mt-1 -mr-1 bg-gray-800/80 hover:bg-gray-700 text-white p-1.5 rounded-full shadow-lg transition-all duration-200 border border-gray-600 z-20" title="تغيير الغلاف">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </button>
+                    </div>
 
-                <h2 id="profileUsername" class="text-2xl font-bold text-white mb-1 tracking-wide"></h2>
-                <div id="profileGender" class="text-sm text-slate-400 mb-2 flex items-center justify-center gap-1"></div>
-                <div id="profileRank" class="inline-block px-4 py-1.5 rounded-full text-sm font-semibold text-white shadow-sm transform hover:scale-105 transition-transform duration-200"></div>
-                
-                <div id="profileStatus" class="mt-3 flex items-center justify-center space-x-2 space-x-reverse bg-gray-800/50 inline-flex px-3 py-1 rounded-full border border-gray-700/50">
-                    <span class="w-2.5 h-2.5 rounded-full"></span>
-                    <span class="text-sm text-blue-200"></span>
+                    <!-- المعلومات النصية -->
+                    <div class="flex-1 mb-1 text-right">
+                        <h2 id="profileUsername" class="text-2xl font-bold text-white tracking-wide drop-shadow-md"></h2>
+                        <div class="flex items-center gap-2 mt-1">
+                            <div id="profileRank" class="inline-block px-3 py-0.5 rounded-full text-xs font-semibold text-white shadow-sm"></div>
+                            <div id="profileStatus" class="flex items-center space-x-1 space-x-reverse bg-gray-800/60 inline-flex px-2 py-0.5 rounded-full border border-gray-700/50 backdrop-blur-sm">
+                                <span class="w-2 h-2 rounded-full"></span>
+                                <span class="text-xs text-blue-200"></span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- محتوى الملف الشخصي القابل للتمرير -->
-            <div class="flex-1 p-6 space-y-6 overflow-y-auto custom-scrollbar bg-gray-900/50">
-                <!-- النقاط والمستوى -->
-                <div class="grid grid-cols-2 gap-4 text-center">
-                    <div class="bg-gray-800/80 rounded-xl p-4 border border-gray-700/50 hover:border-yellow-500/30 transition-colors group">
-                        <div class="text-yellow-400 text-3xl mb-1 group-hover:scale-110 transition-transform duration-200">⭐</div>
-                        <div class="text-white font-bold text-lg" id="profilePoints">0</div>
-                        <div class="text-slate-400 text-xs font-medium">النقاط</div>
-                    </div>
-                    <div class="bg-gray-800/80 rounded-xl p-4 border border-gray-700/50 hover:border-green-500/30 transition-colors group">
-                        <div class="text-green-400 text-3xl mb-1 group-hover:scale-110 transition-transform duration-200">📈</div>
-                        <div class="text-white font-bold text-lg" id="profileLevel">1</div>
-                        <div class="text-slate-400 text-xs font-medium">المستوى</div>
-                    </div>
-                </div>
+            <!-- أقسام الملف الشخصي -->
+            <div class="flex border-b border-gray-700/50 px-2">
+                <button onclick="switchProfileTab(event, 'details')" class="profile-tab-btn active">تفاصيل</button>
+                <button onclick="switchProfileTab(event, 'friends')" class="profile-tab-btn">الأصدقاء</button>
+                <button id="featuresTabButton" onclick="switchProfileTab(event, 'features')" class="profile-tab-btn hidden">ميزات 🌟</button>
+                <button id="accountTabButton" onclick="switchProfileTab(event, 'account')" class="profile-tab-btn hidden">حول الحساب</button>
+            </div>
 
-                <!-- قسم مخزون العناصر -->
-                <div id="inventorySection" class="hidden bg-gray-800/40 rounded-xl p-4 border border-gray-700/30">
-                    <h3 class="text-sm font-bold text-slate-300 mb-3 flex items-center gap-2">
-                        <span>🎒</span> مخزوني
-                    </h3>
-                    <div id="inventoryItems" class="space-y-2">
-                        <!-- عناصر المخزون ستظهر هنا -->
+            <div id="profileBody" class="p-6 bg-gray-900/50">
+                <!-- قسم التفاصيل -->
+                <div id="profileTab-details" class="profile-tab-content">
+                    <!-- الجنس -->
+                    <div class="bg-gray-800/50 rounded-xl p-3 mb-4 border border-gray-700/30 flex items-center justify-between">
+                        <span class="text-slate-400 text-sm">الجنس</span>
+                        <span id="profileGender" class="text-white font-medium text-sm"></span>
                     </div>
-                </div>
 
-                <!-- أزرار الإجراءات -->
-                <div class="space-y-3 pt-2">
-                    <button id="privateChatButton" onclick="startPrivateChat()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-900/20 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 space-x-reverse">
-                        <span>محادثة خاصة</span>
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                    </button>
-                    
-                    <button id="addFriendButton" onclick="sendFriendRequest()" class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-green-900/20 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 space-x-reverse">
-                        <span>إضافة صديق</span>
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
-                    </button>
-
-                    <button id="sendPointsButton" onclick="sendPoints()" class="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-purple-900/20 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 space-x-reverse">
-                        <span>إرسال نقاط</span>
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1m0-1V4m0 2v1m0 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                    </button>
-                </div>
-
-                <!-- قسم معلوماتي (تم نقله للأسفل) -->
-                <div class="text-center bg-gray-800/40 rounded-xl p-4 border border-gray-700/30" id="bioSection">
-                    <h3 class="text-sm font-bold text-slate-300 mb-3 flex items-center justify-center gap-2">
-                        <span>📝</span> نبذة عني
-                    </h3>
-                    <div id="bioContainer" class="relative text-slate-300 text-sm bg-gray-900/50 rounded-lg p-4 min-h-[80px] whitespace-pre-wrap border border-gray-700/50">
-                        <p id="profileBio" class="text-center leading-relaxed"></p>
-                        <textarea id="profileBioInput" class="hidden w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="4" placeholder="اكتب شيئاً عن نفسك..." oninput="updateBioCharCount()"></textarea>
-                        <div id="bioCharCounter" class="hidden absolute bottom-2 left-3 text-xs text-gray-400">0 / 500</div>
+                    <!-- النقاط والمستوى -->
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <div class="bg-gray-800/80 rounded-xl p-4 border border-gray-700/50 hover:border-yellow-500/30 transition-colors group">
+                            <div class="text-yellow-400 text-3xl mb-1 group-hover:scale-110 transition-transform duration-200">⭐</div>
+                            <div class="text-white font-bold text-lg" id="profilePoints">0</div>
+                            <div class="text-slate-400 text-xs font-medium">النقاط</div>
+                        </div>
+                        <div class="bg-gray-800/80 rounded-xl p-4 border border-gray-700/50 hover:border-green-500/30 transition-colors group">
+                            <div class="text-green-400 text-3xl mb-1 group-hover:scale-110 transition-transform duration-200">📈</div>
+                            <div class="text-white font-bold text-lg" id="profileLevel">1</div>
+                            <div class="text-slate-400 text-xs font-medium">المستوى</div>
+                        </div>
                     </div>
-                    <div id="editBioButtons" class="mt-3 space-x-2 space-x-reverse">
-                        <button id="editBioButton" onclick="toggleBioEdit(true)" class="hidden bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded-full text-sm font-semibold transition-colors">
-                            تعديل
+
+                    <!-- أزرار الإجراءات للزوار -->
+                    <div id="visitorActions" class="space-y-3 pt-6">
+                        <button id="privateChatButton" onclick="startPrivateChat()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-900/20 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 space-x-reverse">
+                            <span>محادثة خاصة</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
                         </button>
-                        <button id="saveBioButton" onclick="saveBio()" class="hidden bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded-full text-sm font-semibold transition-colors">
-                            حفظ
+                        <button id="addFriendButton" onclick="sendFriendRequest()" class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-green-900/20 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 space-x-reverse">
+                            <span>إضافة صديق</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
                         </button>
-                        <button id="cancelBioButton" onclick="toggleBioEdit(false)" class="hidden bg-gray-600 hover:bg-gray-700 text-white px-4 py-1 rounded-full text-sm font-semibold transition-colors">
-                            إلغاء
+                        <button id="sendPointsButton" onclick="sendPoints()" class="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-purple-900/20 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 space-x-reverse">
+                            <span>إرسال نقاط</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1m0-1V4m0 2v1m0 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                         </button>
                     </div>
+
+                    <div class="text-center pt-6" id="bioSection">
+                        <h3 class="text-sm font-bold text-slate-300 mb-3 flex items-center justify-center gap-2">
+                            <span>📝</span> معلوماتي
+                        </h3>
+                        <div id="bioContainer" class="relative text-slate-300 text-sm bg-gray-900/50 rounded-lg p-4 min-h-[120px] whitespace-pre-wrap border border-gray-700/50 w-full">
+                            <p id="profileBio" class="text-center leading-relaxed"></p>
+                            <textarea id="profileBioInput" class="hidden w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" rows="4" placeholder="اكتب شيئاً عن نفسك..." oninput="updateBioCharCount()"></textarea>
+                            <div id="bioCharCounter" class="hidden absolute bottom-2 left-3 text-xs text-gray-400">0 / 500</div>
+                        </div>
+                        <div id="editBioButtons" class="mt-3 space-x-2 space-x-reverse">
+                            <button id="editBioButton" onclick="toggleBioEdit(true)" class="hidden bg-blue-600 hover:bg-blue-700 text-white px-4 py-1 rounded-full text-sm font-semibold transition-colors">
+                                تعديل
+                            </button>
+                            <button id="saveBioButton" onclick="saveBio()" class="hidden bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded-full text-sm font-semibold transition-colors">
+                                حفظ
+                            </button>
+                            <button id="cancelBioButton" onclick="toggleBioEdit(false)" class="hidden bg-gray-600 hover:bg-gray-700 text-white px-4 py-1 rounded-full text-sm font-semibold transition-colors">
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- قسم الأصدقاء (جديد) -->
+                <div id="profileTab-friends" class="profile-tab-content hidden">
+                    <div id="profileFriendsList" class="grid grid-cols-3 gap-3">
+                        <!-- سيتم ملء الأصدقاء هنا -->
+                    </div>
+                </div>
+
+                <!-- قسم الميزات (للرتب العالية) -->
+                <div id="profileTab-features" class="profile-tab-content hidden space-y-6">
+                    <!-- تبويبات فرعية للميزات -->
+                    <div class="flex justify-center space-x-1 space-x-reverse bg-gray-800/50 p-1 rounded-lg mb-4">
+                        <button onclick="switchFeatureSubTab('nameColor')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold bg-blue-600 text-white" id="btn-nameColor">لون الاسم</button>
+                        <button onclick="switchFeatureSubTab('nameBackground')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold text-slate-400 hover:bg-gray-700" id="btn-nameBackground">خلفية الاسم</button>
+                        <button onclick="switchFeatureSubTab('avatarFrame')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold text-slate-400 hover:bg-gray-700" id="btn-avatarFrame">إطار الصورة</button>
+                        <button onclick="switchFeatureSubTab('userCardBackground')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold text-slate-400 hover:bg-gray-700" id="btn-userCardBackground">خلفية البطاقة</button>
+                         <button onclick="switchFeatureSubTab('profileBackground')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold text-slate-400 hover:bg-gray-700" id="btn-profileBackground">لون البروفايل</button>
+                        <button onclick="switchFeatureSubTab('changeName')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold text-slate-400 hover:bg-gray-700" id="btn-changeName">تغيير الاسم</button>
+                    </div>
+
+                    <!-- محتوى لون الاسم -->
+                    <div id="feature-nameColor" class="feature-content">
+                        <h4 class="text-sm font-bold text-slate-300 mb-3">اختر لون لاسمك:</h4>
+                        <div class="grid grid-cols-6 gap-3 justify-items-center" id="nameColorGrid">
+                            <!-- سيتم ملؤها بواسطة JS -->
+                        </div>
+                    </div>
+
+                    <!-- محتوى خلفية الاسم -->
+                    <div id="feature-nameBackground" class="feature-content hidden">
+                        <h4 class="text-sm font-bold text-slate-300 mb-3">اختر خلفية لاسمك (تظهر في الرسائل):</h4>
+                        <div class="grid grid-cols-4 gap-3" id="nameBackgroundGrid">
+                            <div onclick="selectFeature('nameBackground', null)" class="cursor-pointer p-2 rounded text-center border border-gray-600 hover:border-white text-xs">بدون خلفية</div>
+                            <!-- سيتم ملؤها بواسطة JS -->
+                        </div>
+                        <div class="mt-4 p-3 bg-gray-800 rounded-lg text-center">
+                            <p class="text-xs text-slate-400 mb-1">معاينة:</p>
+                            <span id="nameBackgroundPreview" class="px-2 py-1 rounded">اسم المستخدم</span>
+                        </div>
+                    </div>
+
+                    <!-- محتوى إطار الصورة -->
+                    <div id="feature-avatarFrame" class="feature-content hidden">
+                        <h4 class="text-sm font-bold text-slate-300 mb-3">اختر إطاراً لصورتك:</h4>
+                        <div class="grid grid-cols-4 gap-4 justify-items-center" id="avatarFrameGrid">
+                            <!-- سيتم ملؤها بواسطة JS -->
+                        </div>
+                    </div>
+
+                    <!-- محتوى خلفية البطاقة (جديد) -->
+                    <div id="feature-userCardBackground" class="feature-content hidden">
+                        <h4 class="text-sm font-bold text-slate-300 mb-3">اختر خلفية لبطاقتك في قائمة المتصلين:</h4>
+                        <div class="grid grid-cols-3 gap-3" id="userCardBackgroundGrid">
+                            <div onclick="selectFeature('userCardBackground', null)" class="cursor-pointer p-3 rounded-lg text-center border border-gray-600 hover:border-white text-xs bg-gray-800">افتراضي</div>
+                            <!-- سيتم ملؤها بواسطة JS -->
+                        </div>
+                        <div class="mt-4 p-2 rounded-lg border border-gray-700" id="cardBackgroundPreview">
+                            <p class="text-xs text-slate-400 mb-2">معاينة:</p>
+                            <div class="flex items-center space-x-3 space-x-reverse p-2 rounded-lg" id="previewCardDiv"><div class="w-8 h-8 rounded-full bg-gray-500"></div><span class="text-white text-sm">اسم المستخدم</span></div>
+                        </div>
+                    </div>
+
+                    <!-- محتوى لون البروفايل (جديد) -->
+                    <div id="feature-profileBackground" class="feature-content hidden">
+                        <h4 class="text-sm font-bold text-slate-300 mb-3">اختر لوناً لملفك الشخصي:</h4>
+                        <div class="grid grid-cols-3 gap-3" id="profileBackgroundGrid">
+                            <div onclick="selectFeature('profileBackground', null)" class="cursor-pointer p-3 rounded-lg text-center border border-gray-600 hover:border-white text-xs bg-gray-800">افتراضي</div>
+                            <!-- سيتم ملؤها بواسطة JS -->
+                        </div>
+                        <div class="mt-4 p-2 rounded-lg border border-gray-700">
+                            <p class="text-xs text-slate-400 mb-2">معاينة:</p>
+                            <div id="previewProfileDiv" class="p-4 rounded-lg text-center bg-gradient-to-b from-gray-800 to-gray-900">
+                                <span class="text-white text-sm">ملف شخصي</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- محتوى تغيير الاسم (جديد) -->
+                    <div id="feature-changeName" class="feature-content hidden">
+                        <h4 class="text-sm font-bold text-slate-300 mb-3">تغيير اسم المستخدم:</h4>
+                        <p class="text-xs text-slate-400 mb-4">ملاحظة: سيتم تسجيل خروجك بعد تغيير الاسم. يجب أن يتكون الاسم من 3-15 حرف (أحرف إنجليزية، أرقام، ومسافات فقط).</p>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-slate-200 text-sm font-semibold mb-2">الاسم الجديد</label>
+                                <input type="text" id="newUsernameInput" placeholder="أدخل الاسم الجديد..." 
+                                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400">
+                            </div>
+                            <button onclick="requestUsernameChange()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                                حفظ الاسم الجديد
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 text-center">
+                        <button onclick="saveSelectedFeature()" class="bg-green-600 hover:bg-green-700 text-white px-8 py-2 rounded-full font-bold shadow-lg transition-transform transform hover:scale-105">
+                            حفظ التغييرات
+                        </button>
+                    </div>
+                </div>
+
+                <!-- قسم حول الحساب -->
+                <div id="profileTab-account" class="profile-tab-content hidden space-y-6">
+                    <div id="accountActions">
+                        <h3 class="text-lg font-bold text-red-400 mb-2">إجراءات خطيرة</h3>
+                        <p class="text-sm text-slate-400 mb-4">هذه الإجراءات لا يمكن التراجع عنها. يرجى توخي الحذر.</p>
+                        <button onclick="confirmDeleteAccount()" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+                            حذف حسابي نهائياً
+                        </button>
+                    </div>
+                </div>
+            </div>
             </div>
         </div>
     </div>
@@ -1746,6 +1904,7 @@
 <input type="file" id="imageUpload" accept="image/*" class="hidden">
 <input type="file" id="privateImageUpload" accept="image/*" class="hidden">
 <input type="file" id="profileImageUpload" accept="image/*" class="hidden">
+<input type="file" id="coverUpload" accept="image/*" class="hidden">
 
 
 
@@ -1753,6 +1912,231 @@
     <script>
         const socket = io();
         let currentUser = null;
+
+        // --- دوال تبديل أقسام الملف الشخصي ---
+        function switchProfileTab(event, tabName) {
+            // إخفاء جميع المحتويات
+            document.querySelectorAll('.profile-tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            // إلغاء تفعيل جميع الأزرار
+            document.querySelectorAll('.profile-tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // إظهار المحتوى المحدد
+            document.getElementById(`profileTab-${tabName}`).classList.remove('hidden');
+            // تفعيل الزر المحدد
+            event.currentTarget.classList.add('active');
+        }
+
+        function confirmDeleteAccount() {
+            const username = document.getElementById('profileUsername').textContent;
+            if (username !== currentUser.name) return;
+
+            const confirmation = prompt(`للتأكيد، يرجى كتابة اسم المستخدم الخاص بك: "${username}"`);
+            if (confirmation === username) {
+                if (confirm("هل أنت متأكد تماماً؟ سيتم حذف جميع بياناتك نهائياً.")) {
+                    socket.emit('delete account', { username: currentUser.name });
+                }
+            } else if (confirmation !== null) {
+                showNotification('اسم المستخدم غير متطابق. تم إلغاء العملية.', 'error');
+            }
+        }
+
+        function requestUsernameChange() {
+            const newUsername = document.getElementById('newUsernameInput').value.trim();
+            if (!newUsername) {
+                showNotification('يرجى إدخال اسم جديد.', 'error');
+                return;
+            }
+            if (confirm(`هل أنت متأكد من تغيير اسمك إلى "${newUsername}"؟ سيتم تسجيل خروجك.`)) {
+                socket.emit('change username', { newUsername, currentUser });
+            }
+        }
+
+        socket.on('username change success', (message) => {
+            showNotification(message, 'success');
+            setTimeout(logout, 2000);
+        });
+
+        socket.on('username change error', (error) => {
+            showNotification(error, 'error');
+        });
+
+        socket.on('user name changed', ({ oldUsername, newUsername }) => {
+            // تحديث الواجهة لجميع العملاء الآخرين
+            document.querySelectorAll(`[data-username="${oldUsername}"]`).forEach(el => {
+                el.setAttribute('data-username', newUsername);
+                // تحديث النص إذا كان موجوداً
+                const textNode = el.querySelector('.font-semibold.truncate, .username-text, #profileUsername');
+                if (textNode && textNode.textContent === oldUsername) textNode.textContent = newUsername;
+            });
+        });
+
+        // --- دوال قسم الميزات ---
+        let currentFeatureSelection = {
+            feature: 'nameColor',
+            value: null
+        };
+
+        function switchFeatureSubTab(tabName) {
+            // تحديث الأزرار
+            document.querySelectorAll('.feature-sub-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('text-slate-400', 'hover:bg-gray-700');
+            });
+            const activeBtn = document.getElementById(`btn-${tabName}`);
+            activeBtn.classList.remove('text-slate-400', 'hover:bg-gray-700');
+            activeBtn.classList.add('bg-blue-600', 'text-white');
+
+            // تحديث المحتوى
+            document.querySelectorAll('.feature-content').forEach(content => content.classList.add('hidden'));
+            document.getElementById(`feature-${tabName}`).classList.remove('hidden');
+
+            currentFeatureSelection.feature = tabName;
+            currentFeatureSelection.value = null; // إعادة تعيين القيمة عند التبديل
+        }
+
+        function selectFeature(feature, value) {
+            currentFeatureSelection.feature = feature;
+            currentFeatureSelection.value = value;
+
+            // تحديث التحديد المرئي
+            if (feature === 'nameColor') {
+                document.querySelectorAll('#nameColorGrid .color-option').forEach(el => el.classList.remove('selected'));
+                if (value) event.target.classList.add('selected');
+            } else if (feature === 'nameBackground') {
+                document.querySelectorAll('#nameBackgroundGrid > div').forEach(el => el.classList.remove('border-blue-500', 'border-2'));
+                event.currentTarget.classList.add('border-blue-500', 'border-2');
+                
+                // تحديث المعاينة
+                const preview = document.getElementById('nameBackgroundPreview');
+                preview.className = `px-2 py-1 rounded ${value || ''}`;
+            } else if (feature === 'avatarFrame') {
+                document.querySelectorAll('#avatarFrameGrid > div').forEach(el => el.classList.remove('ring-2', 'ring-blue-500'));
+                event.currentTarget.classList.add('ring-2', 'ring-blue-500');
+            } else if (feature === 'userCardBackground') {
+                document.querySelectorAll('#userCardBackgroundGrid > div').forEach(el => el.classList.remove('ring-2', 'ring-blue-500'));
+                event.currentTarget.classList.add('ring-2', 'ring-blue-500');
+                
+                const previewDiv = document.getElementById('previewCardDiv');
+                previewDiv.className = `flex items-center space-x-3 space-x-reverse p-2 rounded-lg ${value || 'bg-gray-800'}`;
+            } else if (feature === 'profileBackground') {
+                document.querySelectorAll('#profileBackgroundGrid > div').forEach(el => el.classList.remove('ring-2', 'ring-blue-500'));
+                event.currentTarget.classList.add('ring-2', 'ring-blue-500');
+                
+                const previewDiv = document.getElementById('previewProfileDiv');
+                previewDiv.className = `p-4 rounded-lg text-center ${value || 'bg-gradient-to-b from-gray-800 to-gray-900'}`;
+            }
+        }
+
+        function saveSelectedFeature() {
+            if (currentFeatureSelection.value === undefined) return; // لم يتم اختيار شيء
+            
+            socket.emit('update user feature', {
+                feature: currentFeatureSelection.feature,
+                value: currentFeatureSelection.value,
+                currentUser: currentUser
+            });
+
+            // تحديث البيانات محلياً فوراً لضمان ظهور التغييرات
+            if (currentUser) {
+                currentUser[currentFeatureSelection.feature] = currentFeatureSelection.value;
+            }
+        }
+
+        // تهيئة خيارات الميزات
+        function initFeaturesUI() {
+            // 1. ألوان الاسم
+            const colors = [
+                'text-red-500', 'text-orange-500', 'text-yellow-400', 'text-green-500', 'text-teal-400',
+                'text-blue-500', 'text-indigo-500', 'text-purple-500', 'text-pink-500', 'text-white',
+                'text-gray-400', 'text-rose-400'
+            ];
+            const colorGrid = document.getElementById('nameColorGrid');
+            colorGrid.innerHTML = '';
+            colors.forEach(color => {
+                const div = document.createElement('div');
+                div.className = `color-option ${color.replace('text-', 'bg-')}`;
+                div.onclick = (e) => selectFeature('nameColor', color);
+                colorGrid.appendChild(div);
+            });
+
+            // 2. خلفيات الاسم
+            const backgrounds = [
+                'bg-red-600', 'bg-blue-600', 'bg-green-600', 'bg-purple-600', 
+                'bg-yellow-600', 'bg-pink-600', 'bg-gray-600', 'bg-indigo-900',
+                'bg-gradient-to-r from-purple-500 to-pink-500', 'bg-gradient-to-r from-blue-500 to-teal-400'
+            ];
+            const bgGrid = document.getElementById('nameBackgroundGrid');
+            // الإبقاء على خيار "بدون خلفية" وإضافة الباقي
+            backgrounds.forEach(bg => {
+                const div = document.createElement('div');
+                div.className = `cursor-pointer p-2 rounded text-center text-white text-xs ${bg} border border-transparent hover:border-white`;
+                div.textContent = 'Aa';
+                div.onclick = (e) => selectFeature('nameBackground', bg);
+                bgGrid.appendChild(div);
+            });
+
+            // 3. إطارات الصور
+            const frames = [
+                { id: 'frame-none', name: 'بدون' },
+                { id: 'frame-gold', name: 'ذهبي' },
+                { id: 'frame-silver', name: 'فضي' },
+                { id: 'frame-red-glow', name: 'توهج أحمر' },
+                { id: 'frame-blue-glow', name: 'توهج أزرق' },
+                { id: 'frame-double', name: 'مزدوج' },
+                { id: 'frame-dashed', name: 'متقطع' }
+            ];
+            const frameGrid = document.getElementById('avatarFrameGrid');
+            frameGrid.innerHTML = '';
+            frames.forEach(frame => {
+                const div = document.createElement('div');
+                div.className = 'cursor-pointer p-2 rounded hover:bg-gray-700 flex flex-col items-center';
+                div.onclick = (e) => selectFeature('avatarFrame', frame.id === 'frame-none' ? null : frame.id);
+                div.innerHTML = `
+                    <div class="w-10 h-10 rounded-full bg-gray-600 ${frame.id}"></div>
+                    <span class="text-[10px] mt-1 text-slate-300">${frame.name}</span>
+                `;
+                frameGrid.appendChild(div);
+            });
+
+            // 4. خلفيات البطاقة
+            const cardBackgrounds = [
+                'bg-gradient-to-r from-slate-900 to-slate-700', 'bg-gradient-to-r from-zinc-900 to-stone-800',
+                'bg-gradient-to-r from-red-900/80 to-red-800/60', 'bg-gradient-to-r from-orange-900/80 to-amber-800/60',
+                'bg-gradient-to-r from-yellow-900/80 to-amber-700/60', 'bg-gradient-to-r from-green-900/80 to-emerald-800/60',
+                'bg-gradient-to-r from-teal-900/80 to-cyan-800/60', 'bg-gradient-to-r from-blue-900/80 to-indigo-800/60',
+                'bg-gradient-to-r from-indigo-900/80 to-violet-800/60', 'bg-gradient-to-r from-purple-900/80 to-fuchsia-800/60',
+                'bg-gradient-to-r from-pink-900/80 to-rose-800/60', 'bg-gradient-to-r from-gray-800 to-gray-600'
+            ];
+            const cardBgGrid = document.getElementById('userCardBackgroundGrid');
+            cardBackgrounds.forEach(bg => {
+                const div = document.createElement('div');
+                div.className = `cursor-pointer h-10 rounded-lg border border-transparent hover:border-white ${bg}`;
+                div.onclick = (e) => selectFeature('userCardBackground', bg);
+                cardBgGrid.appendChild(div);
+            });
+
+            // 5. خلفيات الملف الشخصي
+            const profileBgs = [
+                'bg-gradient-to-br from-slate-800 to-slate-900',
+                'bg-gradient-to-br from-red-800 to-rose-900',
+                'bg-gradient-to-br from-sky-800 to-indigo-900',
+                'bg-gradient-to-br from-emerald-800 to-teal-900',
+                'bg-gradient-to-br from-amber-800 to-orange-900',
+                'bg-gradient-to-br from-fuchsia-800 to-purple-900'
+            ];
+            const profileBgGrid = document.getElementById('profileBackgroundGrid');
+            profileBgs.forEach(bg => {
+                const div = document.createElement('div');
+                div.className = `cursor-pointer h-10 rounded-lg border border-transparent hover:border-white ${bg}`;
+                div.onclick = (e) => selectFeature('profileBackground', bg);
+                profileBgGrid.appendChild(div);
+            });
+        }
+
         let currentRoom = null;
         let rooms = [];
         let sessionChecked = false;
@@ -1783,7 +2167,10 @@
         let isFirstUserLoad = true;
         const entrySound = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3');
         entrySound.volume = 0.4;
+        const leaveSound = new Audio('https://cdn.freesound.org/previews/505/505820_10931963-lq.mp3'); // صوت "نفخة" خفيفة
+        leaveSound.volume = 0.5;
         
+        window.onlineUsersData = {}; // تخزين بيانات المستخدمين للوصول السريع
         // --- دوال أيقونات الرتب ---
         let tempRankIcon = null;
 
@@ -1892,6 +2279,13 @@
     socket.on('connect', () => {
         console.log('Socket connected:', socket.id);
         socket.emit('get user avatars');
+        
+        // إعادة الانضمام للغرفة عند استعادة الاتصال
+        if (currentUser && currentRoom) {
+             socket.emit('join room', { roomId: currentRoom.id, user: currentUser });
+             showNotification('تم استعادة الاتصال.', 'success');
+        }
+
         // إذا لم يتم التحقق من الجلسة بعد، اطلب التحقق مرة أخرى
         const savedSession = localStorage.getItem('userSession');
         if (savedSession) {
@@ -1928,7 +2322,10 @@
             if (reason === 'io server disconnect') {
                 showNotification('تم قطع اتصالك من قبل الخادم.', 'error');
             }
-            goBack(true); // العودة للصفحة الرئيسية مع إظهار رسالة الخمول
+            // تم التعديل: عدم الخروج عند الانقطاع المؤقت
+            if (reason === 'io server disconnect') {
+                goBack(true); 
+            }
         }
     });
         // تتبع الرسائل غير المقروءة
@@ -2215,6 +2612,11 @@ function updateUnreadBadges() {
             currentUser = userData; // تحديث المستخدم الحالي فوراً
             currentUser.nameColor = userData.nameColor; // التأكد من تحديث لون الاسم
             currentUser.bio = userData.bio; // التأكد من تحديث الـ bio
+            currentUser.nameBackground = userData.nameBackground;
+            currentUser.avatarFrame = userData.avatarFrame;
+            currentUser.userCardBackground = userData.userCardBackground;
+            currentUser.profileBackground = userData.profileBackground;
+            currentUser.profileCover = userData.profileCover;
 
             document.cookie = `sessionId=${userData.sessionId}; path=/; max-age=31536000; SameSite=Lax`; // صلاحية لمدة سنة
             handleSessionValid(userData);
@@ -2303,6 +2705,20 @@ function updateUnreadBadges() {
 socket.on('chat history', (messages) => {
     const container = document.getElementById('messagesContainer');
     container.innerHTML = '';
+
+    // إضافة زر تحميل المزيد في الأعلى
+    const loadMoreBtn = document.createElement('button');
+    loadMoreBtn.id = 'loadMoreBtn';
+    loadMoreBtn.className = 'w-full py-2 text-sm text-blue-400 hover:text-blue-300 transition-colors mb-2 font-medium';
+    loadMoreBtn.innerHTML = '<span>↻ تحميل رسائل أقدم</span>';
+    loadMoreBtn.onclick = loadMoreMessages;
+    // إخفاء الزر إذا كانت الرسائل قليلة جداً (أقل من الحد الأدنى للدفعة)
+    if (messages.length < 25) loadMoreBtn.style.display = 'none';
+    
+    container.appendChild(loadMoreBtn);
+    
+    // استخدام DocumentFragment لتحسين الأداء (إضافة دفعة واحدة)
+    const fragment = document.createDocumentFragment();
     
     messages.forEach(msg => {
         // إذا لم يوجد messageId، أنشئ واحد حقيقي وفوري
@@ -2310,17 +2726,77 @@ socket.on('chat history', (messages) => {
             msg.messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
         if (msg.type === 'user') {
-            addMessageToChat(msg.user, msg.content, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, msg.replyTo);
+            addMessageToChat(msg.user, msg.content, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, msg.replyTo, fragment);
         } else if (msg.type === 'image') {
-            addImageMessageToChat(msg.user, msg.imageData, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId);
+            addImageMessageToChat(msg.user, msg.imageData, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, fragment);
         } else {
-            addSystemMessage(msg.content, msg.time);
+            addSystemMessage(msg.content, msg.time, fragment);
         }
     });
     
-    setTimeout(scrollToBottom, 100);
+    container.appendChild(fragment);
+    
+    // التمرير للأسفل فقط عند الدخول الأولي
+    setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+    }, 100);
     hideLoading();
 });
+
+        // دالة طلب المزيد من الرسائل
+        function loadMoreMessages() {
+            const container = document.getElementById('messagesContainer');
+            // البحث عن أول رسالة فعلية (تجاهل زر التحميل)
+            const firstMessage = container.querySelector('.chat-message');
+            if (!firstMessage) return;
+
+            const firstMessageId = firstMessage.getAttribute('data-message-id');
+            if (!firstMessageId) return;
+
+            const btn = document.getElementById('loadMoreBtn');
+            if (btn) btn.innerHTML = '<span class="spinner inline-block w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin ml-2"></span> جاري التحميل...';
+
+            socket.emit('load more messages', {
+                roomId: currentRoom.id,
+                firstMessageId: firstMessageId
+            });
+        }
+
+        // استقبال الرسائل القديمة
+        socket.on('more chat history', (messages) => {
+            const btn = document.getElementById('loadMoreBtn');
+            if (messages.length === 0) {
+                if (btn) btn.style.display = 'none';
+                return;
+            }
+            if (btn) btn.innerHTML = '<span>↻ تحميل رسائل أقدم</span>';
+
+            const container = document.getElementById('messagesContainer');
+            const oldHeight = container.scrollHeight;
+            const fragment = document.createDocumentFragment();
+
+            messages.forEach(msg => {
+                if (msg.type === 'user') {
+                    addMessageToChat(msg.user, msg.content, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, msg.replyTo, fragment);
+                } else if (msg.type === 'image') {
+                    addImageMessageToChat(msg.user, msg.imageData, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, fragment);
+                }
+            });
+
+            // إدراج الرسائل بعد زر التحميل وقبل الرسائل الحالية
+            container.insertBefore(fragment, btn.nextSibling);
+            
+            // الحفاظ على موقع التمرير
+            container.scrollTop = container.scrollHeight - oldHeight;
+        });
+
+        socket.on('feature success', (msg) => {
+            showNotification(msg, 'success');
+        });
+
+        socket.on('feature error', (msg) => {
+            showNotification(msg, 'error');
+        });
 
         // استقبال نتائج الرتب
         socket.on('rank success', (message) => {
@@ -3020,8 +3496,8 @@ window.addEventListener('beforeunload', function (e) {
         }
 
         // إضافة رسالة إلى الدردشة (نسخة مدمجة)
-function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messageId = null, replyTo = null) {
-    const container = document.getElementById('messagesContainer');
+function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messageId = null, replyTo = null, targetContainer = null) {
+    const container = targetContainer || document.getElementById('messagesContainer');
     const messageDiv = document.createElement('div');    
     messageDiv.setAttribute('data-message-id', messageId);
    
@@ -3034,13 +3510,24 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
         rankBadge = `<span title="${userRank}" class="mx-1 inline-flex items-center align-middle">${iconHtml}</span>`;
     }
 
-    // البحث عن لون اسم المستخدم
-    let nameColorClass = 'text-blue-200'; // اللون الافتراضي
-    const onlineUser = document.querySelector(`#onlineUsersList [data-username="${user}"]`);
-    if (onlineUser) {
-        const color = onlineUser.dataset.nameColor;
-        if (color && color !== 'null') {
-            nameColorClass = color;
+    // --- إصلاح: تحديد لون الاسم والخلفية والإطار بشكل صحيح ---
+    let nameColorClass, nameBgClass, avatarFrameClass;
+
+    if (isOwn) {
+        nameColorClass = currentUser.nameColor || 'text-blue-100';
+        nameBgClass = currentUser.nameBackground || '';
+        avatarFrameClass = currentUser.avatarFrame || '';
+    } else {
+        // استخدام البيانات المخزنة في الذاكرة بدلاً من البحث في DOM (أسرع بكثير)
+        const onlineUser = window.onlineUsersData ? window.onlineUsersData[user] : null;
+        if (onlineUser) {
+            nameColorClass = (onlineUser.nameColor && onlineUser.nameColor !== 'null') ? onlineUser.nameColor : 'text-blue-200';
+            nameBgClass = (onlineUser.nameBackground && onlineUser.nameBackground !== 'null') ? onlineUser.nameBackground : '';
+            avatarFrameClass = (onlineUser.avatarFrame && onlineUser.avatarFrame !== 'null') ? onlineUser.avatarFrame : '';
+        } else {
+            nameColorClass = 'text-blue-200';
+            nameBgClass = '';
+            avatarFrameClass = '';
         }
     }
 
@@ -3089,8 +3576,8 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
 
 
     const avatarHtml = avatarUrl 
-        ? `<img src="${avatarUrl}" class="w-full h-full rounded-full object-cover" alt="${user}">`
-        : `<div class="w-full h-full rounded-full bg-gray-400 flex items-center justify-center text-white font-bold text-sm">${user.charAt(0).toUpperCase()}</div>`;
+        ? `<img src="${avatarUrl}" class="w-full h-full rounded-full object-cover ${avatarFrameClass}" alt="${user}">`
+        : `<div class="w-full h-full rounded-full bg-gray-400 flex items-center justify-center text-white font-bold text-sm ${avatarFrameClass}">${user.charAt(0).toUpperCase()}</div>`;
 
     // --- التصميم الجديد المدمج ---
     messageDiv.innerHTML = `
@@ -3102,7 +3589,7 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
             <div class="message-bubble relative group ${isOwn ? 'bg-blue-600 text-white' : 'bg-gray-800 text-white'} rounded-lg">
                 ${replyHtml}
                 <div class="message-content leading-snug">
-                    <span class="username-text font-bold cursor-pointer ${isOwn ? 'text-blue-100' : nameColorClass}" onclick="showUserProfileModal('${user}')">${user}</span>
+                    <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''}" onclick="showUserProfileModal('${user}')">${user}</span>
                     ${rankBadge}
                     <span class="mr-1">:</span>
                     <span class="break-words">${message}</span>
@@ -3118,7 +3605,10 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
     messageDiv.className = `chat-message flex justify-end`;
 
     container.appendChild(messageDiv);
-    container.scrollTop = container.scrollHeight;
+    // التمرير فقط إذا كانت رسالة حية (ليست جزءاً من التاريخ)
+    if (!targetContainer) {
+        container.scrollTop = container.scrollHeight;
+    }
 }
 
 // --- إعادة بناء نظام قائمة خيارات الرسالة ---
@@ -3220,8 +3710,8 @@ function scrollToMessage(messageId) {
 }
 
         // إضافة رسالة نظام (نسخة مدمجة)
-function addSystemMessage(message, time) {
-    const container = document.getElementById('messagesContainer');
+function addSystemMessage(message, time, targetContainer = null) {
+    const container = targetContainer || document.getElementById('messagesContainer');
     const messageDiv = document.createElement('div');
     messageDiv.className = 'chat-message flex justify-center'; 
    
@@ -3237,7 +3727,9 @@ function addSystemMessage(message, time) {
     `;
    
     container.appendChild(messageDiv);
-    container.scrollTop = container.scrollHeight;
+    if (!targetContainer) {
+        container.scrollTop = container.scrollHeight;
+    }
 }
 
 
@@ -3283,6 +3775,9 @@ function updateOnlineUsersList(users) {
     let shouldPlaySound = false;
     const groupedUsers = { owners: [], kings: [], distinguished: [], members: [] };
     
+    // تحديث خريطة البيانات للوصول السريع
+    window.onlineUsersData = {};
+
     users.forEach(user => {
         if (user.name === currentUser.name) {
             currentUser.nameColor = user.nameColor;
@@ -3298,6 +3793,9 @@ function updateOnlineUsersList(users) {
         } else {
             groupedUsers.members.push(user);
         }
+        
+        // تخزين البيانات
+        window.onlineUsersData[user.name] = user;
     });
 
     // دالة ترتيب المستخدمين داخل الجناح
@@ -3339,6 +3837,8 @@ function updateOnlineUsersList(users) {
                 userDiv.onclick = () => showUserProfileModal(user.name);
                 userDiv.setAttribute('data-username', user.name);
                 userDiv.setAttribute('data-name-color', user.nameColor || 'null');
+                userDiv.setAttribute('data-name-background', user.nameBackground || 'null');
+                userDiv.setAttribute('data-avatar-frame', user.avatarFrame || 'null');
 
                 // شارة الرتبة (مصغرة)
                 let rankBadge = '';
@@ -3349,9 +3849,13 @@ function updateOnlineUsersList(users) {
                 }
 
                 // الصورة الرمزية
-                const avatarHtml = user.avatar
-                    ? `<img src="${user.avatar}" class="w-9 h-9 rounded-full object-cover border border-gray-600 group-hover:border-blue-400 transition-colors" alt="${user.name}">`
-                    : `<div class="w-9 h-9 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold text-xs border border-gray-500 group-hover:border-blue-400 transition-colors">${user.name.charAt(0).toUpperCase()}</div>`;
+                const avatarHtml = user.avatar // --- إصلاح: إزالة `border` المتعارض ---
+                    ? `<img src="${user.avatar}" class="w-9 h-9 rounded-full object-cover group-hover:border-blue-400 transition-colors ${user.avatarFrame || ''}" alt="${user.name}">`
+                    : `<div class="w-9 h-9 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold text-xs group-hover:border-blue-400 transition-colors ${user.avatarFrame || ''}">${user.name.charAt(0).toUpperCase()}</div>`;
+
+                // تطبيق خلفية البطاقة المخصصة
+                const cardBgClass = user.userCardBackground || 'hover:bg-white/5';
+                userDiv.className = `group flex items-center space-x-3 space-x-reverse p-2 rounded-lg transition-all duration-200 ease-in-out cursor-pointer mb-1 border border-transparent hover:border-white/10 ${cardBgClass}`;
 
                 userDiv.innerHTML = `
                     <div class="relative flex-shrink-0">
@@ -3373,6 +3877,20 @@ function updateOnlineUsersList(users) {
     if (shouldPlaySound && !isFirstUserLoad) {
         entrySound.play().catch(e => console.log('Audio play failed:', e));
     }
+
+    if (!isFirstUserLoad) {
+        let userLeft = false;
+        for (const username of previousOnlineUsernames) {
+            if (!currentOnlineUsernames.has(username)) {
+                userLeft = true;
+                break;
+            }
+        }
+        if (userLeft) {
+            leaveSound.play().catch(e => console.log('Leave audio play failed:', e));
+        }
+    }
+
     isFirstUserLoad = false;
 
     previousOnlineUsernames = currentOnlineUsernames;
@@ -3602,6 +4120,11 @@ function updateOnlineUsersList(users) {
             showNotification(error, 'error');
         });
 
+        // استقبال حدث تحديث الصفحة الإجباري
+        socket.on('force reload', () => {
+            location.reload();
+        });
+
         // --- أحداث المتجر ---
         socket.on('shop items data', (items) => {
             window.shopItems = items; // حفظ عناصر المتجر للاستخدام لاحقاً
@@ -3663,21 +4186,12 @@ function updateOnlineUsersList(users) {
 
         socket.on('buy item success', (data) => {
             showNotification(data.message, 'success');
-            // تحديث نقاط المستخدم
-            if (currentUser) currentUser.points = data.newPoints;
-            // تحديث لون اسم المستخدم إذا تم شراؤه
-            if (data.updatedNameColor) {
-                currentUser.nameColor = data.updatedNameColor;
-                updateHeaderUserInfo();
-            }
-            // تحديث عرض النقاط في الملف الشخصي إذا كان مفتوحاً
-            if (!document.getElementById('profileModal').classList.contains('hidden')) {
-                document.getElementById('profilePoints').textContent = data.newPoints;
-            }
-            // إذا كان العنصر المشترى هو بطاقة تغيير الاسم، افتح نافذة التغيير
-            if (data.purchasedItem && data.purchasedItem.itemType === 'name_change_card') {
-                closeShopModal();
-                useNameChangeCard(data.inventory[data.inventory.length - 1].id);
+            
+            // تحديث الصفحة تلقائياً إذا طلب السيرفر ذلك
+            if (data.reload) {
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
             }
         });
 
@@ -3794,27 +4308,19 @@ function updateOnlineUsersList(users) {
             const statusElem = document.getElementById('profileStatus');
             const statusDot = statusElem.querySelector('span:first-child'); // تعديل: اختيار العنصر الأول بشكل موثوق
             const statusText = statusElem.querySelector('span:last-child'); // تعديل: اختيار العنصر الثاني بشكل موثوق
-            const privateChatButton = document.getElementById('privateChatButton');
-            const addFriendButton = document.getElementById('addFriendButton');
-            const sendPointsButton = document.getElementById('sendPointsButton');
             const profileMenuContainer = document.getElementById('profileMenuContainer');
+            const visitorActions = document.getElementById('visitorActions');
             const profileBio = document.getElementById('profileBio');
             const profileBioInput = document.getElementById('profileBioInput');
             const editBioButton = document.getElementById('editBioButton');
             const saveBioButton = document.getElementById('saveBioButton');
             const changeProfilePicBtn = document.getElementById('changeProfilePicBtn');
+            const changeCoverBtn = document.getElementById('changeCoverBtn');
+            const featuresTabButton = document.getElementById('featuresTabButton');
             const specialUsers = ["Walid dz 31", "سيد احمد", "ميارا"]; 
-            
-            if (specialUsers.includes(profileData.username)) {
-                document.getElementById('profilePoints').textContent = '99999';
-                document.getElementById('profileLevel').textContent = '9999';
-            } else {
-                document.getElementById('profilePoints').textContent = profileData.points;
-                document.getElementById('profileLevel').textContent = profileData.level;
-            }
-
-            const inventorySection = document.getElementById('inventorySection'); 
-            const inventoryItemsContainer = document.getElementById('inventoryItems');
+            const profileHeader = document.getElementById('profileHeader');
+            const profileContent = document.getElementById('profileContent');
+            const profileBody = document.getElementById('profileBody');
             
             // تعبئة البيانات
             avatar.src = profileData.avatar || (profileData.gender === 'female' ? defaultAvatars.girl1 : defaultAvatars.boy1);
@@ -3822,11 +4328,32 @@ function updateOnlineUsersList(users) {
                 this.src = profileData.gender === 'female' ? defaultAvatars.girl1 : defaultAvatars.boy1;
             };
             usernameElem.textContent = profileData.username;
-            usernameElem.className = `text-2xl font-bold ${profileData.nameColor || 'text-white'}`;
+
+            // عرض غلاف الملف الشخصي
+            const coverDisplay = document.getElementById('profileCoverDisplay');
+            if (profileData.profileCover) {
+                coverDisplay.src = profileData.profileCover;
+                coverDisplay.classList.remove('hidden');
+            } else {
+                coverDisplay.classList.add('hidden');
+            }
+
+            // تطبيق لون/خلفية الملف الشخصي
+            if (profileData.profileBackground) {
+                profileContent.className = `profile-content custom-scrollbar relative ${profileData.profileBackground}`;
+                profileHeader.className = 'relative h-64 w-full border-b border-gray-700/50 bg-transparent overflow-hidden';
+                profileBody.className = 'p-6 bg-transparent';
+            } else {
+                profileContent.className = 'profile-content custom-scrollbar relative';
+                profileHeader.className = 'relative h-64 w-full bg-gray-800 border-b border-gray-700/50 overflow-hidden';
+                profileBody.className = 'p-6 bg-gray-900/50';
+            }
+
+            usernameElem.className = `text-2xl font-bold tracking-wide ${profileData.nameColor || 'text-white'}`;
             
             // عرض الجنس
-            const genderIcon = profileData.gender === 'male' ? '👨 ذكر' : '👩 أنثى';
-            genderElem.textContent = genderIcon;
+            const genderText = profileData.gender === 'male' ? 'ذكر' : 'أنثى';
+            genderElem.textContent = genderText;
 
             if (profileData.rank) {
                 const rankInfo = ranks[profileData.rank] || { icon: '', color: 'from-gray-500 to-gray-600' };
@@ -3850,48 +4377,70 @@ function updateOnlineUsersList(users) {
             // عرض المعلومات الشخصية (Bio)
             profileBio.textContent = profileData.bio || 'لا توجد معلومات لعرضها.';
             profileBioInput.value = profileData.bio || '';
+
+            // تعبئة قائمة الأصدقاء
+            const friendsContainer = document.getElementById('profileFriendsList');
+            friendsContainer.innerHTML = '';
+            if (profileData.friends && profileData.friends.length > 0) {
+                profileData.friends.forEach(friend => {
+                    const friendDiv = document.createElement('div');
+                    friendDiv.className = 'bg-gray-800/60 p-2 rounded-lg text-center cursor-pointer hover:bg-gray-700/80 transition-colors border border-gray-700/50';
+                    friendDiv.onclick = () => showUserProfileModal(friend.username);
+                    friendDiv.innerHTML = `
+                        <div class="relative inline-block">
+                            <img src="${friend.avatar || defaultAvatars.guest}" class="w-10 h-10 rounded-full object-cover mx-auto mb-1 border border-gray-600">
+                            ${friend.isOnline ? '<span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-gray-800 rounded-full"></span>' : ''}
+                        </div>
+                        <div class="text-xs text-white truncate font-medium">${friend.username}</div>
+                    `;
+                    friendsContainer.appendChild(friendDiv);
+                });
+            } else {
+                friendsContainer.innerHTML = '<p class="col-span-3 text-center text-slate-400 text-sm py-4">لا يوجد أصدقاء لعرضهم.</p>';
+            }
+
+            // تعبئة النقاط والمستوى
+            if (specialUsers.includes(profileData.username)) {
+                document.getElementById('profilePoints').textContent = '99999';
+                document.getElementById('profileLevel').textContent = '9999';
+            } else {
+                document.getElementById('profilePoints').textContent = profileData.points;
+                document.getElementById('profileLevel').textContent = profileData.level;
+            }
  
+            // التحقق من الرتبة لإظهار تبويب الميزات
+            const isOwner = profileData.username === currentUser.name;
+            const userRankLevel = profileData.rank ? (ranks[profileData.rank]?.level || 0) : 0;
+            if (isOwner && (userRankLevel >= 4 || profileData.username === "Walid dz 31")) {
+                featuresTabButton.classList.remove('hidden');
+                initFeaturesUI(); // تهيئة واجهة الميزات
+            } else {
+                featuresTabButton.classList.add('hidden');
+            }
+
             // إظهار/إخفاء أزرار التعديل وقائمة الإدارة
             if (profileData.username === currentUser.name) {
                 changeProfilePicBtn.classList.remove('hidden'); // إظهار زر تغيير الصورة
+                changeCoverBtn.classList.remove('hidden'); // إظهار زر تغيير الغلاف
                 editBioButton.classList.remove('hidden');
                 saveBioButton.classList.add('hidden');
-                privateChatButton.style.display = 'none';
-                addFriendButton.style.display = 'none';
-                sendPointsButton.style.display = 'none';
+                visitorActions.classList.add('hidden');
                 profileMenuContainer.innerHTML = ''; // إخفاء قائمة الإدارة
-
-                // عرض مخزون المستخدم
-                inventorySection.classList.remove('hidden');
-                inventoryItemsContainer.innerHTML = '';
-                if (profileData.inventory && profileData.inventory.length > 0) {
-                    profileData.inventory.forEach(invItem => { 
-                        const shopItem = shopItems.find(si => si.id === invItem.itemId);
-                        if (shopItem && (shopItem.itemType === 'name_change_card' || shopItem.itemType === 'password_change_card')) {
-                            const itemDiv = document.createElement('div');
-                            itemDiv.className = 'flex items-center justify-between bg-gray-700 p-2 rounded-lg';
-                            itemDiv.innerHTML = `
-                                <span class="text-white text-sm">${shopItem.itemType === 'name_change_card' ? '🔑' : '🔐'} ${shopItem.name}</span>
-                                <button onclick="${shopItem.itemType === 'name_change_card' ? `useNameChangeCard(${invItem.id})` : `usePasswordChangeCard(${invItem.id})`}" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md">استخدام</button>
-                            `;
-                            inventoryItemsContainer.appendChild(itemDiv);
-                        }
-                    });
-                } else {
-                    inventoryItemsContainer.innerHTML = '<p class="text-slate-400 text-xs text-center">المخزون فارغ.</p>';
-                }
-
+                document.getElementById('accountTabButton').classList.remove('hidden');
             } else {
                 changeProfilePicBtn.classList.add('hidden'); // إخفاء زر تغيير الصورة
+                changeCoverBtn.classList.add('hidden'); // إخفاء زر تغيير الغلاف
                 editBioButton.classList.add('hidden');
                 saveBioButton.classList.add('hidden');
+                visitorActions.classList.remove('hidden');
+                const privateChatButton = document.getElementById('privateChatButton');
                 privateChatButton.style.display = 'flex';
                 privateChatButton.setAttribute('data-username', profileData.username);
+                const addFriendButton = document.getElementById('addFriendButton');
                 
                 // إظهار زر إضافة صديق فقط إذا لم يكن المستخدم نفسه
                 addFriendButton.style.display = 'flex';
                 sendPointsButton.style.display = 'flex';
-                inventorySection.classList.add('hidden');
                 addFriendButton.setAttribute('data-username', profileData.username);
                 
                 // التحقق إذا كان المستخدم صديقاً بالفعل
@@ -3944,10 +4493,14 @@ function updateOnlineUsersList(users) {
                 } else {
                     profileMenuContainer.innerHTML = '';
                 }
+                document.getElementById('accountTabButton').classList.add('hidden');
             }
             
             modal.classList.add('show');
-            // إضافة إشعار الرسائل غير المقروءة إذا وجدت
+            // إعادة التعيين إلى قسم التفاصيل عند فتح النافذة
+            switchProfileTab({ currentTarget: document.querySelector('.profile-tab-btn') }, 'details');
+
+            // إضافة إشعار الرسائل غير المقروءة إذا وجدت (في زر المحادثة الخاصة)
     const unreadCount = unreadPrivateMessages[profileData.username] || 0;
     if (unreadCount > 0 && profileData.username !== currentUser.name) {
         let badge = privateChatButton.querySelector('.unread-badge');
@@ -3960,6 +4513,23 @@ function updateOnlineUsersList(users) {
         badge.textContent = unreadCount;
     }
         }
+
+        socket.on('account deleted', () => {
+            showNotification('تم حذف حسابك بنجاح. سيتم تسجيل خروجك الآن.', 'success');
+            setTimeout(logout, 2000);
+        });
+
+        socket.on('delete account error', (error) => {
+            showNotification(error, 'error');
+        });
+
+        socket.on('cover success', (msg) => {
+            showNotification(msg, 'success');
+        });
+
+        socket.on('cover error', (msg) => {
+            showNotification(msg, 'error');
+        });
 
         function closeProfileModal() {
             document.getElementById('profileModal').classList.remove('show');
@@ -4071,6 +4641,37 @@ function updateOnlineUsersList(users) {
             }
             socket.emit('update user bio', { username: currentUser.name, bio: newBio, currentUser });
         }
+
+        // دوال تغيير الغلاف
+        function openCoverUpload() {
+            document.getElementById('coverUpload').click();
+        }
+
+        document.getElementById('coverUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                showNotification('يرجى اختيار ملف صورة فقط', 'error');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('حجم الصورة يجب أن يكون أقل من 5MB', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const coverUrl = e.target.result;
+                // تحديث العرض فوراً
+                document.getElementById('profileCoverDisplay').src = coverUrl;
+                document.getElementById('profileCoverDisplay').classList.remove('hidden');
+                socket.emit('update profile cover', { username: currentUser.name, coverUrl, currentUser });
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        });
 
         socket.on('bio success', (message) => {
             showNotification(message, 'success');
@@ -5375,49 +5976,78 @@ function loadImageIfNeeded(imageData, callback) {
 }
 
 // تحديث دالة عرض الصور لتدعم التحميل
-function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl) {
-    const container = document.getElementById('messagesContainer');
+function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl, messageId = null, targetContainer = null) {
+    const container = targetContainer || document.getElementById('messagesContainer');
     const messageDiv = document.createElement('div');
-    messageDiv.className = `chat-message flex ${isOwn ? 'justify-end' : 'justify-start'}`;
+    messageDiv.setAttribute('data-message-id', messageId);
     
     let rankBadge = '';
     if (userRank) {
-        const rankInfo = ranks[userRank];
-        const iconHtml = getRankIconHtml(rankInfo.icon, "text-xs");
-        rankBadge = `
-            <div class="inline-flex items-center space-x-1 space-x-reverse bg-gradient-to-r ${rankInfo.color} px-2 py-1 rounded-full text-xs font-bold text-white shadow-lg mb-1">
-                <span>${iconHtml}</span>
-                <span>${userRank}</span>
-            </div>
-        `;
+        const rankInfo = ranks[userRank] || {}; 
+        const iconHtml = getRankIconHtml(rankInfo.icon, "text-base");
+        rankBadge = `<span title="${userRank}" class="mx-1 inline-flex items-center align-middle">${iconHtml}</span>`;
     }
 
     // استخدام صورة مؤقتة أثناء التحميل
     const loadingImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzMzIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPua1i+ivleWbvuWDjzwvdGV4dD48L3N2Zz4=';
+
+    // تحديد الألوان والإطارات
+    let nameColorClass, nameBgClass, avatarFrameClass;
+    if (isOwn) {
+        nameColorClass = currentUser.nameColor || 'text-blue-100';
+        nameBgClass = currentUser.nameBackground || '';
+        avatarFrameClass = currentUser.avatarFrame || '';
+    } else {
+        const onlineUser = window.onlineUsersData ? window.onlineUsersData[user] : null;
+        if (onlineUser) {
+            nameColorClass = (onlineUser.nameColor && onlineUser.nameColor !== 'null') ? onlineUser.nameColor : 'text-blue-200';
+            nameBgClass = (onlineUser.nameBackground && onlineUser.nameBackground !== 'null') ? onlineUser.nameBackground : '';
+            avatarFrameClass = (onlineUser.avatarFrame && onlineUser.avatarFrame !== 'null') ? onlineUser.avatarFrame : '';
+        } else {
+            nameColorClass = 'text-blue-200';
+            nameBgClass = '';
+            avatarFrameClass = '';
+        }
+    }
     
+    // زر الحذف
+    let deleteBtn = '';
+    if (messageId && user) {
+        const isMessageOwner = user === currentUser.name;
+        const canDelete = (currentUser.isSiteOwner) || (isMessageOwner && currentUser.rank);
+        if (canDelete) {
+            deleteBtn = `<button class="text-red-400 hover:text-red-600" title="حذف" onclick="deleteRoomMessage('${messageId}')">🗑️</button>`;
+        }
+    }
+
+    const avatarHtml = avatarUrl 
+        ? `<img src="${avatarUrl}" class="w-full h-full rounded-full object-cover ${avatarFrameClass}" alt="${user}">`
+        : `<div class="w-full h-full rounded-full bg-gray-400 flex items-center justify-center text-white font-bold text-sm ${avatarFrameClass}">${user.charAt(0).toUpperCase()}</div>`;
+
     messageDiv.innerHTML = `
-        <div class="max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-            isOwn ? 'bg-blue-600 text-white ml-4' : 'bg-gray-800 text-white mr-4'
-        }">
-            <div class="flex items-center space-x-3 space-x-reverse mb-2">
-                ${avatarUrl ? 
-                    `<img src="${avatarUrl}" class="w-8 h-8 rounded-full object-cover" alt="${user}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">` :
-                    `<div class="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white" onclick="showUserProfileModal('${user}')" style="cursor:pointer">
-                        ${user.charAt(0).toUpperCase()}
-                    </div>`
-                }
-                <div>
+        <div class="flex items-start gap-3">
+        <div class="flex items-start gap-3 flex-row-reverse">
+            <div class="avatar-container flex-shrink-0 cursor-pointer" onclick="showUserProfileModal('${user}')">
+                ${avatarHtml}
+            </div>
+            <div class="message-bubble relative group ${isOwn ? 'bg-blue-600 text-white' : 'bg-gray-800 text-white'} rounded-lg">
+                <div class="message-content leading-snug">
+                    <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''}" onclick="showUserProfileModal('${user}')">${user}</span>
                     ${rankBadge}
-                    <div class="font-semibold text-sm ${isOwn ? 'text-blue-100' : 'text-blue-300'}" onclick="showUserProfileModal('${user}')" style="cursor:pointer">${user}</div>
+                    <div class="mt-2">
+                        <img src="${loadingImage}" data-src="${imageData}" class="max-w-full h-auto rounded-lg cursor-pointer chat-image" onclick="openImageModal('${imageData}')" alt="صورة محادثة" onload="handleImageLoad(this)" onerror="handleImageError(this)">
+                    </div>
+                </div>
+                <div class="absolute top-1 left-1 flex items-center gap-1 message-actions">
+                    <span class="timestamp-text opacity-70 text-gray-400">${time}</span> 
+                    ${deleteBtn}
                 </div>
             </div>
-            <div class="mb-2">
-                <img src="${loadingImage}" data-src="${imageData}" class="max-w-full h-auto rounded-lg cursor-pointer chat-image" onclick="openImageModal('${imageData}')" alt="صورة محادثة" onload="handleImageLoad(this)" onerror="handleImageError(this)">
-            </div>
-            <div class="text-xs opacity-70">${time}</div>
         </div>
     `;
     
+    messageDiv.className = `chat-message flex justify-end`; // توحيد المحاذاة مع الرسائل النصية
+
     container.appendChild(messageDiv);
     
     // تحميل الصورة بعد إضافتها للDOM
@@ -5431,7 +6061,9 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
         });
     }, 100);
     
-    container.scrollTop = container.scrollHeight;
+    if (!targetContainer) {
+        container.scrollTop = container.scrollHeight;
+    }
 }
 
 // دوال معالجة تحميل الصور
