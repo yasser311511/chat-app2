@@ -44,7 +44,8 @@ const User = sequelize.define('User', {
 
 const UserRank = sequelize.define('UserRank', {
   username: { type: DataTypes.STRING, primaryKey: true },
-  rank: { type: DataTypes.STRING, allowNull: false }
+  rank: { type: DataTypes.STRING, allowNull: false },
+  expiresAt: { type: DataTypes.DATE, allowNull: true } // تاريخ انتهاء الرتبة
 });
 
 const RankDefinition = sequelize.define('RankDefinition', {
@@ -223,6 +224,7 @@ const PostComment = sequelize.define('PostComment', {
 // تخزين البيانات في الذاكرة
 let users = {};
 let userRanks = {};
+let userRankExpiry = {}; // لتخزين تواريخ انتهاء الرتب في الذاكرة
 let userManagement = {
   mutedUsers: {},
   bannedFromRoom: {},
@@ -246,6 +248,7 @@ let globalSiteBackground = {
   value: 'from-purple-900 via-blue-900 to-indigo-900'
 };
 let chatImages = {};
+let drawingHistory = []; // تخزين تاريخ الرسم
 
 // --- متغير للتحقق من جاهزية السيرفر ---
 let isServerReady = false;
@@ -283,7 +286,7 @@ async function loadData() {
     try {
       // استخدام alter: false لمعظم النماذج لتجنب التغييرات غير المقصودة
       await User.sync({ alter: false });
-      await UserRank.sync({ alter: false });
+      await UserRank.sync({ alter: true }); // تفعيل التعديل لضمان إضافة عمود expiresAt
       await RankDefinition.sync({ alter: false });
       await UserManagement.sync({ alter: false });
       await UserAvatar.sync({ alter: false });
@@ -351,6 +354,9 @@ async function loadData() {
     const ranksData = await UserRank.findAll();
     ranksData.forEach(rank => {
       userRanks[rank.username] = rank.rank;
+      if (rank.expiresAt) {
+          userRankExpiry[rank.username] = rank.expiresAt;
+      }
     });
 
     // تحميل تعاريف الرتب من قاعدة البيانات
@@ -780,15 +786,15 @@ async function saveUser(username, userData) {
   }
 }
 
-async function saveUserRank(username, rank) {
+async function saveUserRank(username, rank, expiresAt = null) {
   try {
     const [userRank, created] = await UserRank.findOrCreate({
       where: { username },
-      defaults: { rank }
+      defaults: { rank, expiresAt }
     });
     
     if (!created) {
-      await userRank.update({ rank });
+      await userRank.update({ rank, expiresAt });
     }
   } catch (error) {
     console.error('خطأ في حفظ رتبة المستخدم:', error);
@@ -1189,6 +1195,37 @@ function optimizeImageStorage() {
 // استدعاء التنقية دورياً
 setInterval(optimizeImageStorage, 300000); // كل 5 دقائق
 
+// --- فحص دوري لانتهاء صلاحية الرتب ---
+setInterval(async () => {
+    const now = new Date();
+    for (const [username, expiry] of Object.entries(userRankExpiry)) {
+        if (new Date(expiry) < now) {
+            console.log(`انتهت صلاحية رتبة المستخدم: ${username}`);
+            
+            // إزالة الرتبة من الذاكرة وقاعدة البيانات
+            delete userRanks[username];
+            delete userRankExpiry[username];
+            await removeUserRank(username);
+            
+            // تحديث المستخدمين المتصلين
+            Object.keys(onlineUsers).forEach(socketId => {
+                if (onlineUsers[socketId].name === username) {
+                    onlineUsers[socketId].rank = null;
+                    io.to(socketId).emit('rank expired', 'لقد انتهت صلاحية رتبتك.');
+                    io.to(socketId).emit('force reload'); // تحديث الصفحة لإظهار التغييرات
+                }
+            });
+            
+            // تحديث الغرف
+            rooms.forEach(r => r.users.forEach(u => {
+                if (u.name === username) u.rank = null;
+            }));
+            
+            io.emit('rooms update', rooms);
+        }
+    }
+}, 60000); // فحص كل دقيقة
+
 // الغرف الثابتة
 let rooms = [
   { id: 1, name: 'غرفة العامة', icon: '💬', description: 'محادثات عامة ومتنوعة', users: [] },
@@ -1277,6 +1314,26 @@ io.on('connection', (socket) => {
   // إرسال بيانات الصور عند الطلب
 socket.on('get user avatars', () => {
     socket.emit('user avatars data', userAvatars);
+});
+
+    // --- أحداث لوحة الرسم المشتركة ---
+    socket.on('get board state', () => {
+        socket.emit('board state', drawingHistory);
+    });
+
+    socket.on('draw', (data) => {
+        drawingHistory.push(data);
+        if (drawingHistory.length > 10000) {
+            drawingHistory.shift();
+        }
+        socket.broadcast.emit('draw', data);
+    });
+
+    socket.on('clear board', () => {
+        drawingHistory = [];
+        io.emit('clear board');
+    });
+
     // أحداث المنشورات
 socket.on('create post', async (data) => {
     const { content, username } = data;
@@ -1490,7 +1547,6 @@ socket.on('mark notifications as read', async (username) => {
     } catch (error) {
         console.error('خطأ في تحديث حالة الإشعارات:', error);
     }
-}); 
 });
     // حدث الحصول على خلفية الموقع
 socket.on('get site background', () => {
@@ -2054,8 +2110,18 @@ socket.on('leave room', async (data) => {
       return;
     }
     
+    // تحديد مدة الرتبة (30 يوم للرتب العادية، دائم لصاحب الموقع)
+    let expiresAt = null;
+    if (rank !== 'صاحب الموقع') {
+        expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 30);
+    }
+
     userRanks[username] = rank;
-    await saveUserRank(username, rank);
+    if (expiresAt) userRankExpiry[username] = expiresAt;
+    else delete userRankExpiry[username];
+
+    await saveUserRank(username, rank, expiresAt);
     
     // تحديث الرتبة للمستخدمين المتصلين
     Object.keys(onlineUsers).forEach(socketId => {
@@ -2118,6 +2184,7 @@ socket.on('leave room', async (data) => {
     if (userRanks[username]) {
       const oldRank = userRanks[username];
       delete userRanks[username];
+      delete userRankExpiry[username];
       await removeUserRank(username);
       
       // تحديث الرتبة للمستخدمين المتصلين
@@ -2478,6 +2545,7 @@ socket.on('leave room', async (data) => {
       // حذف بيانات المستخدم
       delete users[username];
       if (userRanks[username]) delete userRanks[username];
+      if (userRankExpiry[username]) delete userRankExpiry[username];
       if (userAvatars[username]) delete userAvatars[username];
       
       // حذف من قوائم الإدارة
@@ -2560,6 +2628,7 @@ socket.on('leave room', async (data) => {
         // 2. Remove from in-memory stores
         delete users[username];
         if (userRanks[username]) delete userRanks[username];
+        if (userRankExpiry[username]) delete userRankExpiry[username];
         if (userAvatars[username]) delete userAvatars[username];
         if (userPoints[username]) delete userPoints[username];
         if (userLastSeen[username]) delete userLastSeen[username];
@@ -2753,6 +2822,7 @@ socket.on('leave room', async (data) => {
         userCardBackground: userData ? userData.userCardBackground : null,
         profileBackground: userData ? userData.profileBackground : null,
         profileCover: userData ? userData.profileCover : null,
+        rankExpiry: userRankExpiry[username] || null, // إرسال تاريخ انتهاء الرتبة
         friends: friendsDetails
     });
     
@@ -2947,6 +3017,7 @@ socket.on('leave room', async (data) => {
         updateMemoryKey(users, oldUsername, newUsername);
         updateMemoryKey(userRanks, oldUsername, newUsername);
         updateMemoryKey(userAvatars, oldUsername, newUsername);
+        updateMemoryKey(userRankExpiry, oldUsername, newUsername);
         updateMemoryKey(userPoints, oldUsername, newUsername);
         updateMemoryKey(userLastSeen, oldUsername, newUsername);
         updateMemoryKey(userInventories, oldUsername, newUsername);
@@ -3559,8 +3630,17 @@ socket.on('disconnect', async (reason) => {
       // 2. منح الرتبة مباشرة
       if (item.itemType === 'rank') {
           const newRank = item.itemValue;
+          
+          let expiresAt = null;
+          if (newRank !== 'صاحب الموقع') {
+               expiresAt = new Date();
+               expiresAt.setDate(expiresAt.getDate() + 30);
+          }
+
           userRanks[username] = newRank;
-          await saveUserRank(username, newRank);
+          if (expiresAt) userRankExpiry[username] = expiresAt;
+          else delete userRankExpiry[username];
+          await saveUserRank(username, newRank, expiresAt);
           
           // تحديث المستخدمين المتصلين والغرف
           Object.keys(onlineUsers).forEach(socketId => {
@@ -3659,6 +3739,7 @@ socket.on('disconnect', async (reason) => {
       // نسخ البيانات إلى الاسم الجديد
       users[newUsername] = users[oldUsername];
       if (userRanks[oldUsername]) userRanks[newUsername] = userRanks[oldUsername];
+      if (userRankExpiry[oldUsername]) userRankExpiry[newUsername] = userRankExpiry[oldUsername];
       if (userAvatars[oldUsername]) userAvatars[newUsername] = userAvatars[oldUsername];
       if (userPoints[oldUsername]) userPoints[newUsername] = userPoints[oldUsername];
       if (userLastSeen[oldUsername]) userLastSeen[newUsername] = userLastSeen[oldUsername];
@@ -3669,6 +3750,7 @@ socket.on('disconnect', async (reason) => {
       // حذف البيانات القديمة
       delete users[oldUsername];
       delete userRanks[oldUsername];
+      delete userRankExpiry[oldUsername];
       delete userAvatars[oldUsername];
       delete userPoints[oldUsername];
       delete userLastSeen[oldUsername];
@@ -3961,7 +4043,8 @@ socket.on('disconnect', async (reason) => {
         }
 
         userRanks[targetUsername] = name;
-        await saveUserRank(targetUsername, name);
+        // عند إنشاء رتبة جديدة وتعيينها، نجعلها دائمة افتراضياً أو يمكن تعديل ذلك لاحقاً
+        await saveUserRank(targetUsername, name, null);
 
         // تحديث بيانات المستخدمين المتصلين
         Object.keys(onlineUsers).forEach(socketId => {
@@ -4005,6 +4088,7 @@ socket.on('disconnect', async (reason) => {
 
     if (ranks[rankName]) {
         delete ranks[rankName];
+        // ملاحظة: لا نقوم بحذف userRankExpiry هنا لأننا لا نعرف من يملك الرتبة بسهولة دون البحث
         try {
             await RankDefinition.destroy({ where: { name: rankName } });
             delete ranks[rankName];
