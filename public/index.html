@@ -1890,12 +1890,12 @@
                     <table class="w-full text-sm text-right text-gray-400">
                         <thead class="text-xs text-gray-200 uppercase bg-gray-700/80 sticky top-0">
                             <tr>
-                                <th scope="col" class="px-4 py-3">المستخدم</th>
-                                <th scope="col" class="px-4 py-3">الجنس</th>
+                                <th scope="col" class="px-4 py-3">المستخدم (تعديل)</th>
                                 <th scope="col" class="px-4 py-3">الرتبة</th>
-                                <th scope="col" class="px-4 py-3">المستوى</th>
                                 <th scope="col" class="px-4 py-3">النقاط</th>
-                                <th scope="col" class="px-4 py-3">الحالة</th>
+                                <th scope="col" class="px-4 py-3 text-center">لانهائي</th>
+                                <th scope="col" class="px-4 py-3 text-center">المتفاعلين</th>
+                                <th scope="col" class="px-4 py-3 text-center">إجراءات</th>
                             </tr>
                         </thead>
                         <tbody id="controlUsersTableBody" class="divide-y divide-gray-700">
@@ -1947,7 +1947,7 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io();
+        const socket = io({ transports: ['websocket'] });
         let currentUser = null;
 
         // --- دوال تبديل أقسام الملف الشخصي ---
@@ -2314,8 +2314,6 @@
     });
      // طلب بيانات الصور عند الاتصال
     socket.on('connect', () => {
-        console.log('Socket connected:', socket.id);
-        socket.emit('get user avatars');
         
         // إعادة الانضمام للغرفة عند استعادة الاتصال
         if (currentUser && currentRoom) {
@@ -2347,14 +2345,12 @@
     });
 
     socket.on('connect_error', (err) => {
-        console.error('خطأ في الاتصال بالـ socket:', err);
         sessionChecked = true;
         hideLoading();
         showNotification('تعذر الاتصال بالسيرفر. تحقق من الشبكة وحاول مرة أخرى.', 'error');
     });
 
     socket.on('disconnect', (reason) => {
-        console.warn('تم قطع الاتصال:', reason);
         if (currentRoom) {
             if (reason === 'io server disconnect') {
                 showNotification('تم قطع اتصالك من قبل الخادم.', 'error');
@@ -2514,6 +2510,18 @@ function updateUnreadBadges() {
             loadingSpinner.classList.add('hidden');
         }
 
+        // دالة لتحميل البيانات الخلفية (الملف الشخصي، الأصدقاء، الصور) بعد الدخول
+        function loadBackgroundData() {
+            if (!currentUser) return;
+            console.log('بدء تحميل البيانات الخلفية...');
+            setTimeout(() => {
+                socket.emit('get friend requests', currentUser.name);
+                socket.emit('get friends list', currentUser.name);
+                socket.emit('get unread counts', currentUser.name);
+                socket.emit('get user avatars');
+            }, 100); // تأخير بسيط جداً لضمان سلاسة الواجهة
+        }
+
         // التحقق من الجلسة المحفوظة عند تحميل الصفحة
         window.addEventListener('DOMContentLoaded', async () => {
             showLoading();
@@ -2539,13 +2547,6 @@ function updateUnreadBadges() {
             updateHeaderUserInfo();
             showNotification(`مرحباً بعودتك ${userData.name}! 😊`, 'success');
             showMainPage();
-            
-            // تحميل طلبات الصداقة وقائمة الأصدقاء
-            socket.emit('get friend requests', currentUser.name);
-            socket.emit('get friends list', currentUser.name);
-            // طلب عدد الرسائل والإشعارات غير المقروءة عند التحقق من الجلسة
-            socket.emit('get unread counts', currentUser.name);
-            socket.emit('get user avatars');
 
 
             // --- تعديل: تأخير التحقق من الغرفة المحفوظة لضمان تحميل البيانات ---
@@ -2562,15 +2563,18 @@ function updateUnreadBadges() {
                             openChat(roomData.id, roomData.name, roomData.icon);
                         } else {
                             hideLoading();
+                            loadBackgroundData(); // تحميل البيانات الخلفية إذا لم يكن هناك غرفة
                         }
                     } catch (e) {
                         localStorage.removeItem('currentRoom');
                         hideLoading();
+                        loadBackgroundData();
                     }
                 } else {
                     hideLoading(); // إخفاء التحميل فقط إذا لم تكن هناك غرفة للانضمام إليها
+                    loadBackgroundData(); // تحميل البيانات الخلفية
                 }
-            }, 200); // تأخير بسيط لضمان رسم الواجهة
+            }, 50); // تقليل التأخير لتسريع الدخول
         }
 
         function handleSessionInvalid() {
@@ -2657,11 +2661,6 @@ function updateUnreadBadges() {
 
             document.cookie = `sessionId=${userData.sessionId}; path=/; max-age=31536000; SameSite=Lax`; // صلاحية لمدة سنة
             handleSessionValid(userData);
-            socket.emit('get friend requests', currentUser.name);
-            socket.emit('get friends list', currentUser.name);
-            socket.emit('get unread counts', currentUser.name);
-            
-            hideLoading();
             // بعد تسجيل الدخول الناجح، تحقق من صلاحيات المستخدم
             if (currentUser) {
                 toggleBackgroundButton();
@@ -2683,15 +2682,11 @@ function updateUnreadBadges() {
 
             document.cookie = `sessionId=${userData.sessionId}; path=/; max-age=31536000; SameSite=Lax`; // صلاحية لمدة سنة
             handleSessionValid(userData);
-            socket.emit('get friend requests', currentUser.name);
-            socket.emit('get friends list', currentUser.name);
-            socket.emit('get unread counts', currentUser.name);
             
             // بعد إنشاء الحساب، تحقق من صلاحيات المستخدم
             if (currentUser) {
                 toggleBackgroundButton();
             }
-            hideLoading();
         });
 
         socket.on('register error', (error) => {
@@ -2778,6 +2773,7 @@ socket.on('chat history', (messages) => {
         container.scrollTop = container.scrollHeight;
     }, 100);
     hideLoading();
+    loadBackgroundData(); // تحميل باقي البيانات الآن بعد عرض الرسائل
 });
 
         // دالة طلب المزيد من الرسائل
@@ -3007,12 +3003,6 @@ socket.on('private messages history', (messages) => {
         socket.on('search results', (results) => {
             displaySearchResults(results);
         });
-        // عند الاتصال الناجح، طلب بيانات الصور
-socket.on('connect', () => {
-    if (currentUser) {
-        socket.emit('get user avatars');
-    }
-});
 
 
         // إظهار/إخفاء قائمة المتصلين للجوال
@@ -6463,24 +6453,101 @@ function renderControlUsers(list) {
 
     list.forEach(user => {
         const tr = document.createElement('tr');
-        tr.className = 'hover:bg-gray-700/50 transition-colors';
+        tr.className = 'hover:bg-gray-700/50 transition-colors group';
+        
+        // Username Column with Edit
+        const usernameHtml = `
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full ${user.isOnline ? 'bg-green-500' : 'bg-gray-500'}" title="${user.isOnline ? 'متصل' : 'غير متصل'}"></div>
+                <div class="flex items-center gap-1 flex-1">
+                    <input type="text" value="${user.username}" id="username-input-${user.username}" class="bg-transparent border border-transparent hover:border-gray-600 focus:border-blue-500 rounded px-1 py-0.5 text-white w-full text-sm focus:outline-none transition-colors" onkeydown="if(event.key === 'Enter') adminRenameUser('${user.username}')">
+                    <button onclick="adminRenameUser('${user.username}')" class="text-blue-400 hover:text-blue-300 opacity-0 group-hover:opacity-100 transition-opacity" title="حفظ الاسم">💾</button>
+                </div>
+            </div>
+        `;
+
+        // Points Column with Edit
+        const pointsHtml = `
+            <div class="flex items-center gap-1">
+                <input type="number" value="${user.points}" id="points-input-${user.username}" class="bg-transparent border border-transparent hover:border-gray-600 focus:border-yellow-500 rounded px-1 py-0.5 text-yellow-400 font-bold w-24 text-sm focus:outline-none transition-colors" ${user.isInfinite ? 'disabled' : ''}>
+                <button onclick="adminUpdatePoints('${user.username}')" class="text-yellow-400 hover:text-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity" title="حفظ النقاط" ${user.isInfinite ? 'hidden' : ''}>💾</button>
+            </div>
+        `;
+
+        // Infinite Toggle
+        const infiniteHtml = `
+            <button onclick="adminToggleInfinite('${user.username}', ${!user.isInfinite})" class="relative inline-flex items-center cursor-pointer">
+                <div class="w-9 h-5 bg-gray-600 rounded-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 ${user.isInfinite ? 'bg-purple-600' : ''}">
+                    <div class="absolute top-[2px] left-[2px] bg-white border-gray-300 border rounded-full h-4 w-4 transition-all ${user.isInfinite ? 'translate-x-full border-white' : ''}"></div>
+                </div>
+            </button>
+        `;
+
+        // Show in Top Toggle
+        const showInTopHtml = `
+            <button onclick="adminToggleShowInTop('${user.username}', ${!user.showInTop})" class="relative inline-flex items-center cursor-pointer" title="${user.showInTop ? 'إخفاء من المتفاعلين' : 'إظهار في المتفاعلين'}">
+                <div class="w-9 h-5 bg-gray-600 rounded-full peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 ${user.showInTop ? 'bg-green-600' : ''}">
+                    <div class="absolute top-[2px] left-[2px] bg-white border-gray-300 border rounded-full h-4 w-4 transition-all ${user.showInTop ? 'translate-x-full border-white' : ''}"></div>
+                </div>
+            </button>
+        `;
+
+        // Actions
+        const actionsHtml = `
+            <button onclick="adminDeleteUser('${user.username}')" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 p-1.5 rounded-lg transition-colors" title="حذف المستخدم">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+        `;
+
         tr.innerHTML = `
-            <td class="px-4 py-3 font-medium text-white flex items-center gap-2">
-                <div class="w-2 h-2 rounded-full ${user.isOnline ? 'bg-green-500' : 'bg-gray-500'}"></div>
-                ${user.username}
-            </td>
-            <td class="px-4 py-3">${user.gender === 'male' ? '👨 ذكر' : '👩 أنثى'}</td>
+            <td class="px-4 py-3">${usernameHtml}</td>
             <td class="px-4 py-3"><span class="bg-gray-700 px-2 py-1 rounded text-xs">${user.rank}</span></td>
-            <td class="px-4 py-3 text-blue-300 font-bold">${user.level}</td>
-            <td class="px-4 py-3 text-yellow-400 font-bold">⭐ ${user.points}</td>
-            <td class="px-4 py-3">
-                <span class="${user.isOnline ? 'text-green-400 bg-green-400/10' : 'text-slate-400 bg-slate-400/10'} text-xs px-2 py-1 rounded-full border ${user.isOnline ? 'border-green-400/20' : 'border-slate-400/20'}">
-                    ${user.isOnline ? 'متصل' : 'غير متصل'}
-                </span>
-            </td>
+            <td class="px-4 py-3">${pointsHtml}</td>
+            <td class="px-4 py-3 text-center">${infiniteHtml}</td>
+            <td class="px-4 py-3 text-center">${showInTopHtml}</td>
+            <td class="px-4 py-3 text-center">${actionsHtml}</td>
         `;
         tbody.appendChild(tr);
     });
+}
+
+function adminRenameUser(oldUsername) {
+    const input = document.getElementById(`username-input-${oldUsername}`);
+    const newUsername = input.value.trim();
+    
+    if (newUsername === oldUsername) return;
+    
+    if (confirm(`هل أنت متأكد من تغيير اسم المستخدم من "${oldUsername}" إلى "${newUsername}"؟`)) {
+        socket.emit('admin change username', { oldUsername, newUsername, currentUser });
+    } else {
+        input.value = oldUsername; // Reset
+    }
+}
+
+function adminUpdatePoints(username) {
+    const input = document.getElementById(`points-input-${username}`);
+    const newPoints = input.value;
+    
+    socket.emit('admin update points', { targetUsername: username, newPoints, currentUser });
+    setTimeout(() => socket.emit('get all users stats', { currentUser }), 200);
+}
+
+function adminToggleInfinite(username, newState) {
+    socket.emit('admin toggle infinite', { targetUsername: username, isInfinite: newState, currentUser });
+    setTimeout(() => socket.emit('get all users stats', { currentUser }), 200);
+}
+
+function adminToggleShowInTop(username, newState) {
+    socket.emit('admin toggle show in top', { targetUsername: username, showInTop: newState, currentUser });
+    setTimeout(() => socket.emit('get all users stats', { currentUser }), 200);
+}
+
+function adminDeleteUser(username) {
+    if (confirm(`⚠️ تحذير: هل أنت متأكد تماماً من حذف المستخدم "${username}"؟ سيتم حذف جميع بياناته نهائياً.`)) {
+        socket.emit('delete user', { username, currentUser });
+        // تحديث القائمة فوراً
+        setTimeout(() => socket.emit('get all users stats', { currentUser }), 500);
+    }
 }
 
 function filterControlUsers() {

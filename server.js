@@ -115,7 +115,9 @@ const UserInventory = sequelize.define('UserInventory', {
 const UserPoints = sequelize.define('UserPoints', {
   username: { type: DataTypes.STRING, primaryKey: true },
   points: { type: DataTypes.INTEGER, defaultValue: 0 },
-  level: { type: DataTypes.INTEGER, defaultValue: 1 }
+  level: { type: DataTypes.INTEGER, defaultValue: 1 },
+  isInfinite: { type: DataTypes.BOOLEAN, defaultValue: false },
+  showInTop: { type: DataTypes.BOOLEAN, defaultValue: true }
 });
 const UserLastSeen = sequelize.define('UserLastSeen', {
   username: { type: DataTypes.STRING, primaryKey: true },
@@ -293,7 +295,7 @@ async function loadData() {
       await UserSession.sync({ alter: false });
       await UserFriend.sync({ alter: false });
       await FriendRequest.sync({ alter: false });
-      await UserPoints.sync({ alter: false });
+      await UserPoints.sync({ alter: true });
       await ShopItem.sync({ alter: false });
       await UserInventory.sync({ alter: false });
       await UserLastSeen.sync({ alter: false });
@@ -453,8 +455,10 @@ async function loadData() {
     const pointsData = await UserPoints.findAll();
     pointsData.forEach(point => {
     userPoints[point.username] = {
-    points: point.points,
-    level: point.level
+      points: point.points,
+      level: point.level,
+      isInfinite: point.isInfinite || false,
+      showInTop: point.showInTop !== false // الافتراضي true
     };
     });
 
@@ -1045,6 +1049,9 @@ async function removeUser(username) {
     await UserFriend.destroy({ where: { friendUsername: username } });
     await FriendRequest.destroy({ where: { fromUser: username } });
     await FriendRequest.destroy({ where: { toUser: username } });
+    await UserPoints.destroy({ where: { username } });
+    await UserInventory.destroy({ where: { username } });
+    await UserLastSeen.destroy({ where: { username } });
   } catch (error) {
     console.error('خطأ في حذف المستخدم:', error);
   }
@@ -1983,7 +1990,8 @@ socket.on('join room', (data) => {
       }
 
       // زيادة النقاط فقط إذا كانت الرسالة في غرفة وليست خاصة
-      userPoints[user.name].points += 1;
+      if (!userPoints[user.name].isInfinite) {
+          userPoints[user.name].points += 1;
 
       // التحقق من ترقية المستوى
       const currentLevel = userPoints[user.name].level;
@@ -2005,6 +2013,7 @@ socket.on('join room', (data) => {
 
       // حفظ النقاط والمستوى في قاعدة البيانات
       await saveUserPoints(user.name, userPoints[user.name].points, userPoints[user.name].level);
+      }
     }
     
     const timestamp = Date.now();
@@ -3500,7 +3509,8 @@ socket.on('disconnect', async (reason) => {
         where: {
           username: {
             [Sequelize.Op.notIn]: specialUsernames
-          }
+          },
+          showInTop: true
         },
         order: [['points', 'DESC']],
         limit: 10
@@ -3544,8 +3554,8 @@ socket.on('disconnect', async (reason) => {
 
     // التحقق من النقاط فقط إذا لم يكن المرسل مستخدمًا خاصًا
     if (!SPECIAL_USERS_CONFIG[fromUser]) {
-        const senderPoints = userPoints[fromUser] || { points: 0, level: 1 };
-        if (senderPoints.points < amount) {
+        const senderPoints = userPoints[fromUser] || { points: 0, level: 1, isInfinite: false };
+        if (!senderPoints.isInfinite && senderPoints.points < amount) {
             socket.emit('points sent error', 'ليس لديك نقاط كافية لإتمام هذه العملية.');
             return;
         }
@@ -3554,8 +3564,10 @@ socket.on('disconnect', async (reason) => {
     try {
       // خصم النقاط من المرسل فقط إذا لم يكن مستخدمًا خاصًا
       if (!SPECIAL_USERS_CONFIG[fromUser]) {
-        userPoints[fromUser].points -= amount;
-        await saveUserPoints(fromUser, userPoints[fromUser].points, userPoints[fromUser].level);
+        if (!userPoints[fromUser].isInfinite) {
+            userPoints[fromUser].points -= amount;
+            await saveUserPoints(fromUser, userPoints[fromUser].points, userPoints[fromUser].level);
+        }
       }
 
       // إضافة النقاط للمستلم
@@ -3611,8 +3623,8 @@ socket.on('disconnect', async (reason) => {
 
     // التحقق من النقاط فقط إذا لم يكن المستخدم خاصًا
     if (!SPECIAL_USERS_CONFIG[username]) {
-        const userPointsData = userPoints[username] || { points: 0 };
-        if (userPointsData.points < item.price) {
+        const userPointsData = userPoints[username] || { points: 0, isInfinite: false };
+        if (!userPointsData.isInfinite && userPointsData.points < item.price) {
             socket.emit('buy item error', 'ليس لديك نقاط كافية لشراء هذه الرتبة.');
             return;
         }
@@ -3621,7 +3633,7 @@ socket.on('disconnect', async (reason) => {
     try {
       // 1. خصم النقاط
       let newPoints = userPoints[username]?.points || 0;
-      if (!SPECIAL_USERS_CONFIG[username]) {
+      if (!SPECIAL_USERS_CONFIG[username] && !userPoints[username]?.isInfinite) {
           newPoints -= item.price;
           await saveUserPoints(username, newPoints, userPoints[username].level);
           userPoints[username].points = newPoints;
@@ -3949,13 +3961,15 @@ socket.on('disconnect', async (reason) => {
     if (data.currentUser.name !== SITE_OWNER.username) return;
 
     const usersList = Object.keys(users).map(username => {
-      const pointsData = userPoints[username] || { points: 0, level: 1 };
+      const pointsData = userPoints[username] || { points: 0, level: 1, isInfinite: false };
       return {
         username: username,
         gender: users[username].gender,
         rank: userRanks[username] || 'عضو',
         points: pointsData.points,
         level: pointsData.level,
+        isInfinite: pointsData.isInfinite || false,
+        showInTop: pointsData.showInTop !== false,
         isOnline: Object.values(onlineUsers).some(u => u.name === username)
       };
     });
@@ -3967,6 +3981,199 @@ socket.on('disconnect', async (reason) => {
     });
 
     socket.emit('all users stats data', usersList);
+  });
+
+  // 6. أحداث إدارة المستخدمين المتقدمة (تعديل مباشر)
+  socket.on('admin update points', async (data) => {
+      const { targetUsername, newPoints, currentUser } = data;
+      if (currentUser.name !== SITE_OWNER.username) return;
+      
+      const pointsVal = parseInt(newPoints);
+      if (isNaN(pointsVal)) return;
+
+      if (!userPoints[targetUsername]) {
+          userPoints[targetUsername] = { points: 0, level: 1, isInfinite: false, showInTop: true };
+      }
+
+      userPoints[targetUsername].points = pointsVal;
+      
+      // تحديث قاعدة البيانات
+      await UserPoints.upsert({
+          username: targetUsername,
+          points: pointsVal,
+          level: userPoints[targetUsername].level,
+          isInfinite: userPoints[targetUsername].isInfinite || false,
+          showInTop: userPoints[targetUsername].showInTop !== false
+      });
+      
+      socket.emit('control success', `تم تحديث نقاط ${targetUsername} إلى ${pointsVal}`);
+  });
+
+  socket.on('admin toggle infinite', async (data) => {
+      const { targetUsername, isInfinite, currentUser } = data;
+      if (currentUser.name !== SITE_OWNER.username) return;
+
+      if (!userPoints[targetUsername]) {
+          userPoints[targetUsername] = { points: 0, level: 1, isInfinite: false, showInTop: true };
+      }
+      
+      userPoints[targetUsername].isInfinite = isInfinite;
+      
+      try {
+      await UserPoints.upsert({
+          username: targetUsername,
+          points: userPoints[targetUsername].points,
+          level: userPoints[targetUsername].level,
+          isInfinite: isInfinite,
+          showInTop: userPoints[targetUsername].showInTop !== false
+      });
+      
+      socket.emit('control success', `تم ${isInfinite ? 'تفعيل' : 'تعطيل'} النقاط اللانهائية لـ ${targetUsername}`);
+      } catch (error) {
+          console.error('Error toggling infinite:', error);
+          socket.emit('control error', 'حدث خطأ في حفظ الإعدادات');
+      }
+  });
+
+  socket.on('admin toggle show in top', async (data) => {
+      const { targetUsername, showInTop, currentUser } = data;
+      if (currentUser.name !== SITE_OWNER.username) return;
+
+      if (!userPoints[targetUsername]) {
+          userPoints[targetUsername] = { points: 0, level: 1, isInfinite: false, showInTop: true };
+      }
+      
+      userPoints[targetUsername].showInTop = showInTop;
+      
+      try {
+      await UserPoints.upsert({
+          username: targetUsername,
+          points: userPoints[targetUsername].points,
+          level: userPoints[targetUsername].level,
+          isInfinite: userPoints[targetUsername].isInfinite || false,
+          showInTop: showInTop
+      });
+      
+      socket.emit('control success', `تم ${showInTop ? 'إظهار' : 'إخفاء'} ${targetUsername} في قائمة المتفاعلين`);
+      } catch (error) {
+          console.error('Error toggling showInTop:', error);
+          socket.emit('control error', 'حدث خطأ في حفظ الإعدادات');
+      }
+  });
+
+  socket.on('admin change username', async (data) => {
+      const { oldUsername, newUsername, currentUser } = data;
+      if (currentUser.name !== SITE_OWNER.username) return;
+
+      if (!newUsername || newUsername.length < 3 || newUsername.length > 15) {
+          socket.emit('control error', 'الاسم الجديد يجب أن يتكون من 3 إلى 15 حرفًا.');
+          return;
+      }
+      if (users[newUsername]) {
+          socket.emit('control error', 'هذا الاسم مستخدم بالفعل.');
+          return;
+      }
+
+      const t = await sequelize.transaction();
+      try {
+          await sequelize.query('SET CONSTRAINTS ALL DEFERRED;', { transaction: t });
+
+          // تنظيف شامل للسجلات اليتيمة للاسم الجديد قبل التحديث لتجنب تعارض المفاتيح
+          await UserPoints.destroy({ where: { username: newUsername }, transaction: t });
+          await UserInventory.destroy({ where: { username: newUsername }, transaction: t });
+          await UserLastSeen.destroy({ where: { username: newUsername }, transaction: t });
+          await UserRank.destroy({ where: { username: newUsername }, transaction: t });
+          await UserAvatar.destroy({ where: { username: newUsername }, transaction: t });
+
+          // تحديث جميع الجداول
+          const tables = ['User', 'UserRank', 'UserAvatar', 'UserPoints', 'UserLastSeen', 'UserInventory', 'UserFriend', 'FriendRequest', 'PrivateMessage', 'Post', 'PostLike', 'PostComment', 'Notification', 'UserManagement', 'UserSession', 'ChatImage'];
+          
+          // تنفيذ التحديثات يدوياً كما في دالة تغيير الاسم العادية
+          await User.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+          await UserRank.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+          await UserAvatar.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+          await UserPoints.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+          await UserLastSeen.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+          await UserInventory.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+          await UserFriend.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+          await UserFriend.update({ friendUsername: newUsername }, { where: { friendUsername: oldUsername }, transaction: t });
+          await FriendRequest.update({ fromUser: newUsername }, { where: { fromUser: oldUsername }, transaction: t });
+          await FriendRequest.update({ toUser: newUsername }, { where: { toUser: oldUsername }, transaction: t });
+          await PrivateMessage.update({ fromUser: newUsername }, { where: { fromUser: oldUsername }, transaction: t });
+          await PrivateMessage.update({ toUser: newUsername }, { where: { toUser: oldUsername }, transaction: t });
+          await Post.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+          await PostLike.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+          await PostComment.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+          await Notification.update({ recipientUsername: newUsername }, { where: { recipientUsername: oldUsername }, transaction: t });
+          await Notification.update({ senderUsername: newUsername }, { where: { senderUsername: oldUsername }, transaction: t });
+          await UserManagement.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+          await UserManagement.update({ mutedBy: newUsername }, { where: { mutedBy: oldUsername }, transaction: t });
+          await UserManagement.update({ bannedBy: newUsername }, { where: { bannedBy: oldUsername }, transaction: t });
+          await UserSession.update({ username: newUsername }, { where: { username: oldUsername }, transaction: t });
+          await ChatImage.update({ fromUser: newUsername }, { where: { fromUser: oldUsername }, transaction: t });
+          await ChatImage.update({ toUser: newUsername }, { where: { toUser: oldUsername }, transaction: t });
+
+          await t.commit();
+
+          // --- تحديث الذاكرة (مهم جداً لمنع عودة الاسم القديم) ---
+          
+          // 1. تحديث الجلسات (Sessions) - هذا هو سبب المشكلة الرئيسية
+          Object.keys(userSessions).forEach(sessionId => {
+              if (userSessions[sessionId].username === oldUsername) {
+                  userSessions[sessionId].username = newUsername;
+              }
+          });
+
+          // 2. تحديث كائن المستخدمين
+          if (users[oldUsername]) {
+              users[newUsername] = users[oldUsername];
+              delete users[oldUsername];
+          }
+
+          // 3. تحديث باقي البيانات في الذاكرة
+          const updateMemoryKey = (obj, oldKey, newKey) => {
+              if (obj.hasOwnProperty(oldKey)) {
+                  obj[newKey] = obj[oldKey];
+                  delete obj[oldKey];
+              }
+          };
+
+          updateMemoryKey(userRanks, oldUsername, newUsername);
+          updateMemoryKey(userAvatars, oldUsername, newUsername);
+          updateMemoryKey(userRankExpiry, oldUsername, newUsername);
+          updateMemoryKey(userPoints, oldUsername, newUsername);
+          updateMemoryKey(userLastSeen, oldUsername, newUsername);
+          updateMemoryKey(userInventories, oldUsername, newUsername);
+          updateMemoryKey(userFriends, oldUsername, newUsername);
+          updateMemoryKey(friendRequests, oldUsername, newUsername);
+
+          // تحديث القوائم
+          Object.keys(userFriends).forEach(key => {
+              userFriends[key] = userFriends[key].map(friend => friend === oldUsername ? newUsername : friend);
+          });
+          Object.keys(friendRequests).forEach(key => {
+              friendRequests[key] = friendRequests[key].map(req => req === oldUsername ? newUsername : req);
+          });
+
+          // تحديث المتصلين
+          Object.keys(onlineUsers).forEach(socketId => {
+              if (onlineUsers[socketId].name === oldUsername) {
+                  onlineUsers[socketId].name = newUsername;
+              }
+          });
+
+          io.emit('user name changed', { oldUsername, newUsername });
+          socket.emit('control success', `تم تغيير اسم المستخدم من ${oldUsername} إلى ${newUsername}`);
+          
+          // إجبار المستخدم المستهدف على إعادة التحميل لتحديث واجهته
+          const targetSocketId = Object.keys(onlineUsers).find(id => onlineUsers[id].name === newUsername);
+          if (targetSocketId) io.to(targetSocketId).emit('force reload');
+
+      } catch (error) {
+          await t.rollback();
+          console.error('Admin rename error:', error);
+          socket.emit('control error', 'حدث خطأ أثناء تغيير الاسم: ' + error.message);
+      }
   });
 
   // 7. حفظ تعريف الرتبة (إنشاء أو تعديل)
