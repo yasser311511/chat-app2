@@ -6,6 +6,8 @@ const socketIo = require('socket.io');
 const path = require('path');
 const cookieParser = require('cookie-parser');
 const { Sequelize, DataTypes } = require('sequelize');
+const multer = require('multer');
+const fs = require('fs');
 
 
 // إنشاء اتصال بقاعدة البيانات
@@ -13,19 +15,33 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   protocol: 'postgres',
   pool: {
-    max: 10,
-    min: 0,
-    acquire: 30000,
-    idle: 10000
+    max: 30,
+    min: 10,
+    acquire: 60000,
+    idle: 10000,
+    evict: 10000
   },
   dialectOptions: {
     ssl: {
       require: true,
       rejectUnauthorized: false
     },
-    keepAlive: true
+    keepAlive: true,
+    connectTimeout: 60000
   },
-  logging: false // يمكنك تفعيل هذا لرؤية استعلامات SQL عند الحاجة
+  retry: {
+    match: [
+      /SequelizeConnectionError/,
+      /SequelizeConnectionRefusedError/,
+      /SequelizeHostNotFoundError/,
+      /SequelizeHostNotReachableError/,
+      /SequelizeInvalidConnectionError/,
+      /SequelizeConnectionTimedOutError/,
+      /TimeoutError/
+    ],
+    max: 5
+  },
+  logging: false
 });
 
 // تعريف نماذج قاعدة البيانات
@@ -65,6 +81,8 @@ const UserManagement = sequelize.define('UserManagement', {
   reason: { type: DataTypes.TEXT, allowNull: true },
   expiresAt: { type: DataTypes.DATE, allowNull: true },
   bannedAt: { type: DataTypes.DATE, allowNull: true }
+}, {
+  indexes: [{ fields: ['username'] }, { fields: ['type'] }]
 });
 
 const UserAvatar = sequelize.define('UserAvatar', {
@@ -86,16 +104,22 @@ const PrivateMessage = sequelize.define('PrivateMessage', {
   read: { type: DataTypes.BOOLEAN, defaultValue: false },
   time: { type: DataTypes.STRING, allowNull: false }, // يمكن إزالته لاحقاً والاعتماد على timestamp
   timestamp: { type: DataTypes.BIGINT, allowNull: false }
+}, {
+  indexes: [{ fields: ['conversationId'] }, { fields: ['toUser'] }, { fields: ['fromUser'] }]
 });
 
 const UserFriend = sequelize.define('UserFriend', {
   username: { type: DataTypes.STRING, allowNull: false },
   friendUsername: { type: DataTypes.STRING, allowNull: false }
+}, {
+  indexes: [{ fields: ['username'] }]
 });
 
 const FriendRequest = sequelize.define('FriendRequest', {
   fromUser: { type: DataTypes.STRING, allowNull: false },
   toUser: { type: DataTypes.STRING, allowNull: false }
+}, {
+  indexes: [{ fields: ['toUser'] }]
 });
 
 const ShopItem = sequelize.define('ShopItem', {
@@ -109,8 +133,10 @@ const ShopItem = sequelize.define('ShopItem', {
 
 const UserInventory = sequelize.define('UserInventory', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  username: { type: DataTypes.STRING, allowNull: false, references: { model: 'Users', key: 'username' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
-  itemId: { type: DataTypes.INTEGER, allowNull: false, references: { model: 'ShopItems', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' }
+  username: { type: DataTypes.STRING, allowNull: false },
+  itemId: { type: DataTypes.INTEGER, allowNull: false }
+}, {
+  indexes: [{ fields: ['username'] }]
 });
 const UserPoints = sequelize.define('UserPoints', {
   username: { type: DataTypes.STRING, primaryKey: true },
@@ -133,6 +159,8 @@ const Notification = sequelize.define('Notification', {
   postId: { type: DataTypes.INTEGER, allowNull: true },
   read: { type: DataTypes.BOOLEAN, defaultValue: false },
   timestamp: { type: DataTypes.BIGINT, allowNull: false }
+}, {
+  indexes: [{ fields: ['recipientUsername'] }]
 });
 
 // تعريف نموذج خلفية الموقع
@@ -154,26 +182,54 @@ const ChatImage = sequelize.define('ChatImage', {
   imageData: { type: DataTypes.TEXT, allowNull: false },
   timestamp: { type: DataTypes.BIGINT, allowNull: false }
 });
-// مزامنة النماذج مع قاعدة البيانات
-async function syncDatabase() {
-  try {
-    await sequelize.sync({ alter: true });
-    console.log('تم مزامنة قاعدة البيانات بنجاح');
-  } catch (error) {
-    console.error('خطأ في مزامنة قاعدة البيانات:', error);
-  }
-}
+
+const RoomManager = sequelize.define('RoomManager', {
+  roomId: { type: DataTypes.INTEGER, primaryKey: true },
+  managerUsername: { type: DataTypes.STRING, primaryKey: true },
+  assignedBy: { type: DataTypes.STRING, allowNull: false },
+  assignedAt: { type: DataTypes.DATE, defaultValue: Sequelize.NOW }
+});
+
+const RoomBackground = sequelize.define('RoomBackground', {
+  roomId: { type: DataTypes.INTEGER, primaryKey: true },
+  backgroundType: { type: DataTypes.STRING, allowNull: false, defaultValue: 'gradient' },
+  backgroundValue: { type: DataTypes.TEXT, allowNull: false },
+  setBy: { type: DataTypes.STRING, allowNull: false }
+});
+
+const RoomSettings = sequelize.define('RoomSettings', {
+  roomId: { type: DataTypes.INTEGER, primaryKey: true },
+  description: { type: DataTypes.TEXT, allowNull: true },
+  textColor: { type: DataTypes.STRING, allowNull: true, defaultValue: 'text-white' },
+  messageBackground: { type: DataTypes.STRING, allowNull: true, defaultValue: 'bg-gray-800' },
+  updatedBy: { type: DataTypes.STRING, allowNull: false }
+});
+
+const Room = sequelize.define('Room', {
+  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  name: { type: DataTypes.STRING, allowNull: false, unique: true },
+  icon: { type: DataTypes.STRING, allowNull: false },
+  description: { type: DataTypes.TEXT, allowNull: true },
+  protected: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+  order: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+  createdBy: { type: DataTypes.STRING, allowNull: false },
+  createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW }
+});
 
 // استدعاء التهيئة بعد الاتصال
-syncDatabase();
+loadData();
 
 
 
+const compression = require('compression');
 const app = express();
+app.use(compression());
 const server = http.createServer(app);
 const io = socketIo(server, {
-  pingTimeout: 60000,
-  pingInterval: 25000
+  pingTimeout: 30000,
+  pingInterval: 10000,
+  connectTimeout: 45000,
+  maxHttpBufferSize: 1e7
 });
 
 // نظام الرتب
@@ -241,6 +297,9 @@ let userPoints = {};
 let shopItems = [];
 let userInventories = {};
 let userLastSeen = {}; // لتخزين آخر ظهور للمستخدم
+let roomManagers = {}; // لتخزين مديري الغرف { roomId: [usernames] }
+let roomBackgrounds = {}; // لتخزين خلفيات الغرف { roomId: { type, value } }
+let roomSettings = {}; // لتخزين إعدادات الغرف { roomId: { description, textColor, messageBackground } }
 let posts = {};
 let postLikes = {};
 let postComments = {};
@@ -284,438 +343,220 @@ async function loadData() {
     await sequelize.authenticate();
     console.log('تم الاتصال بقاعدة البيانات بنجاح!');
     
-     // مزامنة آمنة للنماذج
-    try {
-      // استخدام alter: false لمعظم النماذج لتجنب التغييرات غير المقصودة
-      await User.sync({ alter: false });
-      await UserRank.sync({ alter: true }); // تفعيل التعديل لضمان إضافة عمود expiresAt
-      await RankDefinition.sync({ alter: false });
-      await UserManagement.sync({ alter: false });
-      await UserAvatar.sync({ alter: false });
-      await UserSession.sync({ alter: false });
-      await UserFriend.sync({ alter: false });
-      await FriendRequest.sync({ alter: false });
-      await UserPoints.sync({ alter: true });
-      await ShopItem.sync({ alter: false });
-      await UserInventory.sync({ alter: false });
-      await UserLastSeen.sync({ alter: false });
-      await Post.sync({ alter: false });
-      await PostLike.sync({ alter: false });
-      await PostComment.sync({ alter: false });
-      await Notification.sync({ alter: false });
-      await SiteBackground.sync({ alter: false });
-      
-      // مزامنة ChatImage بشكل منفصل مع معالجة الأخطاء
-      try {
-        await ChatImage.sync({ alter: false });
-      } catch (chatImageError) {
-        console.log('تحذير في مزامنة ChatImage:', chatImageError.message);
-        // حاول إنشاء الجدول إذا لم يكن موجوداً
-        try {
-          await ChatImage.sync({ force: false });
-        } catch (createError) {
-          console.log('لا يمكن إنشاء جدول ChatImages:', createError.message);
-        }
-      }
-      
-      // --- معالجة يدوية لنموذج PrivateMessage ---
-      const readColumnExists = await columnExists('PrivateMessages', 'read');
-      if (!readColumnExists) {
-        console.log('عمود "read" غير موجود في جدول "PrivateMessages". جاري محاولة إضافته...');
-        try {
-          await sequelize.query('ALTER TABLE "PrivateMessages" ADD COLUMN "read" BOOLEAN DEFAULT false;');
-          console.log('تم إضافة عمود "read" إلى جدول "PrivateMessages" يدوياً.');
-        } catch (addColumnError) {
-          console.log('فشل في إضافة عمود "read" يدوياً:', addColumnError.message);
-        }
-      }
-      await PrivateMessage.sync({ alter: false }); // مزامنة آمنة بعد التأكد من وجود العمود
+    // مزامنة جميع النماذج مرة واحدة بدلاً من المزامنة المتكررة
+    await sequelize.sync();
+    console.log('تم مزامنة قاعدة البيانات بنجاح');
 
-      console.log('تم مزامنة جميع النماذج بنجاح');
-    } catch (syncError) {
-      console.log('تحذير: هناك أخطاء في المزامنة:', syncError.message);
-    }
-    
-    // تحميل المستخدمين
-    const usersData = await User.findAll();
+    // تحميل جميع البيانات بالتوازي لتقليل وقت بدء التشغيل
+    const [
+      usersData, ranksData, storedRankDefinitions,
+      mutedUsers, roomBans, siteBans,
+      avatarsData, sessionsData, friendsData,
+      pointsData, lastSeenData, roomManagersData,
+      roomBgData, roomSettingsData, dbRooms,
+      inventoriesData, requestsData, privateMessagesData,
+      chatImagesData, privateImagesData, postsData,
+      likesData, commentsData, backgroundData
+    ] = await Promise.all([
+      User.findAll(), UserRank.findAll(), RankDefinition.findAll(),
+      UserManagement.findAll({ where: { type: 'mute' } }), UserManagement.findAll({ where: { type: 'room_ban' } }), UserManagement.findAll({ where: { type: 'site_ban' } }),
+      UserAvatar.findAll(), UserSession.findAll(), UserFriend.findAll(),
+      UserPoints.findAll(), UserLastSeen.findAll(), RoomManager.findAll(),
+      RoomBackground.findAll(), RoomSettings.findAll(), Room.findAll({ order: [['order', 'ASC'], ['id', 'ASC']] }),
+      UserInventory.findAll(), FriendRequest.findAll(), PrivateMessage.findAll({ order: [['timestamp', 'DESC']], limit: 500 }),
+      ChatImage.findAll({ where: { roomId: { [Sequelize.Op.ne]: null } }, order: [['timestamp', 'DESC']], limit: 300 }), 
+      ChatImage.findAll({ where: { conversationId: { [Sequelize.Op.ne]: null } }, order: [['timestamp', 'DESC']], limit: 300 }),
+      Post.findAll({ order: [['timestamp', 'DESC']], limit: 100 }), PostLike.findAll(), PostComment.findAll({ order: [['timestamp', 'ASC']] }),
+      SiteBackground.findOne({ order: [['createdAt', 'DESC']] })
+    ]);
+
+    // معالجة البيانات المحملة
     usersData.forEach(user => {
       users[user.username] = {
-        password: user.password,
-        gender: user.gender,
-        bio: user.bio,
-        nameColor: user.nameColor,
-        nameBackground: user.nameBackground,
-        avatarFrame: user.avatarFrame,
-        userCardBackground: user.userCardBackground,
-        profileBackground: user.profileBackground,
-        profileCover: user.profileCover
+        password: user.password, gender: user.gender, bio: user.bio,
+        nameColor: user.nameColor, nameBackground: user.nameBackground,
+        avatarFrame: user.avatarFrame, userCardBackground: user.userCardBackground,
+        profileBackground: user.profileBackground, profileCover: user.profileCover
       };
     });
     
-    // تحميل الرتب
-    const ranksData = await UserRank.findAll();
     ranksData.forEach(rank => {
       userRanks[rank.username] = rank.rank;
-      if (rank.expiresAt) {
-          userRankExpiry[rank.username] = rank.expiresAt;
-      }
+      if (rank.expiresAt) userRankExpiry[rank.username] = rank.expiresAt;
     });
 
-    // تحميل تعاريف الرتب من قاعدة البيانات
-    const storedRankDefinitions = await RankDefinition.findAll();
     if (storedRankDefinitions.length > 0) {
-        ranks = {}; // إعادة تعيين الرتب في الذاكرة
+        ranks = {};
         storedRankDefinitions.forEach(r => {
-            ranks[r.name] = { 
-                color: r.color, 
-                icon: r.icon, 
-                level: r.level, 
-                wingId: r.wingId 
-            };
+            ranks[r.name] = { color: r.color, icon: r.icon, level: r.level, wingId: r.wingId };
         });
-        console.log('تم تحميل تعاريف الرتب من قاعدة البيانات');
     } else {
-        console.log('تهيئة الرتب الافتراضية في قاعدة البيانات...');
         for (const [name, data] of Object.entries(ranks)) {
              const wingId = data.level >= 5 ? 'owners' : (data.level >= 3 ? 'kings' : 'distinguished');
-             try {
-                 await RankDefinition.create({
-                    name,
-                    color: data.color,
-                    icon: data.icon,
-                    level: data.level,
-                    wingId
-                 });
-                 ranks[name].wingId = wingId; // تحديث الذاكرة لتشمل الجناح
-             } catch (e) {
-                 console.error(`Error saving default rank ${name}:`, e.message);
-             }
+             await RankDefinition.findOrCreate({ where: { name }, defaults: { color: data.color, icon: data.icon, level: data.level, wingId } });
+             ranks[name].wingId = wingId;
         }
     }
-
-    // التأكد من أن مستوى صاحب الموقع هو 100 دائماً
-    if (ranks['صاحب الموقع']) {
-        ranks['صاحب الموقع'].level = 100;
-    }
+    if (ranks['صاحب الموقع']) ranks['صاحب الموقع'].level = 100;
     
-    // تحميل إدارة المستخدمين
-    const mutedUsers = await UserManagement.findAll({ where: { type: 'mute' } });
-    mutedUsers.forEach(mute => {
-      userManagement.mutedUsers[mute.username] = {
-        mutedBy: mute.mutedBy,
-        expiresAt: mute.expiresAt
-      };
-    });
-    
-    const roomBans = await UserManagement.findAll({ where: { type: 'room_ban' } });
+    mutedUsers.forEach(mute => { userManagement.mutedUsers[mute.username] = { mutedBy: mute.mutedBy, expiresAt: mute.expiresAt }; });
     roomBans.forEach(ban => {
-      if (!userManagement.bannedFromRoom[ban.roomName]) {
-        userManagement.bannedFromRoom[ban.roomName] = {};
-      }
-      userManagement.bannedFromRoom[ban.roomName][ban.username] = {
-        bannedBy: ban.bannedBy,
-        reason: ban.reason,
-        bannedAt: ban.bannedAt
-      };
+      if (!userManagement.bannedFromRoom[ban.roomName]) userManagement.bannedFromRoom[ban.roomName] = {};
+      userManagement.bannedFromRoom[ban.roomName][ban.username] = { bannedBy: ban.bannedBy, reason: ban.reason, bannedAt: ban.bannedAt };
     });
+    siteBans.forEach(ban => { userManagement.bannedFromSite[ban.username] = { bannedBy: ban.bannedBy, reason: ban.reason, bannedAt: ban.bannedAt }; });
     
-    const siteBans = await UserManagement.findAll({ where: { type: 'site_ban' } });
-    siteBans.forEach(ban => {
-      userManagement.bannedFromSite[ban.username] = {
-        bannedBy: ban.bannedBy,
-        reason: ban.reason,
-        bannedAt: ban.bannedAt
-      };
-    });
-    
-    // تحميل الصور
-    const avatarsData = await UserAvatar.findAll();
-    avatarsData.forEach(avatar => {
-      userAvatars[avatar.username] = avatar.avatarUrl;
-    });
-    
-    // تحميل الجلسات
-    const sessionsData = await UserSession.findAll();
-    sessionsData.forEach(session => {
-      userSessions[session.sessionId] = {
-        username: session.username,
-        password: session.password
-      };
-    });
-    
-    // تحميل الأصدقاء
-    const friendsData = await UserFriend.findAll();
+    avatarsData.forEach(avatar => userAvatars[avatar.username] = avatar.avatarUrl);
+    sessionsData.forEach(session => userSessions[session.sessionId] = { username: session.username, password: session.password });
     friendsData.forEach(friend => {
-      if (!userFriends[friend.username]) {
-        userFriends[friend.username] = [];
-      }
+      if (!userFriends[friend.username]) userFriends[friend.username] = [];
       userFriends[friend.username].push(friend.friendUsername);
     });
 
-    const pointsData = await UserPoints.findAll();
-    pointsData.forEach(point => {
-    userPoints[point.username] = {
-      points: point.points,
-      level: point.level,
-      isInfinite: point.isInfinite || false,
-      showInTop: point.showInTop !== false // الافتراضي true
-    };
+    pointsData.forEach(point => { userPoints[point.username] = { points: point.points, level: point.level, isInfinite: point.isInfinite || false, showInTop: point.showInTop !== false }; });
+    lastSeenData.forEach(seen => userLastSeen[seen.username] = parseInt(seen.lastSeen, 10));
+
+    roomManagersData.forEach(manager => {
+      if (!roomManagers[manager.roomId]) roomManagers[manager.roomId] = [];
+      roomManagers[manager.roomId].push(manager.managerUsername);
+    });
+    roomBgData.forEach(bg => roomBackgrounds[bg.roomId] = { type: bg.backgroundType, value: bg.backgroundValue });
+    roomSettingsData.forEach(setting => {
+      roomSettings[setting.roomId] = { description: setting.description, textColor: setting.textColor, messageBackground: setting.messageBackground };
     });
 
-    // تحميل آخر ظهور للمستخدمين
-    const lastSeenData = await UserLastSeen.findAll();
-    lastSeenData.forEach(seen => {
-      userLastSeen[seen.username] = parseInt(seen.lastSeen, 10);
-    });
-    
-    // تحميل عناصر المتجر
-    // إعادة تهيئة المتجر بالرتب الجديدة (تنفيذ طلب المستخدم)
-    try {
-        await UserInventory.destroy({ where: {}, truncate: true }); // تفريغ المخزون بالكامل
-        await ShopItem.destroy({ where: {}, truncate: true, cascade: true }); // تفريغ المتجر بالكامل
-        
-        await ShopItem.bulkCreate([
-            { name: 'رتبة جيد', description: 'شراء رتبة جيد', price: 1000, itemType: 'rank', itemValue: 'جيد' },
-            { name: 'رتبة بريميوم', description: 'شراء رتبة بريميوم', price: 3000, itemType: 'rank', itemValue: 'بريميوم' },
-            { name: 'رتبة ادمن', description: 'شراء رتبة ادمن', price: 10000, itemType: 'rank', itemValue: 'ادمن' },
-            { name: 'رتبة سوبر ادمن', description: 'شراء رتبة سوبر ادمن', price: 20000, itemType: 'rank', itemValue: 'سوبر ادمن' },
-            { name: 'رتبة منشئ', description: 'شراء رتبة منشئ', price: 50000, itemType: 'rank', itemValue: 'منشئ' }
-        ]);
-        shopItems = await ShopItem.findAll({ order: [['price', 'ASC']] });
-        console.log('تم تحديث المتجر بنظام الرتب الجديد.');
-    } catch (e) {
-        console.error('Error resetting shop:', e);
+    if (dbRooms.length > 0) {
+      rooms = dbRooms.map(room => ({ 
+        id: room.id, 
+        name: room.name, 
+        icon: room.icon, 
+        description: room.description, 
+        protected: room.protected, 
+        order: room.order, 
+        users: [], 
+        managers: roomManagers[room.id] || [],
+        background: roomBackgrounds[room.id],
+        settings: roomSettings[room.id]
+      }));
+    } else {
+      const defaultRooms = [
+        { name: 'غرفة العامة', icon: '💬', description: 'محادثات عامة ومتنوعة', protected: false, order: 1 },
+        { name: 'غرفة التقنية', icon: '💻', description: 'مناقشات تقنية وبرمجة', protected: false, order: 2 },
+        { name: 'غرفة الرياضة', icon: '⚽', description: 'أخبار ومناقشات رياضية', protected: false, order: 3 },
+        { name: 'غرفة الألعاب', icon: '🎮', description: 'مناقشات الألعاب والجيمرز', protected: false, order: 4 }
+      ];
+      for (const defaultRoom of defaultRooms) {
+        await Room.findOrCreate({ where: { name: defaultRoom.name }, defaults: { ...defaultRoom, createdBy: 'Walid dz 31' } });
+      }
+      const createdRooms = await Room.findAll({ order: [['order', 'ASC'], ['id', 'ASC']] });
+      rooms = createdRooms.map(room => ({ 
+        id: room.id, 
+        name: room.name, 
+        icon: room.icon, 
+        description: room.description, 
+        protected: room.protected, 
+        order: room.order, 
+        users: [], 
+        managers: roomManagers[room.id] || [],
+        background: roomBackgrounds[room.id],
+        settings: roomSettings[room.id]
+      }));
     }
 
-    // تحميل مشتريات المستخدمين
-    const inventoriesData = await UserInventory.findAll();
+    const existingShopItems = await ShopItem.count();
+    if (existingShopItems === 0) {
+      await ShopItem.bulkCreate([
+        { name: 'رتبة جيد', description: 'شراء رتبة جيد', price: 1000, itemType: 'rank', itemValue: 'جيد' },
+        { name: 'رتبة بريميوم', description: 'شراء رتبة بريميوم', price: 3000, itemType: 'rank', itemValue: 'بريميوم' },
+        { name: 'رتبة ادمن', description: 'شراء رتبة ادمن', price: 10000, itemType: 'rank', itemValue: 'ادمن' },
+        { name: 'رتبة سوبر ادمن', description: 'شراء رتبة سوبر ادمن', price: 20000, itemType: 'rank', itemValue: 'سوبر ادمن' },
+        { name: 'رتبة منشئ', description: 'شراء رتبة منشئ', price: 50000, itemType: 'rank', itemValue: 'منشئ' }
+      ]);
+    }
+    shopItems = await ShopItem.findAll({ order: [['price', 'ASC']] });
+
     inventoriesData.forEach(inventory => {
-      if (!userInventories[inventory.username]) {
-        userInventories[inventory.username] = [];
-      }
+      if (!userInventories[inventory.username]) userInventories[inventory.username] = [];
       userInventories[inventory.username].push({ id: inventory.id, itemId: inventory.itemId });
     });
-    console.log('تم تحميل مشتريات المستخدمين بنجاح.');
 
-    // تحميل طلبات الصداقة
-    const requestsData = await FriendRequest.findAll();
     requestsData.forEach(request => {
-      if (!friendRequests[request.toUser]) {
-        friendRequests[request.toUser] = [];
-      }
+      if (!friendRequests[request.toUser]) friendRequests[request.toUser] = [];
       friendRequests[request.toUser].push(request.fromUser);
     });
-    // تحميل الرسائل الخاصة
-    const privateMessagesData = await PrivateMessage.findAll({
-      order: [['timestamp', 'ASC']]
-    });
-    privateMessagesData.forEach(msg => {
-      const conversationId = msg.conversationId;
-      if (!privateMessages[conversationId]) {
-        privateMessages[conversationId] = [];
-      }
-      privateMessages[conversationId].push({
-        from: msg.fromUser,
-        to: msg.toUser,
-        content: msg.content,
-        time: msg.time,
-        timestamp: msg.timestamp
-      });
-    });
-    // ... الكود الحالي ...
 
-    // تحميل الصور من المحادثات
-    const chatImagesData = await ChatImage.findAll({
-      order: [['timestamp', 'ASC']]
+    privateMessagesData.forEach(msg => {
+      if (!privateMessages[msg.conversationId]) privateMessages[msg.conversationId] = [];
+      privateMessages[msg.conversationId].push({ from: msg.fromUser, to: msg.toUser, content: msg.content, time: msg.time, timestamp: msg.timestamp });
     });
-    
+
     chatImagesData.forEach(image => {
       if (image.roomId) {
         if (!messages[image.roomId]) messages[image.roomId] = [];
-        
-        // البحث إذا كانت الرسالة موجودة مسبقاً
-        const existingMessageIndex = messages[image.roomId].findIndex(msg => 
-          msg.messageId === image.messageId
-        );
-        
-        if (existingMessageIndex === -1) {
-          messages[image.roomId].push({
-            type: 'image',
-            messageId: image.messageId,
-            user: image.fromUser,
-            imageData: image.imageData,
-            time: new Date(image.timestamp).toLocaleTimeString('ar-SA'),
-            timestamp: image.timestamp
-          });
-        }
+        messages[image.roomId].push({ type: 'image', messageId: image.messageId, user: image.fromUser, imageData: image.imageData, time: new Date(image.timestamp).toLocaleTimeString('ar-SA'), timestamp: image.timestamp });
       }
     });
-    // تحميل الصور من المحادثات الخاصة
-    const privateImagesData = await ChatImage.findAll({
-      where: { conversationId: { [Sequelize.Op.ne]: null } },
-      order: [['timestamp', 'ASC']]
-    });
-    
+
     privateImagesData.forEach(image => {
-      const conversationId = image.conversationId;
-      if (!privateMessages[conversationId]) {
-        privateMessages[conversationId] = [];
-      }
-      
-      // البحث إذا كانت الرسالة موجودة مسبقاً
-      const existingMessageIndex = privateMessages[conversationId].findIndex(msg => 
-        msg.messageId === image.messageId
-      );
-      
-      if (existingMessageIndex === -1) {
-        privateMessages[conversationId].push({
-          type: 'image',
-          messageId: image.messageId,
-          from: image.fromUser,
-          to: image.toUser || conversationId.replace(image.fromUser + '_', '').replace('_' + image.fromUser, ''),
-          imageData: image.imageData,
-          time: new Date(image.timestamp).toLocaleTimeString('ar-SA'),
-          timestamp: image.timestamp
-        });
-      }
+      if (!privateMessages[image.conversationId]) privateMessages[image.conversationId] = [];
+      privateMessages[image.conversationId].push({ type: 'image', messageId: image.messageId, from: image.fromUser, to: image.toUser, imageData: image.imageData, time: new Date(image.timestamp).toLocaleTimeString('ar-SA'), timestamp: image.timestamp });
     });
 
-    console.log('تم تحميل صور المحادثات الخاصة بنجاح');
+    postsData.forEach(post => { posts[post.id] = { username: post.username, content: post.content, timestamp: parseInt(post.timestamp, 10), likes: [], comments: [] }; });
+    likesData.forEach(like => { if (posts[like.postId]) posts[like.postId].likes.push(like.username); });
+    commentsData.forEach(comment => { if (posts[comment.postId]) posts[comment.postId].comments.push({ username: comment.username, content: comment.content, timestamp: parseInt(comment.timestamp, 10) }); });
 
-    // تحميل المنشورات
-const postsData = await Post.findAll({ order: [['timestamp', 'DESC']] });
-postsData.forEach(post => {
-    posts[post.id] = {
-        username: post.username,
-        content: post.content,
-        timestamp: parseInt(post.timestamp, 10),
-        likes: [],
-        comments: []
-    };
-});
-
-// تحميل الإعجابات
-const likesData = await PostLike.findAll();
-likesData.forEach(like => {
-    if (posts[like.postId]) {
-        posts[like.postId].likes.push(like.username);
-    }
-});
-
-// تحميل التعليقات
-const commentsData = await PostComment.findAll({ order: [['timestamp', 'ASC']] });
-commentsData.forEach(comment => {
-    if (posts[comment.postId]) {
-        posts[comment.postId].comments.push({
-            username: comment.username,
-            content: comment.content,
-            timestamp: parseInt(comment.timestamp, 10)
-        });
-    }
-});
- // تحميل خلفية الموقع مع معالجة الأخطاء
-    try {
-      const backgroundData = await SiteBackground.findOne({
-        order: [['createdAt', 'DESC']]
-      });
-
-      if (backgroundData) {
-        globalSiteBackground = {
-          type: backgroundData.backgroundType,
-          value: backgroundData.backgroundValue
-        };
-        console.log('تم تحميل خلفية الموقع من قاعدة البيانات');
-      } else {
-        // إذا لم توجد خلفية، ننشئ الخلفية الافتراضية
+    if (backgroundData) {
+      globalSiteBackground = { type: backgroundData.backgroundType, value: backgroundData.backgroundValue };
+    } else {
+      // إنشاء الخلفية الافتراضية إذا لم تكن موجودة
+      try {
         await SiteBackground.create({
           backgroundType: 'gradient',
           backgroundValue: 'from-purple-900 via-blue-900 to-indigo-900',
           setBy: 'System'
         });
-        globalSiteBackground = {
-          type: 'gradient',
-          value: 'from-purple-900 via-blue-900 to-indigo-900'
-        };
-        console.log('تم إنشاء الخلفية الافتراضية في قاعدة البيانات');
-      }
-    } catch (backgroundError) {
-      console.log('خطأ في تحميل خلفية الموقع، سيتم استخدام الإعدادات الافتراضية:', backgroundError.message);
-      
-      // محاولة إنشاء الجدول يدوياً إذا فشل
-      try {
-        await sequelize.query(`
-          CREATE TABLE IF NOT EXISTS "SiteBackgrounds" (
-            id SERIAL PRIMARY KEY,
-            "backgroundType" VARCHAR(255) NOT NULL,
-            "backgroundValue" TEXT NOT NULL,
-            "setBy" VARCHAR(255) NOT NULL,
-            "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-            "updatedAt" TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-          )
-        `);
-        
-        // إدخال الخلفية الافتراضية
-        await sequelize.query(`
-          INSERT INTO "SiteBackgrounds" ("backgroundType", "backgroundValue", "setBy") 
-          VALUES ('gradient', 'from-purple-900 via-blue-900 to-indigo-900', 'System')
-        `);
-        
-        globalSiteBackground = {
-          type: 'gradient',
-          value: 'from-purple-900 via-blue-900 to-indigo-900'
-        };
-        console.log('تم إنشاء جدول خلفية الموقع يدوياً');
-      } catch (createError) {
-        console.log('فشل في إنشاء جدول الخلفية:', createError.message);
+        globalSiteBackground = { type: 'gradient', value: 'from-purple-900 via-blue-900 to-indigo-900' };
+      } catch (e) {
+        console.error('Error creating default background:', e);
       }
     }
 
-    // تنظيف الصور القديمة من الغرف العامة عند بدء التشغيل
-    await ChatImage.destroy({
-      where: { roomId: { [Sequelize.Op.ne]: null } }
-    });
-    console.log('تم تنظيف صور الغرف العامة القديمة من قاعدة البيانات.');
-    
-    // --- التأكد من وجود حساب صاحب الموقع (إنشاء فقط إذا لم يكن موجوداً) ---
+    // تنظيف صور الغرف العامة عند التشغيل
     try {
-      const [user, created] = await User.findOrCreate({
-        where: { username: SITE_OWNER.username },
-        defaults: {
-          password: await bcrypt.hash(SITE_OWNER.password, 10),
-          gender: 'male'
-        }
-      });
+      await ChatImage.destroy({ where: { roomId: { [Sequelize.Op.ne]: null } } });
+    } catch (e) {
+      console.error('Error cleaning up images:', e);
+    }
 
-      if (created) {
-        console.log(`تم إنشاء حساب صاحب الموقع: ${SITE_OWNER.username}`);
-        // إذا تم إنشاء المستخدم، قم بتحديث الذاكرة
-        users[SITE_OWNER.username] = {
-          password: user.password,
-          gender: user.gender,
-          bio: user.bio,
-          nameColor: user.nameColor
-        };
-      }
+    // التأكد من وجود حساب صاحب الموقع ورتبته
+    try {
+      const ownerPassword = await bcrypt.hash(SITE_OWNER.password, 10);
+      const [ownerUser] = await User.findOrCreate({ 
+        where: { username: SITE_OWNER.username }, 
+        defaults: { password: ownerPassword, gender: 'male' } 
+      });
       
-      // التأكد من وجود الرتبة
-      const [userRank, rankCreated] = await UserRank.findOrCreate({
-          where: { username: SITE_OWNER.username },
-          defaults: { rank: SITE_OWNER.rank }
+      const [ownerRank] = await UserRank.findOrCreate({ 
+        where: { username: SITE_OWNER.username }, 
+        defaults: { rank: SITE_OWNER.rank } 
       });
-
-      if (!rankCreated && userRank.rank !== SITE_OWNER.rank) {
-          // تحديث الرتبة إذا كانت مختلفة
-          await userRank.update({ rank: SITE_OWNER.rank });
+      
+      if (ownerRank.rank !== SITE_OWNER.rank) {
+        await ownerRank.update({ rank: SITE_OWNER.rank });
       }
       userRanks[SITE_OWNER.username] = SITE_OWNER.rank;
-
-
-    } catch (error) {
-      console.error(`خطأ في معالجة حساب صاحب الموقع:`, error);
+      users[SITE_OWNER.username] = {
+        password: ownerUser.password, gender: ownerUser.gender, bio: ownerUser.bio,
+        nameColor: ownerUser.nameColor, nameBackground: ownerUser.nameBackground,
+        avatarFrame: ownerUser.avatarFrame, userCardBackground: ownerUser.userCardBackground,
+        profileBackground: ownerUser.profileBackground, profileCover: ownerUser.profileCover
+      };
+    } catch (e) {
+      console.error('Error ensuring site owner:', e);
     }
 
-
-    // --- إضافة المستخدمين الخاصين الجدد (إنشاء فقط إذا لم يكونوا موجودين) ---
+    // إضافة المستخدمين الخاصين
     const specialUsers = [
       { username: 'سيد احمد', password: 'انسة', gender: 'male', rank: 'رئيس' },
       { username: 'ميارا', password: 'هندو', gender: 'female', rank: 'رئيسة' }
@@ -723,68 +564,53 @@ commentsData.forEach(comment => {
 
     for (const specialUser of specialUsers) {
       try {
-        const [user, created] = await User.findOrCreate({
+        const hashedPassword = await bcrypt.hash(specialUser.password, 10);
+        const [u, created] = await User.findOrCreate({
           where: { username: specialUser.username },
-          defaults: {
-            password: await bcrypt.hash(specialUser.password, 10),
-            gender: specialUser.gender
-          }
+          defaults: { password: hashedPassword, gender: specialUser.gender }
         });
-
-        if (created) {
-          console.log(`تم إنشاء المستخدم الخاص: ${specialUser.username}`);
-          // إذا تم إنشاء المستخدم، قم بتحديث الذاكرة
-          users[specialUser.username] = {
-            password: user.password,
-            gender: user.gender,
-            bio: user.bio,
-            nameColor: user.nameColor
-          };
-        }
-
-        // التأكد من وجود الرتبة
-        const [userRank, rankCreated] = await UserRank.findOrCreate({
-            where: { username: specialUser.username },
-            defaults: { rank: specialUser.rank }
+        
+        const [r] = await UserRank.findOrCreate({
+          where: { username: specialUser.username },
+          defaults: { rank: specialUser.rank }
         });
-
-        if (!rankCreated && userRank.rank !== specialUser.rank) {
-            await userRank.update({ rank: specialUser.rank });
+        
+        if (r.rank !== specialUser.rank) {
+          await r.update({ rank: specialUser.rank });
         }
+        
         userRanks[specialUser.username] = specialUser.rank;
-
-      } catch (error) {
-        console.error(`خطأ في معالجة المستخدم الخاص ${specialUser.username}:`, error);
+        if (created) {
+          users[specialUser.username] = { password: u.password, gender: u.gender };
+        }
+      } catch (e) {
+        console.error(`Error ensuring special user ${specialUser.username}:`, e);
       }
     }
-    
-    console.log('تم تحميل البيانات من قاعدة البيانات بنجاح!');
+
+    // تحديث إعدادات الغرف في الذاكرة
+    rooms.forEach(room => {
+      room.managers = roomManagers[room.id] || [];
+    });
+
+    console.log('تم تحميل جميع البيانات بنجاح!');
+    isServerReady = true;
   } catch (error) {
-    console.log('خطأ في تحميل البيانات:', error);
+    console.error('خطأ في تحميل البيانات:', error);
+    isServerReady = true;
   }
 }
 
 // دوال الحفظ في قاعدة البيانات
 async function saveUser(username, userData) {
   try {
-    const [user, created] = await User.findOrCreate({
-      where: { username },
-      defaults: {
-        password: userData.password,
-        gender: userData.gender,
-        bio: userData.bio || null,
-        nameColor: userData.nameColor || null
-      },
+    await User.upsert({
+      username,
+      password: userData.password,
+      gender: userData.gender,
+      bio: userData.bio || null,
+      nameColor: userData.nameColor || null
     });
-    
-    if (!created) {
-      // لا تقم بتحديث كلمة المرور هنا إلا إذا كان مقصوداً
-      // هذا يمنع إعادة تعيين كلمة المرور عند كل تسجيل دخول
-      await user.update({
-        bio: userData.bio,
-        nameColor: userData.nameColor
-      });
-    }
   } catch (error) {
     console.error('خطأ في حفظ المستخدم:', error);
   }
@@ -1233,20 +1059,8 @@ setInterval(async () => {
     }
 }, 60000); // فحص كل دقيقة
 
-// الغرف الثابتة
-let rooms = [
-  { id: 1, name: 'غرفة العامة', icon: '💬', description: 'محادثات عامة ومتنوعة', users: [] },
-  { id: 2, name: 'غرفة التقنية', icon: '💻', description: 'مناقشات تقنية وبرمجة', users: [] },
-  { id: 3, name: 'غرفة الرياضة', icon: '⚽', description: 'أخبار ومناقشات رياضية', users: [] },
-  { id: 4, name: 'غرفة الألعاب', icon: '🎮', description: 'مناقشات الألعاب والجيمرز', users: [] },
-  { id: 5, name: 'غرفة الطبخ', icon: '👨‍🍳', description: 'وصفات ونصائح الطبخ', users: [] },
-  { id: 6, name: 'غرفة السفر', icon: '✈️', description: 'تجارب ونصائح السفر', users: [] },
-  { id: 7, name: 'غرفة الكتب', icon: '📚', description: 'مناقشات الكتب والقراءة', users: [] },
-  { id: 8, name: 'غرفة الأفلام', icon: '🎬', description: 'مراجعات ومناقشات الأفلام', users: [] },
-  { id: 9, name: 'غرفة الموسيقى', icon: '🎵', description: 'مشاركة ومناقشة الموسيقى', users: [] },
-  { id: 10, name: 'غرفة تخصيص المظهر', icon: '🎨', description: 'تخصيص المظهر والصورة الشخصية', users: [], protected: true },
-  { id: 11, name: 'غرفة الإدارة', icon: '👑', description: 'غرفة خاصة للإدارة والمشرفين', users: [], protected: true }
-];
+// الغرف سيتم تحميلها من قاعدة البيانات
+let rooms = [];
 
 let globalAnnouncement = ''; // متغير لتخزين الإعلان الهام
 let messages = {};
@@ -1299,12 +1113,73 @@ function canSendMessage(username, roomName) {
   return true;
 }
 
+function isRoomManager(username, roomId) {
+  return roomManagers[roomId] && roomManagers[roomId].includes(username);
+}
+
+function canManageRoom(username, roomId) {
+  if (username === SITE_OWNER.username) return true;
+  return isRoomManager(username, roomId);
+}
+
 // خدمة الملفات الثابتة
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(cookieParser());
 
+// إعداد مجلد الرفع
+const uploadsDir = path.join(__dirname, 'public', 'uploads', 'room-backgrounds');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// إعداد multer للصور
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadsDir);
+  },
+  filename: (req, file, cb) => {
+    const timestamp = Date.now();
+    const random = Math.round(Math.random() * 1E9);
+    cb(null, `room-bg-${timestamp}-${random}${path.extname(file.originalname)}`);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+});
+
+// مسار رفع خلفية الغرفة
+app.post('/api/upload-room-background', upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'لم يتم اختيار ملف' });
+  }
+  
+  const fileUrl = `/uploads/room-backgrounds/${req.file.filename}`;
+  res.json({ success: true, fileUrl });
+});
+
+app.use(express.static(path.join(__dirname, 'public', 'uploads')));
+
 // إعداد Socket.io
+// دالة لإرسال تحديث الغرف مع تقليل الضغط (Throttling)
+let roomsUpdateTimeout = null;
+function broadcastRoomsUpdate() {
+  if (roomsUpdateTimeout) return;
+  roomsUpdateTimeout = setTimeout(() => {
+    io.emit('rooms update', rooms);
+    roomsUpdateTimeout = null;
+  }, 2000); // إرسال التحديث كل ثانيتين كحد أقصى
+}
+
 io.on('connection', (socket) => {
   console.log('مستخدم جديد متصل:', socket.id);
 
@@ -1317,6 +1192,7 @@ io.on('connection', (socket) => {
   // إرسال الإعلان الحالي للمستخدم الجديد
   socket.emit('announcement update', globalAnnouncement);
   socket.emit('ranks update', ranks); // إرسال الرتب فور الاتصال لضمان تحميل الرتب الخاصة
+  socket.emit('rooms update', rooms); // إرسال الغرف فوراً لضمان سرعة العرض
   
   // إرسال بيانات الصور عند الطلب
 socket.on('get user avatars', () => {
@@ -1803,10 +1679,15 @@ socket.on('join room', (data) => {
       userCardBackground: users[user.name]?.userCardBackground
     };
     
-    // إزالة المستخدم من أي غرفة سابقة
-    rooms.forEach(room => {
-      room.users = room.users.filter(u => u.id !== socket.id);
-    });
+    // إزالة المستخدم من الغرفة السابقة إن وجدت
+    if (socket.currentRoomId) {
+      const prevRoom = rooms.find(r => r.id === socket.currentRoomId);
+      if (prevRoom) {
+        prevRoom.users = prevRoom.users.filter(u => u.id !== socket.id);
+        io.to(socket.currentRoomId).emit('users update', prevRoom.users);
+        socket.leave(socket.currentRoomId);
+      }
+    }
     
     // إضافة المستخدم للغرفة الجديدة
     room.users.push({
@@ -1821,11 +1702,11 @@ socket.on('join room', (data) => {
       userCardBackground: users[user.name]?.userCardBackground
     });
     
-    // انضمام المستخدم للغرفة
+    socket.currentRoomId = roomId;
     socket.join(roomId);
     
-    // إرسال تحديث الغرف لجميع المستخدمين
-    io.emit('rooms update', rooms);
+    // إرسال تحديث الغرف (مقلل)
+    broadcastRoomsUpdate();
     
     // إرسال تحديث المستخدمين المتصلين للغرفة
     io.to(roomId).emit('users update', room.users);
@@ -2096,15 +1977,11 @@ socket.on('leave room', async (data) => {
     
     if (room) {
       room.users = room.users.filter(u => u.id !== socket.id);
-      io.emit('rooms update', rooms);
+      broadcastRoomsUpdate();
       io.to(roomId).emit('users update', room.users);
     }
     
-    // تحديث آخر ظهور للمستخدم وحفظه
-    const lastSeenTime = Date.now();
-    userLastSeen[user.name] = lastSeenTime;
-    await saveUserLastSeen(user.name, lastSeenTime);
-
+    socket.currentRoomId = null;
     socket.leave(roomId);
 });
 
@@ -3462,6 +3339,30 @@ socket.on('get private messages', async (data) => {
     socket.emit('friends list', friends);
   });
 
+  socket.on('get initial data', async (username) => {
+    try {
+      const [unreadMessagesCount, unreadNotificationsCount] = await Promise.all([
+        PrivateMessage.count({ where: { toUser: username, read: false } }),
+        Notification.count({ where: { recipientUsername: username, read: false } })
+      ]);
+      
+      socket.emit('initial data', {
+        friendRequests: friendRequests[username] || [],
+        friendsList: userFriends[username] || [],
+        unreadCounts: { privateMessages: unreadMessagesCount, notifications: unreadNotificationsCount },
+        userAvatars: userAvatars
+      });
+    } catch (error) {
+      console.error('خطأ في جلب البيانات الأولية:', error);
+      socket.emit('initial data', {
+        friendRequests: friendRequests[username] || [],
+        friendsList: userFriends[username] || [],
+        unreadCounts: { privateMessages: 0, notifications: 0 },
+        userAvatars: userAvatars
+      });
+    }
+  });
+
   socket.on('search users', (data) => {
     const { query, currentUser } = data;
     const results = Object.keys(users)
@@ -3473,6 +3374,406 @@ socket.on('get private messages', async (data) => {
     
     socket.emit('search results', results);
   });
+
+  socket.on('set room manager', async (data) => {
+    const { roomId, managerUsername, currentUser } = data;
+    
+    if (currentUser.name !== SITE_OWNER.username) {
+      socket.emit('management error', 'عذراً، تعيين مديري الغرف متاح فقط لصاحب الموقع.');
+      return;
+    }
+
+    if (!users[managerUsername]) {
+      socket.emit('management error', 'المستخدم غير موجود');
+      return;
+    }
+
+    const room = rooms.find(r => r.id === roomId);
+    if (!room) {
+      socket.emit('management error', 'الغرفة غير موجودة');
+      return;
+    }
+
+    if (!roomManagers[roomId]) {
+      roomManagers[roomId] = [];
+    }
+
+    if (!roomManagers[roomId].includes(managerUsername)) {
+      roomManagers[roomId].push(managerUsername);
+      room.managers = roomManagers[roomId];
+
+      try {
+        await RoomManager.create({
+          roomId,
+          managerUsername,
+          assignedBy: currentUser.name
+        });
+
+        const notificationMessage = {
+          type: 'system',
+          user: 'رسائل النظام',
+          avatar: BOT_AVATAR_URL,
+          content: `👮 تم تعيين ${managerUsername} كمدير لغرفة ${room.name} من قبل ${currentUser.name}`,
+          time: new Date().toLocaleTimeString('ar-SA')
+        };
+
+        io.emit('new message', notificationMessage);
+        messages[roomId] = messages[roomId] || [];
+        messages[roomId].push(notificationMessage);
+        io.emit('rooms update', rooms);
+
+        socket.emit('management success', `تم تعيين ${managerUsername} كمدير للغرفة بنجاح`);
+      } catch (error) {
+        socket.emit('management error', 'حدث خطأ عند تعيين المدير');
+        console.error('Error setting room manager:', error);
+      }
+    } else {
+      socket.emit('management error', 'المستخدم مدير بالفعل في هذه الغرفة');
+    }
+  });
+
+  socket.on('remove room manager', async (data) => {
+    const { roomId, managerUsername, currentUser } = data;
+    
+    if (currentUser.name !== SITE_OWNER.username) {
+      socket.emit('management error', 'عذراً، إزالة مديري الغرف متاحة فقط لصاحب الموقع.');
+      return;
+    }
+
+    const room = rooms.find(r => r.id === roomId);
+    if (!room) {
+      socket.emit('management error', 'الغرفة غير موجودة');
+      return;
+    }
+
+    if (roomManagers[roomId] && roomManagers[roomId].includes(managerUsername)) {
+      roomManagers[roomId] = roomManagers[roomId].filter(m => m !== managerUsername);
+      room.managers = roomManagers[roomId];
+
+      try {
+        await RoomManager.destroy({
+          where: {
+            roomId,
+            managerUsername
+          }
+        });
+
+        const notificationMessage = {
+          type: 'system',
+          user: 'رسائل النظام',
+          avatar: BOT_AVATAR_URL,
+          content: `👮 تم إزالة ${managerUsername} من منصب مدير غرفة ${room.name} من قبل ${currentUser.name}`,
+          time: new Date().toLocaleTimeString('ar-SA')
+        };
+
+        io.emit('new message', notificationMessage);
+        messages[roomId] = messages[roomId] || [];
+        messages[roomId].push(notificationMessage);
+        io.emit('rooms update', rooms);
+
+        socket.emit('management success', `تم إزالة ${managerUsername} من منصب مدير الغرفة بنجاح`);
+      } catch (error) {
+        socket.emit('management error', 'حدث خطأ عند إزالة المدير');
+        console.error('Error removing room manager:', error);
+      }
+    } else {
+      socket.emit('management error', 'المستخدم ليس مديراً في هذه الغرفة');
+    }
+  });
+  
+  socket.on('get room managers', (roomId) => {
+    const managers = roomManagers[roomId] || [];
+    socket.emit('room managers list', { roomId, managers });
+  });
+
+  socket.on('get room info', async (roomId) => {
+    const roomIdInt = parseInt(roomId);
+    const room = rooms.find(r => r.id === roomIdInt);
+    if (room) {
+      const background = roomBackgrounds[roomIdInt] || { type: 'gradient', value: 'from-gray-800 to-gray-900' };
+      const settings = roomSettings[roomIdInt] || { description: room.description, textColor: 'text-white', messageBackground: 'bg-gray-800' };
+      socket.emit('room info', {
+        id: room.id,
+        name: room.name,
+        icon: room.icon,
+        description: settings.description || room.description,
+        managers: roomManagers[roomIdInt] || [],
+        background,
+        settings
+      });
+    }
+  });
+
+  socket.on('update room settings', async (data) => {
+    const { roomId, description, textColor, messageBackground, currentUser } = data;
+    const roomIdInt = parseInt(roomId);
+    
+    if (!canManageRoom(currentUser.name, roomIdInt)) {
+      socket.emit('management error', 'ليس لديك صلاحية لتعديل إعدادات هذه الغرفة');
+      return;
+    }
+
+    try {
+      const room = rooms.find(r => r.id === roomIdInt);
+      if (!room) {
+        socket.emit('management error', 'الغرفة غير موجودة');
+        return;
+      }
+
+      await RoomSettings.upsert({
+        roomId: roomIdInt,
+        description: description || room.description,
+        textColor: textColor || 'text-white',
+        messageBackground: messageBackground || 'bg-gray-800',
+        updatedBy: currentUser.name
+      });
+
+      roomSettings[roomIdInt] = {
+        description: description || room.description,
+        textColor: textColor || 'text-white',
+        messageBackground: messageBackground || 'bg-gray-800'
+      };
+
+      room.settings = roomSettings[roomIdInt];
+      io.emit('rooms update', rooms);
+      io.emit('management success', 'تم تحديث إعدادات الغرفة بنجاح');
+    } catch (error) {
+      socket.emit('management error', 'حدث خطأ في تحديث الإعدادات');
+      console.error('Error updating room settings:', error);
+    }
+  });
+
+  socket.on('update room background', async (data) => {
+    const { roomId, backgroundType, backgroundValue, currentUser } = data;
+    const roomIdInt = parseInt(roomId);
+    
+    if (!canManageRoom(currentUser.name, roomIdInt)) {
+      socket.emit('management error', 'ليس لديك صلاحية لتعديل خلفية هذه الغرفة');
+      return;
+    }
+
+    try {
+      const room = rooms.find(r => r.id === roomIdInt);
+      if (!room) {
+        socket.emit('management error', 'الغرفة غير موجودة');
+        return;
+      }
+
+      await RoomBackground.upsert({
+        roomId: roomIdInt,
+        backgroundType,
+        backgroundValue,
+        setBy: currentUser.name
+      });
+
+      roomBackgrounds[roomIdInt] = {
+        type: backgroundType,
+        value: backgroundValue
+      };
+
+      room.background = roomBackgrounds[roomIdInt];
+      io.emit('rooms update', rooms);
+      io.emit('management success', 'تم تحديث خلفية الغرفة بنجاح');
+    } catch (error) {
+      socket.emit('management error', 'حدث خطأ في تحديث الخلفية');
+      console.error('Error updating room background:', error);
+    }
+  });
+
+  socket.on('delete message', async (data) => {
+    const { messageId, roomId, currentUser } = data;
+    const user = onlineUsers[socket.id];
+
+    if (!user) {
+      socket.emit('management error', 'يجب أن تكون في غرفة لحذف الرسائل');
+      return;
+    }
+
+    if (!canManageRoom(currentUser.name, roomId)) {
+      socket.emit('management error', 'ليس لديك صلاحية لحذف الرسائل في هذه الغرفة');
+      return;
+    }
+
+    if (messages[roomId]) {
+      const index = messages[roomId].findIndex(msg => msg.messageId === messageId);
+      if (index !== -1) {
+        messages[roomId].splice(index, 1);
+        io.to(`room-${roomId}`).emit('message deleted', { messageId, roomId });
+        socket.emit('management success', 'تم حذف الرسالة بنجاح');
+      }
+    }
+  });
+
+  socket.on('add room', async (data) => {
+    const { name, icon, description, order, currentUser } = data;
+
+    if (currentUser.name !== SITE_OWNER.username) {
+      socket.emit('management error', 'عذراً، إضافة الغرف متاحة فقط لصاحب الموقع.');
+      return;
+    }
+
+    if (!name || !icon) {
+      socket.emit('management error', 'يجب إدخال اسم الغرفة والأيقونة');
+      return;
+    }
+
+    try {
+      const existingRoom = rooms.find(r => r.name === name);
+      if (existingRoom) {
+        socket.emit('management error', 'اسم الغرفة موجود بالفعل');
+        return;
+      }
+
+      const newRoom = await Room.create({
+        name,
+        icon,
+        description: description || '',
+        protected: false,
+        order: parseInt(order) || 0,
+        createdBy: currentUser.name
+      });
+
+      const roomData = {
+        id: newRoom.id,
+        name: newRoom.name,
+        icon: newRoom.icon,
+        description: newRoom.description,
+        protected: newRoom.protected,
+        order: newRoom.order,
+        users: [],
+        managers: []
+      };
+
+      rooms.push(roomData);
+      // إعادة ترتيب الغرف في الذاكرة
+      rooms.sort((a, b) => (a.order - b.order) || (a.id - b.id));
+      
+      io.emit('rooms update', rooms);
+      socket.emit('management success', `تم إنشاء الغرفة "${name}" بنجاح`);
+    } catch (error) {
+      socket.emit('management error', 'حدث خطأ في إنشاء الغرفة');
+      console.error('Error adding room:', error);
+    }
+  });
+
+  socket.on('update room order', async (data) => {
+    const { roomId, newOrder, currentUser } = data;
+
+    if (currentUser.name !== SITE_OWNER.username) {
+      socket.emit('management error', 'عذراً، تعديل الترتيب متاح فقط لصاحب الموقع.');
+      return;
+    }
+
+    // تحديث في الذاكرة أولاً لضمان استجابة سريعة للواجهة
+    const roomInMemory = rooms.find(r => r.id === parseInt(roomId));
+    const oldOrder = roomInMemory ? roomInMemory.order : 0;
+    
+    if (roomInMemory) {
+      roomInMemory.order = parseInt(newOrder);
+      rooms.sort((a, b) => (a.order - b.order) || (a.id - b.id));
+      io.emit('rooms update', rooms);
+    }
+
+    try {
+      const room = await Room.findByPk(roomId);
+      if (!room) {
+        socket.emit('management error', 'الغرفة غير موجودة في قاعدة البيانات');
+        return;
+      }
+
+      await room.update({ order: parseInt(newOrder) });
+      socket.emit('management success', 'تم تحديث ترتيب الغرفة بنجاح');
+    } catch (error) {
+      // في حال فشل التحديث في قاعدة البيانات، نعيد القيمة القديمة في الذاكرة ونرسل خطأ
+      if (roomInMemory) {
+        roomInMemory.order = oldOrder;
+        rooms.sort((a, b) => (a.order - b.order) || (a.id - b.id));
+        io.emit('rooms update', rooms);
+      }
+      
+      let errorMsg = 'حدث خطأ في تحديث الترتيب بقاعدة البيانات';
+      if (error.name === 'SequelizeConnectionError' || error.name === 'SequelizeConnectionTimedOutError') {
+        errorMsg = 'فشل الاتصال بقاعدة البيانات، يرجى المحاولة مرة أخرى لاحقاً.';
+      }
+      
+      socket.emit('management error', errorMsg);
+      console.error('Error updating room order:', error);
+    }
+  });
+
+  socket.on('delete room', async (data) => {
+    const { roomId, currentUser } = data;
+    const roomIdInt = parseInt(roomId);
+
+    if (currentUser.name !== SITE_OWNER.username) {
+      socket.emit('management error', 'عذراً، حذف الغرف متاح فقط لصاحب الموقع.');
+      return;
+    }
+
+    try {
+      const room = rooms.find(r => r.id === roomIdInt);
+      if (!room) {
+        socket.emit('management error', 'الغرفة غير موجودة');
+        return;
+      }
+
+      if (room.protected) {
+        socket.emit('management error', 'لا يمكن حذف الغرف المحمية');
+        return;
+      }
+
+      // حذف من قاعدة البيانات
+      await Room.destroy({ where: { id: roomIdInt } });
+      
+      // حذف الإعدادات والخلفيات المرتبطة
+      await RoomSettings.destroy({ where: { roomId: roomIdInt } });
+      await RoomBackground.destroy({ where: { roomId: roomIdInt } });
+      await RoomManager.destroy({ where: { roomId: roomIdInt } });
+
+      // حذف من الذاكرة
+      const index = rooms.findIndex(r => r.id === roomIdInt);
+      if (index !== -1) {
+        rooms.splice(index, 1);
+      }
+
+      delete roomSettings[roomIdInt];
+      delete roomBackgrounds[roomIdInt];
+      delete roomManagers[roomIdInt];
+      delete messages[roomIdInt];
+
+      io.emit('rooms update', rooms);
+      socket.emit('management success', `تم حذف الغرفة "${room.name}" بنجاح`);
+    } catch (error) {
+      socket.emit('management error', 'حدث خطأ في حذف الغرفة');
+      console.error('Error deleting room:', error);
+    }
+  });
+
+  socket.on('get all rooms for management', async (currentUser) => {
+    if (currentUser.name !== SITE_OWNER.username) {
+      socket.emit('management error', 'ليس لديك صلاحية للوصول إلى هذه البيانات');
+      return;
+    }
+
+    try {
+      const allRooms = await Room.findAll({ order: [['id', 'ASC']] });
+      const roomsList = allRooms.map(room => ({
+        id: room.id,
+        name: room.name,
+        icon: room.icon,
+        description: room.description,
+        protected: room.protected,
+        createdBy: room.createdBy,
+        createdAt: room.createdAt,
+        usersCount: rooms.find(r => r.id === room.id)?.users.length || 0
+      }));
+
+      socket.emit('all rooms for management', roomsList);
+    } catch (error) {
+      socket.emit('management error', 'حدث خطأ في جلب الغرف');
+      console.error('Error fetching rooms:', error);
+    }
+  });
   
   // في حدث disconnect - البحث عن هذا الجزء واستبداله
 socket.on('disconnect', async (reason) => {
@@ -3482,11 +3783,8 @@ socket.on('disconnect', async (reason) => {
       const room = rooms.find(r => r.id === roomId);
       
       if (room) {
-        const userIndex = room.users.findIndex(u => u.id === socket.id);
-        if (userIndex !== -1) {
-            room.users.splice(userIndex, 1);
-        }
-        io.emit('rooms update', rooms);
+        room.users = room.users.filter(u => u.id !== socket.id);
+        broadcastRoomsUpdate();
         io.to(roomId).emit('users update', room.users);
       }
       

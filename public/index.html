@@ -226,7 +226,8 @@
             backdrop-filter: blur(20px);
             width: 90%;
             max-width: 550px;
-            display: block;
+            display: flex;
+            flex-direction: column;
             border: 1px solid rgba(255, 255, 255, 0.1);
             transform: scale(0.9);
             transition: transform 0.3s ease;
@@ -548,6 +549,73 @@
 .frame-double { border: 4px double #ffffff; }
 .frame-dashed { border: 3px dashed #ffffff; }
 
+/* إطارات متحركة جديدة */
+.frame-rainbow {
+    border: 3px solid transparent;
+    border-image: linear-gradient(to right, red, orange, yellow, green, blue, indigo, violet) 1;
+    animation: rainbow-border 3s linear infinite;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+@keyframes rainbow-border {
+    0% { filter: hue-rotate(0deg); }
+    100% { filter: hue-rotate(360deg); }
+}
+
+.frame-neon-pulse {
+    border: 3px solid #00ff00;
+    animation: neon-pulse 1.5s ease-in-out infinite;
+    box-shadow: 0 0 15px #00ff00;
+}
+@keyframes neon-pulse {
+    0%, 100% { box-shadow: 0 0 5px #00ff00; border-color: #00ff00; }
+    50% { box-shadow: 0 0 20px #00ff00, 0 0 30px #00ff00; border-color: #7fff00; }
+}
+
+.frame-fire {
+    border: 3px solid #ff4500;
+    animation: fire-glow 1s ease-in-out infinite;
+    box-shadow: 0 0 10px #ff4500;
+}
+@keyframes fire-glow {
+    0%, 100% { box-shadow: 0 0 10px #ff4500, 0 0 5px #ff8c00; }
+    50% { box-shadow: 0 0 20px #ff4500, 0 0 10px #ff8c00; }
+}
+
+.frame-rotating {
+    border: 3px dashed #3498db;
+    animation: rotate-border 4s linear infinite;
+}
+@keyframes rotate-border {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* تدرجات ألوان جديدة لنص الاسم */
+.text-gradient-rainbow {
+    background: linear-gradient(to right, #ef4444, #f59e0b, #10b981, #3b82f6, #8b5cf6, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: bold;
+}
+.text-gradient-gold {
+    background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: bold;
+}
+.text-gradient-fire {
+    background: linear-gradient(to right, #f83600 0%, #f9d423 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: bold;
+}
+.text-gradient-ocean {
+    background: linear-gradient(to right, #4facfe 0%, #00f2fe 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: bold;
+}
+
 /* خيارات الألوان في الميزات */
 .color-option { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; }
 .color-option:hover { transform: scale(1.2); }
@@ -807,6 +875,12 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
         </svg>
     </button>
+                    <!-- زر معلومات الغرفة -->
+                    <button id="roomInfoButton" onclick="openRoomInfo()" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors" title="معلومات الغرفة">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </button>
                     <!-- زر الرسائل الخاصة (البريد) -->
     <div class="relative" id="chatMessagesButtonContainer">
         <button id="chatMessagesButton" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors relative">
@@ -1267,8 +1341,21 @@
                     <!-- محتوى لون الاسم -->
                     <div id="feature-nameColor" class="feature-content">
                         <h4 class="text-sm font-bold text-slate-300 mb-3">اختر لون لاسمك:</h4>
-                        <div class="grid grid-cols-6 gap-3 justify-items-center" id="nameColorGrid">
+                        <div class="grid grid-cols-6 gap-3 justify-items-center mb-4" id="nameColorGrid">
                             <!-- سيتم ملؤها بواسطة JS -->
+                        </div>
+                        <div class="border-t border-gray-700 pt-3">
+                            <h4 class="text-xs font-bold text-slate-400 mb-2">تدرج لوني أو لون مخصص:</h4>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="selectFeature('nameColor', 'text-gradient-rainbow')" class="py-1 px-2 rounded bg-gradient-to-r from-red-500 via-green-500 to-blue-500 text-white text-[10px] font-bold">قوس قزح</button>
+                                <button onclick="selectFeature('nameColor', 'text-gradient-gold')" class="py-1 px-2 rounded bg-gradient-to-r from-yellow-600 to-yellow-200 text-black text-[10px] font-bold">ذهبي ملكي</button>
+                                <button onclick="selectFeature('nameColor', 'text-gradient-fire')" class="py-1 px-2 rounded bg-gradient-to-r from-red-600 to-orange-400 text-white text-[10px] font-bold">ناري</button>
+                                <button onclick="selectFeature('nameColor', 'text-gradient-ocean')" class="py-1 px-2 rounded bg-gradient-to-r from-blue-400 to-cyan-300 text-white text-[10px] font-bold">محيط</button>
+                            </div>
+                            <div class="mt-3 flex items-center justify-between bg-gray-800/50 p-2 rounded-lg">
+                                <span class="text-[10px] text-slate-300">لون مخصص (مزج):</span>
+                                <input type="color" id="customNameColorPicker" onchange="applyCustomColor('nameColor', this.value)" class="w-8 h-6 bg-transparent cursor-pointer">
+                            </div>
                         </div>
                     </div>
 
@@ -1467,7 +1554,7 @@
     <div id="globalNotifications" class="fixed top-4 right-4 z-50 space-y-3 max-w-sm"></div>
 <!-- نافذة المنشورات -->
 <div id="postsModal" class="profile-modal">
-    <div class="profile-content custom-scrollbar" style="max-width: 650px; height: 90vh;">
+    <div class="profile-content custom-scrollbar" style="max-width: 650px; height: 95vh;">
         <!-- رأس النافذة -->
         <div class="flex justify-between items-center p-4 border-b border-slate-700 flex-shrink-0">
             <h2 class="text-xl font-bold text-white">📝 المنشورات</h2>
@@ -1713,6 +1800,26 @@
     </div>
 </div>
 
+<!-- نافذة معلومات الغرفة -->
+<div id="roomInfoModal" class="profile-modal">
+    <div class="profile-content" style="max-width: 600px;">
+        <button onclick="closeRoomInfo()" class="absolute top-4 right-4 text-slate-300 hover:text-red-500">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+        
+        <div class="bg-gray-800 p-6 text-center border-b border-gray-700">
+            <h2 id="roomInfoTitle" class="text-2xl font-bold text-white mb-2">معلومات الغرفة</h2>
+            <p id="roomInfoDesc" class="text-slate-400 text-sm"></p>
+        </div>
+
+        <div id="roomInfoContent" class="p-6 space-y-6 overflow-y-auto" style="max-height: 70vh;">
+            <!-- سيتم ملء المحتوى هنا -->
+        </div>
+    </div>
+</div>
+
 <!-- نافذة تغيير كلمة المرور -->
 <div id="changePasswordModal" class="profile-modal">
     <div class="profile-content" style="max-width: 400px;">
@@ -1753,9 +1860,9 @@
 
 <!-- نافذة غرفة التحكم (Control Panel) -->
 <div id="controlPanelModal" class="profile-modal">
-    <div class="profile-content custom-scrollbar" style="max-width: 800px; height: 90vh;">
+    <div class="profile-content custom-scrollbar" style="max-width: 800px; height: 95vh;">
         <!-- رأس النافذة -->
-        <div class="relative bg-gray-800 p-6 text-center border-b border-gray-700">
+        <div class="relative bg-gray-800 p-6 text-center border-b border-gray-700 flex-shrink-0">
             <button onclick="closeControlPanel()" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
@@ -1764,7 +1871,7 @@
         </div>
         
         <!-- محتوى النافذة -->
-        <div class="p-6 space-y-8 overflow-y-auto custom-scrollbar">
+        <div class="flex-1 p-6 space-y-8 overflow-y-auto custom-scrollbar">
             <!-- قسم الإحصائيات -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-gray-700/50 p-4 rounded-xl text-center border border-gray-600">
@@ -1861,18 +1968,73 @@
                 </div>
             </div>
 
+            <!-- قسم إدارة مديري الغرف -->
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <span>👮</span> إدارة مديري الغرف
+                </h3>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="text-sm text-slate-300 mb-2 block">اختر الغرفة</label>
+                            <select id="managerRoomSelect" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-orange-500" onchange="updateManagersList()">
+                                <option value="">اختر غرفة...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-sm text-slate-300 mb-2 block">اسم المستخدم</label>
+                            <input type="text" id="managerUserInput" placeholder="اكتب اسم المستخدم..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        </div>
+                    </div>
+                    <button onclick="assignRoomManager()" class="w-full bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">تعيين مدير الغرفة</button>
+                </div>
+
+                <!-- قائمة مديري الغرف الحاليين -->
+                <div class="mt-6 pt-6 border-t border-gray-700">
+                    <h4 class="text-lg font-semibold text-white mb-4">مديرو الغرف الحاليون</h4>
+                    <div id="roomManagersList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- سيتم ملء قائمة المديرين هنا -->
+                    </div>
+                    <div id="noManagersMsg" class="text-center text-slate-400 text-sm py-6">لا توجد غرف بها مديرون حالياً</div>
+                </div>
+            </div>
+
             <!-- قسم إدارة الغرف -->
             <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
                 <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <span>🏠</span> إدارة الغرف
+                    <span>🚪</span> إدارة الغرف
                 </h3>
-                <div class="flex flex-col md:flex-row gap-2 mb-4">
-                    <input type="text" id="newRoomName" placeholder="اسم الغرفة" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <input type="text" id="newRoomIcon" placeholder="الأيقونة (مثال: 💬)" class="w-full md:w-32 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-center focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <button onclick="addNewRoom()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">إضافة</button>
+
+                <!-- نموذج إضافة غرفة جديدة -->
+                <div class="bg-gray-900/50 p-4 rounded-lg mb-6 border border-gray-600">
+                    <h4 class="text-white font-semibold mb-3 text-sm">إضافة غرفة جديدة</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                        <input type="text" id="newRoomName" placeholder="اسم الغرفة" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <input type="text" id="newRoomIcon" placeholder="أيقونة (مثال: 💬)" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-center focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <input type="number" id="newRoomOrder" placeholder="الترتيب (مثال: 1)" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-center focus:outline-none focus:ring-2 focus:ring-green-500" min="0">
+                        <input type="text" id="newRoomDesc" placeholder="وصف الغرفة" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-green-500 md:col-span-1">
+                    </div>
+                    <button onclick="addNewRoom()" class="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">➕ إضافة غرفة</button>
                 </div>
-                <div id="controlRoomsList" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar bg-gray-900/50 p-2 rounded-lg">
-                    <!-- قائمة الغرف ستظهر هنا -->
+
+                <!-- قائمة الغرف -->
+                <div class="overflow-x-auto bg-gray-900/50 rounded-lg border border-gray-700 custom-scrollbar">
+                    <table class="w-full text-sm text-right text-gray-400">
+                        <thead class="text-xs text-gray-200 uppercase bg-gray-700/80 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3">الترتيب</th>
+                                <th class="px-4 py-3">الأيقونة</th>
+                                <th class="px-4 py-3">اسم الغرفة</th>
+                                <th class="px-4 py-3">الوصف</th>
+                                <th class="px-4 py-3 text-center">المستخدمون</th>
+                                <th class="px-4 py-3 text-center">الحالة</th>
+                                <th class="px-4 py-3 text-center">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roomsListTableBody" class="divide-y divide-gray-700">
+                            <!-- سيتم ملء الجدول هنا -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -1886,7 +2048,7 @@
                         <input type="text" id="controlUserSearch" placeholder="بحث عن مستخدم..." class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" oninput="filterControlUsers()">
                     </div>
                 </div>
-                <div class="overflow-x-auto bg-gray-900/50 rounded-lg border border-gray-700 max-h-96 custom-scrollbar">
+                <div class="overflow-x-auto bg-gray-900/50 rounded-lg border border-gray-700 custom-scrollbar">
                     <table class="w-full text-sm text-right text-gray-400">
                         <thead class="text-xs text-gray-200 uppercase bg-gray-700/80 sticky top-0">
                             <tr>
@@ -1947,7 +2109,14 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        const socket = io({ transports: ['websocket'] });
+        const socket = io({ 
+            transports: ['polling', 'websocket'],
+            reconnection: true,
+            reconnectionAttempts: 10,
+            reconnectionDelay: 1000,
+            reconnectionDelayMax: 5000,
+            timeout: 20000
+        });
         let currentUser = null;
 
         // --- دوال تبديل أقسام الملف الشخصي ---
@@ -2035,6 +2204,16 @@
             currentFeatureSelection.value = null; // إعادة تعيين القيمة عند التبديل
         }
 
+        function applyCustomColor(feature, color) {
+            let value = '';
+            if (feature === 'nameColor') {
+                value = `color:${color}`; // استخدام كود اللون مباشرة
+            } else if (feature === 'profileBackground') {
+                value = `background-color:${color}`;
+            }
+            selectFeature(feature, value);
+        }
+
         function selectFeature(feature, value) {
             currentFeatureSelection.feature = feature;
             currentFeatureSelection.value = value;
@@ -2042,7 +2221,27 @@
             // تحديث التحديد المرئي
             if (feature === 'nameColor') {
                 document.querySelectorAll('#nameColorGrid .color-option').forEach(el => el.classList.remove('selected'));
-                if (value) event.target.classList.add('selected');
+                if (event && event.target && event.target.classList.contains('color-option')) {
+                    event.target.classList.add('selected');
+                }
+                
+                // تحديث المعاينة في بطاقة المستخدم (إذا وجدت معاينة)
+                const previewText = document.querySelector('#previewCardDiv .truncate');
+                if (previewText) {
+                    previewText.className = 'font-semibold truncate text-sm';
+                    previewText.style.color = '';
+                    previewText.style.background = '';
+                    previewText.style.webkitBackgroundClip = '';
+                    previewText.style.webkitTextFillColor = '';
+                    
+                    if (value && value.startsWith('color:')) {
+                        previewText.style.color = value.split(':')[1];
+                    } else if (value && value.startsWith('text-gradient-')) {
+                        previewText.classList.add(value);
+                    } else if (value) {
+                        previewText.classList.add(value);
+                    }
+                }
             } else if (feature === 'nameBackground') {
                 document.querySelectorAll('#nameBackgroundGrid > div').forEach(el => el.classList.remove('border-blue-500', 'border-2'));
                 event.currentTarget.classList.add('border-blue-500', 'border-2');
@@ -2123,6 +2322,10 @@
                 { id: 'frame-silver', name: 'فضي' },
                 { id: 'frame-red-glow', name: 'توهج أحمر' },
                 { id: 'frame-blue-glow', name: 'توهج أزرق' },
+                { id: 'frame-rainbow', name: 'قوس قزح' },
+                { id: 'frame-neon-pulse', name: 'نيون' },
+                { id: 'frame-fire', name: 'ناري' },
+                { id: 'frame-rotating', name: 'دوار' },
                 { id: 'frame-double', name: 'مزدوج' },
                 { id: 'frame-dashed', name: 'متقطع' }
             ];
@@ -2175,7 +2378,14 @@
         }
 
         let currentRoom = null;
+        let currentRoomSettings = {
+            textColor: 'text-white',
+            messageBackground: 'bg-gray-800'
+        };
+        let currentRoomBackground = null;
         let rooms = [];
+        let roomsWithSettings = {};
+        let roomsWithBackgrounds = {};
         let sessionChecked = false;
         let privateChatTarget = null;
         let friendRequests = [];
@@ -2204,8 +2414,9 @@
         let isFirstUserLoad = true;
         const entrySound = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3');
         entrySound.volume = 0.4;
-        const leaveSound = new Audio('https://cdn.freesound.org/previews/505/505820_10931963-lq.mp3'); // صوت "نفخة" خفيفة
-        leaveSound.volume = 0.5;
+        const leaveSound = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3'); // صوت فرقعة (Pop) موثوق
+        leaveSound.volume = 1.0;
+        leaveSound.preload = 'auto';
         
         window.onlineUsersData = {}; // تخزين بيانات المستخدمين للوصول السريع
         // --- دوال أيقونات الرتب ---
@@ -2513,14 +2724,28 @@ function updateUnreadBadges() {
         // دالة لتحميل البيانات الخلفية (الملف الشخصي، الأصدقاء، الصور) بعد الدخول
         function loadBackgroundData() {
             if (!currentUser) return;
-            console.log('بدء تحميل البيانات الخلفية...');
-            setTimeout(() => {
-                socket.emit('get friend requests', currentUser.name);
-                socket.emit('get friends list', currentUser.name);
-                socket.emit('get unread counts', currentUser.name);
-                socket.emit('get user avatars');
-            }, 100); // تأخير بسيط جداً لضمان سلاسة الواجهة
+            console.log('بدء تحميل البيانات الخلفية المجمعة...');
+            // استخدام حدث واحد مجمع لتقليل عدد الطلبات وتحسين الأداء على الشبكات الضعيفة
+            socket.emit('get initial data', currentUser.name);
         }
+
+        // استقبال البيانات الأولية المجمعة
+        socket.on('initial data', (data) => {
+            console.log('تم استقبال البيانات الأولية المجمعة');
+            if (data.friendRequests) friendRequests = data.friendRequests;
+            if (data.friendsList) friendsList = data.friendsList;
+            if (data.userAvatars) userAvatars = data.userAvatars;
+            
+            if (data.unreadCounts) {
+                updateMessagesBadge(data.unreadCounts.privateMessages);
+                updateNotificationsBadge(data.unreadCounts.notifications > 0);
+            }
+            
+            // تحديث الواجهة
+            updateFriendRequests();
+            updateFriendsList();
+            updateUnreadBadges();
+        });
 
         // التحقق من الجلسة المحفوظة عند تحميل الصفحة
         window.addEventListener('DOMContentLoaded', async () => {
@@ -2546,35 +2771,50 @@ function updateUnreadBadges() {
             currentUser = userData;
             updateHeaderUserInfo();
             showNotification(`مرحباً بعودتك ${userData.name}! 😊`, 'success');
-            showMainPage();
-
-
-            // --- تعديل: تأخير التحقق من الغرفة المحفوظة لضمان تحميل البيانات ---
-            setTimeout(() => {
-                // التحقق من صلاحيات المستخدم (مثل إظهار زر تغيير الخلفية)
-                toggleBackgroundButton();
-                
-                // الانضمام إلى الغرفة المحفوظة إذا كانت موجودة
-                const savedRoom = localStorage.getItem('currentRoom');
-                if (savedRoom) {
-                    try {
-                        const roomData = JSON.parse(savedRoom);
-                        if (roomData && roomData.id) {
+            
+            // التحقق من صلاحيات المستخدم
+            toggleBackgroundButton();
+            
+            // محاولة الانضمام للغرفة المحفوظة بسرعة
+            const savedRoom = localStorage.getItem('currentRoom');
+            if (savedRoom) {
+                try {
+                    const roomData = JSON.parse(savedRoom);
+                    if (roomData && roomData.id) {
+                        // إذا كانت الغرف محملة، ادخل فوراً، وإلا انتظر أول تحديث للغرف
+                        if (rooms.length > 0) {
+                            rooms.forEach(r => {
+                                if (r.background) roomsWithBackgrounds[r.id] = r.background;
+                                if (r.settings) roomsWithSettings[r.id] = r.settings;
+                            });
                             openChat(roomData.id, roomData.name, roomData.icon);
                         } else {
-                            hideLoading();
-                            loadBackgroundData(); // تحميل البيانات الخلفية إذا لم يكن هناك غرفة
+                            // سنقوم بالدخول للغرفة بمجرد استقبال 'rooms update' الأول
+                            const entryHandler = (updatedRooms) => {
+                                // تحديث البيانات أولاً
+                                updatedRooms.forEach(room => {
+                                    if (room.settings) roomsWithSettings[room.id] = room.settings;
+                                    if (room.background) roomsWithBackgrounds[room.id] = room.background;
+                                });
+                                rooms = updatedRooms;
+                                openChat(roomData.id, roomData.name, roomData.icon);
+                                socket.off('rooms update', entryHandler); // إزالة المعالج بعد الدخول
+                            };
+                            socket.on('rooms update', entryHandler);
+                            // حد زمني للانتظار
+                            setTimeout(() => socket.off('rooms update', entryHandler), 5000);
+                            showMainPage();
                         }
-                    } catch (e) {
-                        localStorage.removeItem('currentRoom');
-                        hideLoading();
-                        loadBackgroundData();
+                        return;
                     }
-                } else {
-                    hideLoading(); // إخفاء التحميل فقط إذا لم تكن هناك غرفة للانضمام إليها
-                    loadBackgroundData(); // تحميل البيانات الخلفية
+                } catch (e) {
+                    localStorage.removeItem('currentRoom');
                 }
-            }, 50); // تقليل التأخير لتسريع الدخول
+            }
+
+            showMainPage();
+            hideLoading();
+            loadBackgroundData();
         }
 
         function handleSessionInvalid() {
@@ -2584,6 +2824,18 @@ function updateUnreadBadges() {
             sessionChecked = true;
             hideLoading();
             document.getElementById('loginPage').classList.remove('hidden');
+        }
+
+        // دالة مساعدة لتطبيق لون الاسم (كلاس أو ستايل)
+        function getUserNameStyle(colorValue) {
+            if (!colorValue) return { class: 'text-gray-200', style: '' };
+            if (colorValue.startsWith('color:')) {
+                return { class: '', style: `color: ${colorValue.split(':')[1]}` };
+            }
+            if (colorValue.startsWith('text-gradient-')) {
+                return { class: colorValue, style: '' };
+            }
+            return { class: colorValue, style: '' };
         }
 
         // تحديث معلومات المستخدم في الرأس
@@ -3305,9 +3557,15 @@ friendsList.forEach(username => {
         // تحميل الغرف
         function loadRooms() {
             const roomsContainer = document.getElementById('roomsContainer');
-            roomsContainer.innerHTML = '';
+            if (!roomsContainer) return;
             
-            rooms.forEach(room => {
+            // استخدام DocumentFragment لتحسين الأداء
+            const fragment = document.createDocumentFragment();
+            
+            // فرز الغرف قبل العرض
+            const sortedRooms = [...rooms].sort((a, b) => (a.order - b.order) || (a.id - b.id));
+            
+            sortedRooms.forEach(room => {
                 const roomDiv = document.createElement('div');
                 roomDiv.className = room.protected ? 
                     'bg-gradient-to-br from-red-900/30 to-orange-900/30 backdrop-blur-lg rounded-2xl p-6 hover:from-red-800/40 hover:to-orange-800/40 transition-all duration-300 relative group border-2 border-red-500/50' :
@@ -3324,6 +3582,12 @@ friendsList.forEach(username => {
                         <div class="text-4xl mb-4 text-center">${room.icon}</div>
                         <h3 class="text-xl font-semibold text-white text-center mb-2">${room.name}</h3>
                         <p class="text-blue-200 text-center text-sm">${room.description}</p>
+                        ${room.managers && room.managers.length > 0 ? `
+                            <div class="mt-3 pt-3 border-t border-white/20">
+                                <p class="text-xs text-slate-300 mb-1">👮 مديرو الغرفة:</p>
+                                <p class="text-xs text-yellow-300 font-semibold">${room.managers.join(', ')}</p>
+                            </div>
+                        ` : ''}
                         <div class="mt-4 text-center">
                             <span class="${room.protected ? 'bg-red-600' : 'bg-gray-500'} text-white px-3 py-1 rounded-full text-xs">
                                 ${room.protected ? '🔒 محمية' : 'انقر للدخول'}
@@ -3332,7 +3596,7 @@ friendsList.forEach(username => {
                     </div>
                 `;
                 
-                roomsContainer.appendChild(roomDiv);
+                fragment.appendChild(roomDiv);
             });
 
             // إضافة غرفة التحكم لصاحب الموقع فقط
@@ -3352,8 +3616,12 @@ friendsList.forEach(username => {
                         <span class="bg-blue-600 text-white px-3 py-1 rounded-full text-xs">دخول المالك</span>
                     </div>
                 `;
-                roomsContainer.appendChild(controlDiv);
+                fragment.appendChild(controlDiv);
             }
+
+            // استبدال المحتوى دفعة واحدة
+            roomsContainer.innerHTML = '';
+            roomsContainer.appendChild(fragment);
         }
 
         // فتح غرفة الدردشة
@@ -3365,6 +3633,30 @@ friendsList.forEach(username => {
             isFirstUserLoad = true;
 
             currentRoom = { id: roomId, name: roomName, icon: icon };
+            
+            // جلب إعدادات الغرفة
+            const roomSettings = roomsWithSettings[roomId] || {
+                textColor: 'text-white',
+                messageBackground: 'bg-gray-800'
+            };
+            currentRoomSettings = roomSettings;
+            
+            // جلب خلفية الغرفة
+            let roomBackground = roomsWithBackgrounds[roomId];
+            
+            // محاولة إضافية للبحث في مصفوفة الغرف إذا لم تكن موجودة في الخريطة
+            if (!roomBackground && rooms.length > 0) {
+                const roomInList = rooms.find(r => r.id === roomId);
+                if (roomInList && roomInList.background) {
+                    roomBackground = roomInList.background;
+                    roomsWithBackgrounds[roomId] = roomBackground;
+                }
+            }
+
+            if (roomBackground) {
+                currentRoomBackground = roomBackground;
+                applyBackground(roomBackground, true);
+            }
             
             // حفظ الغرفة الحالية
             localStorage.setItem('currentRoom', JSON.stringify(currentRoom));
@@ -3434,6 +3726,8 @@ friendsList.forEach(username => {
         // العودة إلى الصفحة الرئيسية
         function goBack(isDisconnected = false) {
     if (currentRoom) {
+        leaveSound.currentTime = 0;
+        leaveSound.play().catch(e => console.log("Audio play blocked:", e));
         socket.emit('leave room', { roomId: currentRoom.id, user: currentUser });
         localStorage.removeItem('currentRoom');
     }
@@ -3452,6 +3746,9 @@ friendsList.forEach(username => {
     
     // إعادة إظهار زر الملف الشخصي في الرأس
     document.getElementById('profileButton').classList.remove('hidden');
+    
+    // تطبيق خلفية الموقع عند العودة إلى قائمة الغرف
+    socket.emit('get site background');
     
     currentRoom = null;
 }
@@ -3523,6 +3820,14 @@ window.addEventListener('beforeunload', function (e) {
         function handleKeyPress(event) {
             if (event.key === 'Enter') {
                 sendMessage();
+            }
+        }
+
+        // التحقق من طول الرسالة
+        function checkMessageLength() {
+            const input = document.getElementById('messageInput');
+            if (input.value.length > 200) {
+                input.value = input.value.substring(0, 200);
             }
         }
 
@@ -3611,13 +3916,16 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
         : `<div class="w-full h-full rounded-full bg-gray-400 flex items-center justify-center text-white font-bold text-sm ${avatarFrameClass}">${user.charAt(0).toUpperCase()}</div>`;
 
     // --- التصميم الجديد المدمج ---
+    const messageBgClass = currentRoomSettings?.messageBackground || 'bg-gray-800';
+    const messageTextColorClass = currentRoomSettings?.textColor || 'text-white';
+    
     messageDiv.innerHTML = `
         <div class="flex items-start gap-3">
         <div class="flex items-start gap-3 flex-row-reverse">
             <div class="avatar-container flex-shrink-0 cursor-pointer" onclick="showUserProfileModal('${user}')">
                 ${avatarHtml}
             </div>
-            <div class="message-bubble relative group ${isOwn ? 'bg-blue-600 text-white' : 'bg-gray-800 text-white'} rounded-lg">
+            <div class="message-bubble relative group ${isOwn ? 'bg-blue-600 text-white' : messageBgClass + ' ' + messageTextColorClass} rounded-lg">
                 ${replyHtml}
                 <div class="message-content leading-snug">
                     <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''}" onclick="showUserProfileModal('${user}')">${user}</span>
@@ -3638,7 +3946,7 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
     container.appendChild(messageDiv);
     // التمرير فقط إذا كانت رسالة حية (ليست جزءاً من التاريخ)
     if (!targetContainer) {
-        container.scrollTop = container.scrollHeight;
+        scrollToBottom();
     }
 }
 
@@ -3772,7 +4080,9 @@ function updateOnlineUsersList(users) {
     if (!onlineUsersList || !onlineUsersCount) return;
     
     onlineUsersCount.textContent = users.length;
-    onlineUsersList.innerHTML = '';
+    
+    // استخدام DocumentFragment لتقليل وميض الصفحة وتحسين الأداء
+    const fragment = document.createDocumentFragment();
     
     // تعريف الأجنحة (Wings Configuration)
     const wings = [
@@ -3825,7 +4135,7 @@ function updateOnlineUsersList(users) {
             groupedUsers.members.push(user);
         }
         
-        // تخزين البيانات
+        // تخزين البيانات للوصول السريع
         window.onlineUsersData[user.name] = user;
     });
 
@@ -3851,13 +4161,12 @@ function updateOnlineUsersList(users) {
             const wingHeader = document.createElement('div');
             wingHeader.className = `py-2 px-3 mb-2 mt-2 font-bold text-sm text-center uppercase tracking-wider rounded-lg backdrop-blur-md ${wing.classes}`;
             wingHeader.innerHTML = wing.title;
-            onlineUsersList.appendChild(wingHeader);
+            fragment.appendChild(wingHeader);
 
             // قائمة مستخدمي الجناح
             wingUsers.forEach(user => {
                 currentOnlineUsernames.add(user.name);
                 const userDiv = document.createElement('div');
-                userDiv.className = 'group flex items-center space-x-3 space-x-reverse p-2 rounded-lg transition-all duration-200 ease-in-out cursor-pointer hover:bg-white/5 mb-1 border border-transparent hover:border-white/10';
                 
                 // إضافة تأثير الحركة إذا كان المستخدم جديداً
                 if (!previousOnlineUsernames.has(user.name)) {
@@ -3880,13 +4189,16 @@ function updateOnlineUsersList(users) {
                 }
 
                 // الصورة الرمزية
-                const avatarHtml = user.avatar // --- إصلاح: إزالة `border` المتعارض ---
-                    ? `<img src="${user.avatar}" class="w-9 h-9 rounded-full object-cover group-hover:border-blue-400 transition-colors ${user.avatarFrame || ''}" alt="${user.name}">`
+                const avatarHtml = user.avatar 
+                    ? `<img src="${user.avatar}" class="w-9 h-9 rounded-full object-cover group-hover:border-blue-400 transition-colors ${user.avatarFrame || ''}" alt="${user.name}" loading="lazy">`
                     : `<div class="w-9 h-9 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold text-xs group-hover:border-blue-400 transition-colors ${user.avatarFrame || ''}">${user.name.charAt(0).toUpperCase()}</div>`;
 
                 // تطبيق خلفية البطاقة المخصصة
                 const cardBgClass = user.userCardBackground || 'hover:bg-white/5';
                 userDiv.className = `group flex items-center space-x-3 space-x-reverse p-2 rounded-lg transition-all duration-200 ease-in-out cursor-pointer mb-1 border border-transparent hover:border-white/10 ${cardBgClass}`;
+
+                // تطبيق لون الاسم
+                const nameStyle = getUserNameStyle(user.nameColor);
 
                 userDiv.innerHTML = `
                     <div class="relative flex-shrink-0">
@@ -3895,18 +4207,22 @@ function updateOnlineUsersList(users) {
                     </div>
                     <div class="flex-1 min-w-0 flex flex-col justify-center">
                         <div class="flex items-center justify-between">
-                            <div class="font-semibold truncate ${user.nameColor || 'text-gray-200'} text-sm">${user.name}</div>
+                            <div class="font-semibold truncate ${nameStyle.class} text-sm" style="${nameStyle.style}">${user.name}</div>
                         </div>
                         ${rankBadge ? `<div class="text-gray-400 leading-none">${rankBadge}</div>` : ''}
                     </div>
                 `;
-                onlineUsersList.appendChild(userDiv);
+                fragment.appendChild(userDiv);
             });
         }
     });
 
+    // استبدال القائمة القديمة بالجديدة دفعة واحدة
+    onlineUsersList.innerHTML = '';
+    onlineUsersList.appendChild(fragment);
+
     if (shouldPlaySound && !isFirstUserLoad) {
-        entrySound.play().catch(e => console.log('Audio play failed:', e));
+        entrySound.play().catch(e => {});
     }
 
     if (!isFirstUserLoad) {
@@ -3918,14 +4234,13 @@ function updateOnlineUsersList(users) {
             }
         }
         if (userLeft) {
-            leaveSound.play().catch(e => console.log('Leave audio play failed:', e));
+            leaveSound.currentTime = 0;
+            leaveSound.play().catch(e => console.log("Audio play blocked:", e));
         }
     }
 
     isFirstUserLoad = false;
-
     previousOnlineUsernames = currentOnlineUsernames;
-    
     document.getElementById('onlineUsersPanel').classList.remove('hidden');
 }
 
@@ -4918,11 +5233,17 @@ function makeDraggable(element, handle) {
         }
         
         // وظيفة لتمرير المحادثة إلى أحدث رسالة
+        // دالة التمرير للأسفل مع تحسين الأداء
+        let scrollTimeout;
         function scrollToBottom() {
             const container = document.getElementById('messagesContainer');
-            if (container) {
+            if (!container) return;
+            
+            // استخدام requestAnimationFrame لضمان سلاسة التمرير وتقليل استهلاك المعالج
+            cancelAnimationFrame(scrollTimeout);
+            scrollTimeout = requestAnimationFrame(() => {
                 container.scrollTop = container.scrollHeight;
-            }
+            });
         }
         // استقبال حدث الترقية
 socket.on('level up', (data) => {
@@ -5527,10 +5848,17 @@ function saveBackground() {
     closeBackgroundModal();
 }
 
-function applyBackground(backgroundData) {
+function applyBackground(backgroundData, isRoomBackground = false) {
     const body = document.body;
     
-    console.log('تطبيق الخلفية:', backgroundData);
+    // إذا لم نكن بصدد تطبيق خلفية غرفة وكنا متواجدين بالفعل داخل غرفة، نتجاهل الطلب
+    // لمنع خلفية الموقع العامة من تغطية خلفية الغرفة الخاصة
+    if (!isRoomBackground && currentRoom) {
+        console.log('تجاهل خلفية الموقع لوجودنا داخل غرفة');
+        return;
+    }
+
+    console.log('تطبيق الخلفية:', backgroundData, 'isRoomBackground:', isRoomBackground);
     
     if (!backgroundData) {
         // استخدام الخلفية الافتراضية إذا لم توجد بيانات
@@ -5547,12 +5875,15 @@ function applyBackground(backgroundData) {
         'from-pink-900', 'via-red-900', 'to-orange-900',
         'from-teal-900', 'via-cyan-900', 'to-blue-900',
         'from-yellow-900', 'via-orange-900', 'to-red-900',
-        'from-indigo-900', 'via-purple-900', 'to-pink-900'
+        'from-indigo-900', 'via-purple-900', 'to-pink-900',
+        'from-gray-800', 'to-gray-900'
     ];
     
     gradientClasses.forEach(className => {
         body.classList.remove(className);
     });
+    
+    body.classList.remove('bg-gradient-to-br', 'bg-gradient-to-t');
     
     // إزالة خلفية الصورة إذا كانت موجودة
     body.style.backgroundImage = '';
@@ -5560,6 +5891,7 @@ function applyBackground(backgroundData) {
     body.style.backgroundRepeat = '';
     body.style.backgroundAttachment = '';
     body.style.backgroundPosition = '';
+    body.style.backgroundColor = '';
     
     // إزالة الطبقة الشفافة إذا كانت موجودة
     const existingOverlay = document.getElementById('background-overlay');
@@ -5567,37 +5899,42 @@ function applyBackground(backgroundData) {
         existingOverlay.remove();
     }
     
-    // تطبيق الخلفية الجديدة
-    if (backgroundData.type === 'image') {
-        // إذا كانت صورة
-        body.style.backgroundImage = `url('${backgroundData.value}')`;
-        body.style.backgroundSize = 'cover';
-        body.style.backgroundRepeat = 'no-repeat';
-        body.style.backgroundAttachment = 'fixed';
-        body.style.backgroundPosition = 'center';
-        
-        // إضافة طبقة شفافة فوق الخلفية لتحسين قراءة النص
-        const overlay = document.createElement('div');
-        overlay.id = 'background-overlay';
-        overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.3);
-            z-index: -1;
-            pointer-events: none;
-        `;
-        body.appendChild(overlay);
-        
-    } else {
-        // إذا كانت تدرج لوني
-        body.classList.add('bg-gradient-to-br'); 
-        const gradientClasses = backgroundData.value.split(' ');
-        gradientClasses.forEach(className => {
-            body.classList.add(className);
-        });
+    // تطبيق الخلفية الجديدة فقط إذا لم نكن في غرفة، أو إذا كانت خلفية الغرفة
+    if (isRoomBackground || !currentRoom) {
+        if (backgroundData.type === 'image') {
+            // إذا كانت صورة
+            body.style.backgroundImage = `url('${backgroundData.value}')`;
+            body.style.backgroundSize = 'cover';
+            body.style.backgroundRepeat = 'no-repeat';
+            body.style.backgroundAttachment = 'fixed';
+            body.style.backgroundPosition = 'center';
+            
+            // إضافة طبقة شفافة فوق الخلفية لتحسين قراءة النص
+            const overlay = document.createElement('div');
+            overlay.id = 'background-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.3);
+                z-index: -1;
+                pointer-events: none;
+            `;
+            body.appendChild(overlay);
+            
+        } else if (backgroundData.type === 'color') {
+            // إذا كانت لون
+            body.style.backgroundColor = backgroundData.value;
+        } else {
+            // إذا كانت تدرج لوني
+            body.classList.add('bg-gradient-to-br'); 
+            const gradientClasses = backgroundData.value.split(' ');
+            gradientClasses.forEach(className => {
+                body.classList.add(className);
+            });
+        }
     }
     
     console.log('تم تطبيق الخلفية بنجاح');
@@ -6237,56 +6574,151 @@ function openControlPanel() {
     socket.emit('get all users stats', { currentUser });
     
     // تحديث قائمة الغرف في لوحة التحكم
-    updateControlRoomsList();
+    updateRoomsListTable(); // تحديث جدول الغرف الجديد
     updateRanksTable(); // تحديث جدول الرتب
+    initManagerPanel(); // تحديث لوحة إدارة المديرين
 }
 
 function closeControlPanel() {
     document.getElementById('controlPanelModal').classList.remove('show');
 }
 
-function updateControlRoomsList() {
-    const container = document.getElementById('controlRoomsList');
-    container.innerHTML = '';
+function initManagerPanel() {
+    const managerRoomSelect = document.getElementById('managerRoomSelect');
+    managerRoomSelect.innerHTML = '<option value="">اختر غرفة...</option>';
     
     rooms.forEach(room => {
-        const div = document.createElement('div');
-        div.className = 'flex items-center justify-between bg-gray-800 p-3 rounded-lg border border-gray-700';
-        div.innerHTML = `
-            <div class="flex items-center gap-3">
-                <span class="text-2xl">${room.icon}</span>
-                <div>
-                    <div class="font-bold text-white">${room.name}</div>
-                    <div class="text-xs text-slate-400">${room.description}</div>
-                </div>
-            </div>
-            ${room.name !== 'غرفة الإدارة' ? `
-            <button onclick="deleteRoom(${room.id})" class="text-red-400 hover:text-red-500 p-2 hover:bg-red-500/10 rounded-lg transition-colors" title="حذف الغرفة">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-            </button>` : '<span class="text-xs text-gray-500 px-2">ثابتة</span>'}
-        `;
-        container.appendChild(div);
+        const option = document.createElement('option');
+        option.value = room.id;
+        option.textContent = `${room.icon} ${room.name}`;
+        managerRoomSelect.appendChild(option);
     });
+
+    document.getElementById('managerUserInput').value = '';
+    updateManagersList();
+}
+
+function updateManagersList() {
+    const roomId = parseInt(document.getElementById('managerRoomSelect').value);
+    const container = document.getElementById('roomManagersList');
+    const noMsg = document.getElementById('noManagersMsg');
+    
+    container.innerHTML = '';
+    let hasManagers = false;
+
+    rooms.forEach(room => {
+        if (room.managers && room.managers.length > 0) {
+            hasManagers = true;
+            const roomCard = document.createElement('div');
+            roomCard.className = 'bg-gray-900/50 border border-gray-600 rounded-lg p-4';
+            roomCard.innerHTML = `
+                <div class="font-semibold text-white mb-2">${room.icon} ${room.name}</div>
+                <div class="space-y-2">
+                    ${room.managers.map(manager => `
+                        <div class="flex items-center justify-between bg-gray-800/50 p-2 rounded text-sm">
+                            <span class="text-yellow-300">${manager}</span>
+                            <button onclick="removeRoomManager(${room.id}, '${manager}')" class="text-red-400 hover:text-red-300 text-xs px-2 py-1 hover:bg-red-500/10 rounded transition-colors">إزالة</button>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            container.appendChild(roomCard);
+        }
+    });
+
+    noMsg.style.display = hasManagers ? 'none' : 'block';
+}
+
+function assignRoomManager() {
+    const roomId = parseInt(document.getElementById('managerRoomSelect').value);
+    const username = document.getElementById('managerUserInput').value.trim();
+
+    if (!roomId || !username) {
+        showNotification('يرجى إدخال الغرفة واسم المستخدم', 'error');
+        return;
+    }
+
+    socket.emit('set room manager', {
+        roomId,
+        managerUsername: username,
+        currentUser
+    });
+
+    document.getElementById('managerUserInput').value = '';
+}
+
+function removeRoomManager(roomId, managerUsername) {
+    if (confirm(`هل أنت متأكد من إزالة ${managerUsername} كمدير الغرفة؟`)) {
+        socket.emit('remove room manager', {
+            roomId,
+            managerUsername,
+            currentUser
+        });
+    }
 }
 
 function addNewRoom() {
     const name = document.getElementById('newRoomName').value.trim();
     const icon = document.getElementById('newRoomIcon').value.trim();
+    const order = document.getElementById('newRoomOrder').value.trim();
+    const description = document.getElementById('newRoomDesc').value.trim();
     
     if (!name || !icon) {
         showNotification('يرجى إدخال اسم الغرفة والأيقونة', 'error');
         return;
     }
     
-    socket.emit('add room', { name, icon, currentUser });
+    socket.emit('add room', { name, icon, order, description, currentUser });
     document.getElementById('newRoomName').value = '';
     document.getElementById('newRoomIcon').value = '';
+    document.getElementById('newRoomOrder').value = '';
+    document.getElementById('newRoomDesc').value = '';
+}
+
+function updateRoomOrder(roomId, newOrder) {
+    socket.emit('update room order', { roomId, newOrder: parseInt(newOrder), currentUser });
 }
 
 function deleteRoom(roomId) {
     if (confirm('هل أنت متأكد من حذف هذه الغرفة؟')) {
         socket.emit('delete room', { roomId, currentUser });
     }
+}
+
+function updateRoomsListTable() {
+    const tbody = document.getElementById('roomsListTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    // فرز الغرف قبل العرض
+    const sortedRooms = [...rooms].sort((a, b) => (a.order - b.order) || (a.id - b.id));
+    
+    sortedRooms.forEach(room => {
+        const row = document.createElement('tr');
+        const usersCount = room.users ? room.users.length : 0;
+        const status = room.protected ? '🔒 محمية' : '🔓 عامة';
+        
+        row.innerHTML = `
+            <td class="px-4 py-3">
+                <input type="number" value="${room.order || 0}" 
+                    onchange="updateRoomOrder(${room.id}, this.value)"
+                    class="w-16 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-white text-center text-xs focus:outline-none focus:ring-1 focus:ring-blue-500">
+            </td>
+            <td class="px-4 py-3">${room.icon}</td>
+            <td class="px-4 py-3 font-semibold text-white">${room.name}</td>
+            <td class="px-4 py-3 text-xs text-slate-300">${room.description || '-'}</td>
+            <td class="px-4 py-3 text-center">${usersCount}</td>
+            <td class="px-4 py-3 text-center text-xs">${status}</td>
+            <td class="px-4 py-3 text-center">
+                ${!room.protected ? `
+                    <button onclick="deleteRoom(${room.id})" class="text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-500/20 transition-colors text-sm">
+                        🗑️ حذف
+                    </button>
+                ` : '<span class="text-gray-500 text-xs">ثابتة</span>'}
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
 }
 
 // دوال الإعلان الهام
@@ -6561,11 +6993,46 @@ function filterControlUsers() {
 // تحديث قائمة الغرف في لوحة التحكم عند حدوث تغيير
 socket.on('rooms update', (updatedRooms) => {
     rooms = updatedRooms;
+    
+    // تحديث إعدادات الغرف والخلفيات من بيانات الغرف
+    updatedRooms.forEach(room => {
+        if (room.settings) {
+            roomsWithSettings[room.id] = room.settings;
+        }
+        if (room.background) {
+            roomsWithBackgrounds[room.id] = room.background;
+        }
+    });
+    
+    // تحديث الإعدادات الحالية إذا كنا في غرفة
+    if (currentRoom) {
+        const newSettings = roomsWithSettings[currentRoom.id];
+        if (newSettings) {
+            currentRoomSettings = newSettings;
+            // إعادة تطبيق ألوان الرسائل القديمة
+            const messages = document.querySelectorAll('.message-bubble');
+            messages.forEach(msg => {
+                if (!msg.classList.contains('own-message')) {
+                    const oldClasses = Array.from(msg.classList)
+                        .filter(cls => cls.startsWith('bg-') || cls.startsWith('text-'));
+                    oldClasses.forEach(cls => msg.classList.remove(cls));
+                    msg.classList.add(newSettings.messageBackground, newSettings.textColor);
+                }
+            });
+        }
+        
+        const newBackground = roomsWithBackgrounds[currentRoom.id];
+        if (newBackground && JSON.stringify(newBackground) !== JSON.stringify(currentRoomBackground)) {
+            currentRoomBackground = newBackground;
+            applyBackground(newBackground, true);
+        }
+    }
+    
     loadRooms(); // تحديث القائمة الرئيسية
     
     // إذا كانت لوحة التحكم مفتوحة، قم بتحديث قائمتها أيضاً
     if (document.getElementById('controlPanelModal').classList.contains('show')) {
-        updateControlRoomsList();
+        updateRoomsListTable(); // تحديث جدول الغرف
     }
 });
 
@@ -6698,6 +7165,251 @@ socket.on('join error', (error) => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+        });
+
+        function openRoomInfo() {
+            if (!currentRoom) {
+                showNotification('يجب أن تكون في غرفة', 'error');
+                return;
+            }
+            socket.emit('get room info', currentRoom.id);
+        }
+
+        function closeRoomInfo() {
+            document.getElementById('roomInfoModal').classList.remove('show');
+        }
+
+        socket.on('room info', (roomInfo) => {
+            const modal = document.getElementById('roomInfoModal');
+            const title = document.getElementById('roomInfoTitle');
+            const desc = document.getElementById('roomInfoDesc');
+            const content = document.getElementById('roomInfoContent');
+
+            title.textContent = `${roomInfo.icon} ${roomInfo.name}`;
+            desc.textContent = roomInfo.description || 'لا توجد وصف للغرفة';
+
+            let html = `
+                <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+                    <h3 class="text-white font-semibold mb-3">👮 مديرو الغرفة</h3>
+                    <div class="text-sm">
+                        ${roomInfo.managers.length > 0 
+                            ? `<p class="text-yellow-400">${roomInfo.managers.join(', ')}</p>`
+                            : '<p class="text-slate-400">لا يوجد مديرون</p>'
+                        }
+                    </div>
+                </div>
+
+                <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+                    <h3 class="text-white font-semibold mb-3">📝 الوصف</h3>
+                    <p class="text-slate-300 text-sm">${roomInfo.description || roomInfo.description || 'لا يوجد وصف'}</p>
+                </div>
+            `;
+
+            const isManager = currentUser && (currentUser.isSiteOwner || roomInfo.managers.includes(currentUser.name));
+            if (isManager) {
+                html += `
+                    <div class="bg-gray-900/50 p-4 rounded-lg border border-gray-700">
+                        <h3 class="text-white font-semibold mb-4">⚙️ إعدادات الغرفة</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="text-sm text-slate-300 mb-2 block">وصف الغرفة</label>
+                                <input type="text" id="roomDescInput" value="${roomInfo.description || ''}" placeholder="أدخل وصف الغرفة" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            </div>
+
+                            <div>
+                                <label class="text-sm text-slate-300 mb-2 block">لون النص</label>
+                                <select id="roomTextColorSelect" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                    <option value="text-white" ${roomInfo.settings?.textColor === 'text-white' ? 'selected' : ''}>أبيض</option>
+                                    <option value="text-yellow-300" ${roomInfo.settings?.textColor === 'text-yellow-300' ? 'selected' : ''}>أصفر</option>
+                                    <option value="text-blue-300" ${roomInfo.settings?.textColor === 'text-blue-300' ? 'selected' : ''}>أزرق فاتح</option>
+                                    <option value="text-green-400" ${roomInfo.settings?.textColor === 'text-green-400' ? 'selected' : ''}>أخضر</option>
+                                    <option value="text-pink-400" ${roomInfo.settings?.textColor === 'text-pink-400' ? 'selected' : ''}>وردي</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-sm text-slate-300 mb-2 block">خلفية الرسائل</label>
+                                <select id="roomMessageBgSelect" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                    <option value="bg-gray-800" ${roomInfo.settings?.messageBackground === 'bg-gray-800' ? 'selected' : ''}>رمادي داكن</option>
+                                    <option value="bg-slate-900" ${roomInfo.settings?.messageBackground === 'bg-slate-900' ? 'selected' : ''}>أسود</option>
+                                    <option value="bg-blue-900" ${roomInfo.settings?.messageBackground === 'bg-blue-900' ? 'selected' : ''}>أزرق داكن</option>
+                                    <option value="bg-purple-900" ${roomInfo.settings?.messageBackground === 'bg-purple-900' ? 'selected' : ''}>بنفسجي</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="text-sm text-slate-300 mb-2 block">خلفية الغرفة</label>
+                                <select id="roomBgTypeSelect" onchange="updateBackgroundTypeOptions()" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                    <option value="gradient" ${roomInfo.background?.type === 'gradient' ? 'selected' : ''}>تدرج</option>
+                                    <option value="color" ${roomInfo.background?.type === 'color' ? 'selected' : ''}>لون</option>
+                                    <option value="image" ${roomInfo.background?.type === 'image' ? 'selected' : ''}>صورة مخصصة</option>
+                                </select>
+                            </div>
+
+                            <div id="backgroundOptionsContainer">
+                                ${roomInfo.background?.type === 'gradient' ? `
+                                    <div>
+                                        <label class="text-sm text-slate-300 mb-2 block">التدرج اللوني</label>
+                                        <select id="roomBgValueSelect" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                            <option value="from-purple-900 via-blue-900 to-indigo-900" ${roomInfo.background?.value === 'from-purple-900 via-blue-900 to-indigo-900' ? 'selected' : ''}>بنفسجي-أزرق</option>
+                                            <option value="from-green-900 via-blue-900 to-purple-900" ${roomInfo.background?.value === 'from-green-900 via-blue-900 to-purple-900' ? 'selected' : ''}>أخضر-أزرق</option>
+                                            <option value="from-pink-900 via-red-900 to-orange-900" ${roomInfo.background?.value === 'from-pink-900 via-red-900 to-orange-900' ? 'selected' : ''}>وردي-برتقالي</option>
+                                            <option value="from-gray-800 to-gray-900" ${roomInfo.background?.value === 'from-gray-800 to-gray-900' ? 'selected' : ''}>رمادي</option>
+                                        </select>
+                                    </div>
+                                ` : roomInfo.background?.type === 'color' ? `
+                                    <div>
+                                        <label class="text-sm text-slate-300 mb-2 block">اللون</label>
+                                        <input type="color" id="roomBgColorInput" value="${roomInfo.background?.value || '#1f2937'}" class="w-full h-10 rounded-lg cursor-pointer">
+                                    </div>
+                                ` : roomInfo.background?.type === 'image' ? `
+                                    <div>
+                                        <label class="text-sm text-slate-300 mb-2 block">الصورة المخصصة</label>
+                                        <input type="file" id="roomBgImageInput" accept="image/*" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                        <div id="imageUploadProgress" class="text-sm text-slate-300 mt-2"></div>
+                                    </div>
+                                ` : ''}
+                            </div>
+
+                            <button onclick="saveRoomSettings('${currentRoom.id}')" class="w-full bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors mt-4">
+                                💾 حفظ الإعدادات
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            content.innerHTML = html;
+            modal.classList.add('show');
+        });
+
+        function updateBackgroundTypeOptions() {
+            const bgType = document.getElementById('roomBgTypeSelect')?.value || 'gradient';
+            const container = document.getElementById('backgroundOptionsContainer');
+            
+            let html = '';
+            if (bgType === 'gradient') {
+                html = `
+                    <div>
+                        <label class="text-sm text-slate-300 mb-2 block">التدرج اللوني</label>
+                        <select id="roomBgValueSelect" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                            <option value="from-purple-900 via-blue-900 to-indigo-900">بنفسجي-أزرق</option>
+                            <option value="from-green-900 via-blue-900 to-purple-900">أخضر-أزرق</option>
+                            <option value="from-pink-900 via-red-900 to-orange-900">وردي-برتقالي</option>
+                            <option value="from-gray-800 to-gray-900">رمادي</option>
+                        </select>
+                    </div>
+                `;
+            } else if (bgType === 'color') {
+                html = `
+                    <div>
+                        <label class="text-sm text-slate-300 mb-2 block">اللون</label>
+                        <input type="color" id="roomBgColorInput" value="#1f2937" class="w-full h-10 rounded-lg cursor-pointer">
+                    </div>
+                `;
+            } else if (bgType === 'image') {
+                html = `
+                    <div>
+                        <label class="text-sm text-slate-300 mb-2 block">الصورة المخصصة</label>
+                        <input type="file" id="roomBgImageInput" accept="image/*" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                        <div id="imageUploadProgress" class="text-sm text-slate-300 mt-2"></div>
+                    </div>
+                `;
+            }
+            
+            if (container) {
+                container.innerHTML = html;
+            }
+        }
+
+        function uploadRoomBackground(roomId, file) {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const progressDiv = document.getElementById('imageUploadProgress');
+            if (progressDiv) {
+                progressDiv.textContent = 'جاري رفع الصورة...';
+            }
+
+            fetch('/api/upload-room-background', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (progressDiv) {
+                        progressDiv.textContent = 'تم رفع الصورة بنجاح';
+                    }
+                    socket.emit('update room background', {
+                        roomId,
+                        backgroundType: 'image',
+                        backgroundValue: data.fileUrl,
+                        currentUser
+                    });
+                    setTimeout(() => {
+                        if (progressDiv) {
+                            progressDiv.textContent = '';
+                        }
+                    }, 2000);
+                } else {
+                    if (progressDiv) {
+                        progressDiv.textContent = 'فشل رفع الصورة';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Upload error:', error);
+                if (progressDiv) {
+                    progressDiv.textContent = 'حدث خطأ في رفع الصورة';
+                }
+            });
+        }
+
+        function saveRoomSettings(roomId) {
+            const description = document.getElementById('roomDescInput')?.value || '';
+            const textColor = document.getElementById('roomTextColorSelect')?.value || 'text-white';
+            const messageBackground = document.getElementById('roomMessageBgSelect')?.value || 'bg-gray-800';
+            const backgroundType = document.getElementById('roomBgTypeSelect')?.value || 'gradient';
+
+            socket.emit('update room settings', {
+                roomId,
+                description,
+                textColor,
+                messageBackground,
+                currentUser
+            });
+
+            // التعامل مع خلفية الغرفة
+            if (backgroundType === 'image') {
+                const imageInput = document.getElementById('roomBgImageInput');
+                if (imageInput && imageInput.files.length > 0) {
+                    uploadRoomBackground(roomId, imageInput.files[0]);
+                }
+            } else if (backgroundType === 'gradient') {
+                const backgroundValue = document.getElementById('roomBgValueSelect')?.value || 'from-gray-800 to-gray-900';
+                socket.emit('update room background', {
+                    roomId,
+                    backgroundType: 'gradient',
+                    backgroundValue,
+                    currentUser
+                });
+            } else if (backgroundType === 'color') {
+                const backgroundValue = document.getElementById('roomBgColorInput')?.value || '#1f2937';
+                socket.emit('update room background', {
+                    roomId,
+                    backgroundType: 'color',
+                    backgroundValue,
+                    currentUser
+                });
+            }
+        }
+
+        socket.on('message deleted', (data) => {
+            const messageEl = document.querySelector(`[data-message-id="${data.messageId}"]`);
+            if (messageEl) {
+                messageEl.remove();
+            }
         });
     </script>
 </body>
