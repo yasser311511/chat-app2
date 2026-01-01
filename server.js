@@ -208,7 +208,7 @@ const Room = sequelize.define('Room', {
 });
 
 // استدعاء التهيئة بعد الاتصال
-loadData();
+// loadData(); // تم نقله إلى startServer() لمنع التكرار
 
 
 
@@ -472,19 +472,19 @@ async function loadData() {
 
     privateMessagesData.forEach(msg => {
       if (!privateMessages[msg.conversationId]) privateMessages[msg.conversationId] = [];
-      privateMessages[msg.conversationId].push({ from: msg.fromUser, to: msg.toUser, content: msg.content, time: msg.time, timestamp: msg.timestamp });
+      privateMessages[msg.conversationId].push({ from: msg.fromUser, to: msg.toUser, content: msg.content, time: msg.time, timestamp: Number(msg.timestamp) });
     });
 
     chatImagesData.forEach(image => {
       if (image.roomId) {
         if (!messages[image.roomId]) messages[image.roomId] = [];
-        messages[image.roomId].push({ type: 'image', messageId: image.messageId, user: image.fromUser, imageData: image.imageData, time: new Date(image.timestamp).toLocaleTimeString('ar-SA'), timestamp: image.timestamp });
+        messages[image.roomId].push({ type: 'image', messageId: image.messageId, user: image.fromUser, imageData: image.imageData, time: new Date(Number(image.timestamp)).toLocaleTimeString('ar-SA'), timestamp: Number(image.timestamp) });
       }
     });
 
     privateImagesData.forEach(image => {
       if (!privateMessages[image.conversationId]) privateMessages[image.conversationId] = [];
-      privateMessages[image.conversationId].push({ type: 'image', messageId: image.messageId, from: image.fromUser, to: image.toUser, imageData: image.imageData, time: new Date(image.timestamp).toLocaleTimeString('ar-SA'), timestamp: image.timestamp });
+      privateMessages[image.conversationId].push({ type: 'image', messageId: image.messageId, from: image.fromUser, to: image.toUser, imageData: image.imageData, time: new Date(Number(image.timestamp)).toLocaleTimeString('ar-SA'), timestamp: Number(image.timestamp) });
     });
 
     postsData.forEach(post => { posts[post.id] = { username: post.username, content: post.content, timestamp: parseInt(post.timestamp, 10), likes: [], comments: [] }; });
@@ -1436,7 +1436,11 @@ socket.on('send image message', async (data) => {
 
 // حدث إرسال صورة في المحادثة الخاصة
 socket.on('send private image', async (data) => {
-    const { toUser, imageData, fromUser } = data;
+    let { toUser, imageData, fromUser } = data;
+    if (!toUser || !fromUser) return;
+    
+    toUser = toUser.trim();
+    fromUser = fromUser.trim();
     
     const messageId = 'private_img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     const timestamp = Date.now();
@@ -1452,7 +1456,8 @@ socket.on('send private image', async (data) => {
         to: toUser,
         imageData: imageData,
         time: new Date().toLocaleTimeString('ar-SA'),
-        timestamp: timestamp
+        timestamp: timestamp,
+        avatar: userAvatars[fromUser] || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + fromUser
     };
     
     // حفظ في الذاكرة أيضاً
@@ -1721,8 +1726,8 @@ socket.on('join room', (data) => {
     const { roomId, message, user, replyTo } = data;
 
     // التحقق من طول الرسالة في السيرفر
-    if (message && message.length > 200) {
-        socket.emit('message error', 'الرسالة طويلة جداً (الحد الأقصى 200 حرف).');
+    if (message && message.length > 300) {
+        socket.emit('message error', 'الرسالة طويلة جداً (الحد الأقصى 300 حرف).');
         return;
     }
 
@@ -2960,7 +2965,11 @@ socket.on('leave room', async (data) => {
   });
 
   socket.on('send private message', async (data) => {
-    const { toUser, message, fromUser } = data;
+    let { toUser, message, fromUser } = data;
+    if (!toUser || !fromUser) return;
+    
+    toUser = toUser.trim();
+    fromUser = fromUser.trim();
     
     // حفظ الرسالة الخاصة
     const conversationId = [fromUser, toUser].sort().join('_');
@@ -2974,7 +2983,8 @@ socket.on('leave room', async (data) => {
       content: message, 
       read: false,
       time: new Date().toLocaleTimeString('en-GB'),
-      timestamp: new Date().getTime()
+      timestamp: new Date().getTime(),
+      avatar: userAvatars[fromUser] || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + fromUser
     };
     
     privateMessages[conversationId].push(privateMessage);
@@ -3000,18 +3010,61 @@ socket.on('leave room', async (data) => {
 
   // في حدث join room، أضف تحميل الصور للمحادثات الخاصة
 socket.on('get private messages', async (data) => {
-  const { otherUser, currentUser } = data;
+  let { otherUser, currentUser } = data;
+  if (!otherUser || !currentUser) return;
+  
+  // تنظيف الأسماء من الفراغات الزائدة
+  otherUser = otherUser.trim();
+  currentUser = currentUser.trim();
+  
   const conversationId = [currentUser, otherUser].sort().join('_');
+  const normalizedConvId = [currentUser.toLowerCase(), otherUser.toLowerCase()].sort().join('_');
   
   try {
-    // جلب الرسائل النصية من الذاكرة
-    const textMessages = privateMessages[conversationId] ? 
-      privateMessages[conversationId].filter(msg => msg.type !== 'image') : [];
+    // جلب الرسائل النصية من قاعدة البيانات
+    // استخدام عدة طرق للبحث لضمان استرجاع الرسائل حتى لو اختلف تنسيق المعرف
+    const dbTextMessages = await PrivateMessage.findAll({
+      where: {
+        [Sequelize.Op.or]: [
+          { conversationId: conversationId },
+          { conversationId: normalizedConvId },
+          {
+            [Sequelize.Op.or]: [
+              { fromUser: currentUser, toUser: otherUser },
+              { fromUser: otherUser, toUser: currentUser }
+            ]
+          }
+        ]
+      },
+      order: [['timestamp', 'DESC']],
+      limit: 100
+    });
+
+    const textMessages = dbTextMessages.map(msg => ({
+      from: msg.fromUser,
+      to: msg.toUser,
+      content: msg.content,
+      time: msg.time,
+      timestamp: Number(msg.timestamp),
+      avatar: userAvatars[msg.fromUser] || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + msg.fromUser
+    })).reverse();
     
     // جلب الصور من قاعدة البيانات للمحادثة الخاصة
     const imagesData = await ChatImage.findAll({
-      where: { conversationId },
-      order: [['timestamp', 'ASC']]
+      where: {
+        [Sequelize.Op.or]: [
+          { conversationId: conversationId },
+          { conversationId: normalizedConvId },
+          {
+            [Sequelize.Op.or]: [
+              { fromUser: currentUser, toUser: otherUser },
+              { fromUser: otherUser, toUser: currentUser }
+            ]
+          }
+        ]
+      },
+      order: [['timestamp', 'DESC']],
+      limit: 50
     });
     
     // تحويل الصور إلى شكل مشابه للرسائل النصية
@@ -3021,18 +3074,18 @@ socket.on('get private messages', async (data) => {
       from: image.fromUser,
       to: image.toUser || (image.fromUser === currentUser ? otherUser : currentUser),
       imageData: image.imageData,
-      time: new Date(image.timestamp).toLocaleTimeString('ar-SA'),
-      timestamp: image.timestamp
-    }));
+      time: new Date(Number(image.timestamp)).toLocaleTimeString('ar-SA'),
+      timestamp: Number(image.timestamp),
+      avatar: userAvatars[image.fromUser] || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + image.fromUser
+    })).reverse();
     
     // دمج الرسائل النصية والصورية وترتيبها حسب الوقت
     const allMessages = [...textMessages, ...imageMessages].sort((a, b) => a.timestamp - b.timestamp);
     
     socket.emit('private messages history', allMessages);
   } catch (error) {
-    console.error('خطأ في تحميل صور المحادثة الخاصة:', error);
-    // إرسال الرسائل النصية فقط في حالة الخطأ
-    socket.emit('private messages history', privateMessages[conversationId] || []);
+    console.error('خطأ في تحميل تاريخ المحادثة الخاصة:', error);
+    socket.emit('private messages history', []);
   }
 
   // عند فتح محادثة خاصة، حدد الرسائل كمقروءة
@@ -3044,13 +3097,16 @@ socket.on('get private messages', async (data) => {
 
   // حدث جديد لجلب قائمة المحادثات الخاصة
   socket.on('get private conversations', async (username) => {
+    if (!username) return;
+    username = username.trim();
     try {
-      // جلب جميع المحادثات التي يشارك فيها المستخدم
+      // جلب آخر 2000 رسالة لضمان العثور على أغلب المحادثات النشطة وتحسين الأداء
       const conversations = await PrivateMessage.findAll({
         where: {
           [Sequelize.Op.or]: [{ fromUser: username }, { toUser: username }]
         },
-        order: [['timestamp', 'DESC']]
+        order: [['timestamp', 'DESC']],
+        limit: 2000
       });
 
       const conversationsMap = new Map();
@@ -3072,7 +3128,7 @@ socket.on('get private messages', async (data) => {
             otherUser: otherUser,
             lastMessage: {
               content: msg.content,
-              timestamp: msg.timestamp
+              timestamp: Number(msg.timestamp)
             },
             unreadCount: unreadCount,
             isOnline: Object.values(onlineUsers).some(u => u.name === otherUser)
