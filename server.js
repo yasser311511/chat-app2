@@ -317,7 +317,8 @@ const userMessageHistory = {};
 const SPAM_MESSAGE_COUNT = 10;
 const SPAM_TIME_WINDOW_MS = 15000; // 15 ثانية
 const SPAM_MUTE_DURATION_MIN = 10;
-const BOT_AVATAR_URL = 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=system-bot';
+const DEFAULT_AVATAR_URL = '/my-avatar.png';
+const BOT_AVATAR_URL = DEFAULT_AVATAR_URL;
 
 // --- متغير لتتبع آخر نشاط للمستخدم لمنع التكرار (Debounce) ---
 const userLastAction = {};
@@ -411,7 +412,9 @@ async function loadData() {
     });
 
     if (dbRooms.length > 0) {
-      rooms = dbRooms.map(room => ({ 
+      rooms = dbRooms
+        .filter(room => room.name !== 'غرفة تخصيص المظهر')
+        .map(room => ({ 
         id: room.id, 
         name: room.name, 
         icon: room.icon, 
@@ -1216,7 +1219,7 @@ socket.on('create post', async (data) => {
             id: postId,
             username,
             content,
-            avatar: userAvatars[username] || null,
+            avatar: userAvatars[username] || DEFAULT_AVATAR_URL,
             timestamp,
             likes: [],
             comments: []
@@ -1253,7 +1256,7 @@ socket.on('get posts', () => {
         id: parseInt(id, 10),
         ...posts[id],
         // إضافة صورة المستخدم للمنشور
-        avatar: userAvatars[posts[id].username] || null
+        avatar: userAvatars[posts[id].username] || DEFAULT_AVATAR_URL
     })).sort((a, b) => b.timestamp - a.timestamp);
 
     socket.emit('posts data', postsArray);
@@ -1339,7 +1342,7 @@ socket.on('add comment', async (data) => {
             username, 
             content, 
             timestamp,
-            avatar: userAvatars[username] || null
+            avatar: userAvatars[username] || DEFAULT_AVATAR_URL
         });
 
         // إرسال إشعار لصاحب المنشور
@@ -1422,7 +1425,7 @@ socket.on('send image message', async (data) => {
     timestamp: timestamp,
     gender: user.gender,
     rank: user.rank,
-    avatar: userAvatars[user.name] || null
+    avatar: userAvatars[user.name] || DEFAULT_AVATAR_URL
   };
   
   if (!messages[roomId]) messages[roomId] = [];
@@ -1457,7 +1460,7 @@ socket.on('send private image', async (data) => {
         imageData: imageData,
         time: new Date().toLocaleTimeString('ar-SA'),
         timestamp: timestamp,
-        avatar: userAvatars[fromUser] || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + fromUser
+        avatar: userAvatars[fromUser] || DEFAULT_AVATAR_URL
     };
     
     // حفظ في الذاكرة أيضاً
@@ -1514,6 +1517,7 @@ socket.on('send private image', async (data) => {
             profileBackground: userInMemory.profileBackground,
             profileCover: userInMemory.profileCover
           });
+          socket.join(userData.username); // الانضمام لغرفة المستخدم لتلقي الرسائل الخاصة
           socket.emit('ranks update', ranks); // إرسال الرتب الحالية عند تسجيل الدخول
           return; // إنهاء الدالة بعد تسجيل الدخول الناجح
         }
@@ -1555,6 +1559,7 @@ socket.on('send private image', async (data) => {
     sessionId: sessionId,
     nameColor: null
   });
+  socket.join(userData.username);
   socket.emit('ranks update', ranks);
 });
 
@@ -1587,12 +1592,15 @@ socket.on('join room', (data) => {
       roomId: roomId,
       rank: user.rank,
       gender: user.gender,
-      avatar: userAvatars[user.name] || null,
+      avatar: userAvatars[user.name] || DEFAULT_AVATAR_URL,
       nameColor: users[user.name]?.nameColor,
       nameBackground: users[user.name]?.nameBackground,
       avatarFrame: users[user.name]?.avatarFrame,
       userCardBackground: users[user.name]?.userCardBackground
     };
+    
+    // الانضمام لغرفة باسم المستخدم لاستقبال الرسائل الخاصة بكفاءة
+    socket.join(user.name);
     
     // إزالة المستخدم من الغرفة السابقة إن وجدت
     if (socket.currentRoomId) {
@@ -1610,7 +1618,7 @@ socket.on('join room', (data) => {
       name: user.name,
       rank: user.rank,
       gender: user.gender,
-      avatar: userAvatars[user.name] || null,
+      avatar: userAvatars[user.name] || DEFAULT_AVATAR_URL,
       nameColor: users[user.name]?.nameColor,
       nameBackground: users[user.name]?.nameBackground,
       avatarFrame: users[user.name]?.avatarFrame,
@@ -1627,19 +1635,16 @@ socket.on('join room', (data) => {
     io.to(roomId).emit('users update', room.users);
     
     // إرسال رسالة ترحيب - الجزء المعدل
-    const userNameWithColor = `<strong style="color: ${users[user.name]?.nameColor || 'white'}">${user.name}</strong>`;
-    let welcomeContent = `🚪 انضم ${userNameWithColor} إلى الغرفة.`;
-    if (user.rank) {
-        const rankInfo = ranks[user.rank];
-        if (rankInfo) {
-            const iconHtml = getRankIconHtml(rankInfo.icon);
-            welcomeContent = `🚪 انضم ${iconHtml} <span class="font-bold bg-clip-text text-transparent bg-gradient-to-r ${rankInfo.color}">${user.rank}</span> ${userNameWithColor} إلى الغرفة.`;
-        }
-    }
+    const rankInfo = user.rank ? ranks[user.rank] : null;
     const welcomeMessage = {
       type: 'system',
-      content: welcomeContent, // المحتوى الآن يتضمن HTML للتنسيق
+      subType: 'join',
+      user: user.name,
+      avatar: userAvatars[user.name] || DEFAULT_AVATAR_URL,
+      rank: user.rank,
+      rankLevel: rankInfo ? rankInfo.level : 0,
       time: new Date().toLocaleTimeString('en-GB'),
+      timestamp: Date.now()
     };
     
     // إضافة الرسالة للسجل قبل إرسالها
@@ -1671,7 +1676,7 @@ socket.on('join room', (data) => {
           time: msg.time,
           timestamp: msg.timestamp,
           rank: userRanks[msg.user] || null,
-          avatar: userAvatars[msg.user] || null,
+          avatar: userAvatars[msg.user] || DEFAULT_AVATAR_URL,
           nameBackground: msg.nameBackground,
           avatarFrame: msg.avatarFrame
         };
@@ -1710,7 +1715,7 @@ socket.on('join room', (data) => {
           time: msg.time,
           timestamp: msg.timestamp,
           rank: userRanks[msg.user] || null,
-          avatar: userAvatars[msg.user] || null,
+          avatar: userAvatars[msg.user] || DEFAULT_AVATAR_URL,
           nameBackground: msg.nameBackground,
           avatarFrame: msg.avatarFrame
         };
@@ -1824,7 +1829,7 @@ socket.on('join room', (data) => {
       timestamp: timestamp,
       gender: user.gender,
       rank: user.rank,
-      avatar: userAvatars[user.name] || null,
+      avatar: userAvatars[user.name] || DEFAULT_AVATAR_URL,
       nameBackground: users[user.name]?.nameBackground,
       avatarFrame: users[user.name]?.avatarFrame
     };
@@ -2327,6 +2332,51 @@ socket.on('leave room', async (data) => {
     }
   });
 
+  socket.on('warn user', async (data) => {
+    const { username, reason, currentUser } = data;
+    
+    if (!canManageTargetUser(currentUser, username)) {
+      socket.emit('management error', 'عذراً، لا يمكنك تحذير هذا المستخدم لأن رتبته مساوية أو أعلى منك.');
+      return;
+    }
+
+    if (username === SITE_OWNER.username) {
+      socket.emit('management error', 'لا يمكن تحذير صاحب الموقع');
+      return;
+    }
+
+    const warningData = {
+      from: currentUser.name,
+      reason: reason || 'غير محدد',
+      timestamp: Date.now()
+    };
+
+    // إرسال التحذير للمستخدم المستهدف إذا كان متصلاً
+    const targetSocketId = Object.keys(onlineUsers).find(
+      socketId => onlineUsers[socketId].name === username
+    );
+
+    if (targetSocketId) {
+      io.to(targetSocketId).emit('user warned', warningData);
+    }
+
+    // إرسال رسالة في الشات العام (أو الغرفة الحالية) لإعلام الجميع بالتحذير
+    const userRoomId = onlineUsers[socket.id]?.roomId;
+    if (userRoomId) {
+      const notificationMessage = {
+        type: 'system',
+        user: 'رسائل النظام',
+        avatar: BOT_AVATAR_URL,
+        content: `⚠️ تم توجيه تحذير للمستخدم <strong class="text-white">${username}</strong> من قبل ${currentUser.name}. السبب: ${warningData.reason}`,
+        time: new Date().toLocaleTimeString('en-GB')
+      };
+      io.to(userRoomId).emit('new message', notificationMessage);
+      if (messages[userRoomId]) messages[userRoomId].push(notificationMessage);
+    }
+
+    socket.emit('management success', `تم إرسال تحذير للمستخدم ${username} بنجاح`);
+  });
+
   socket.on('delete user', async (data) => {
     const { username, currentUser } = data;
     const userRoomId = onlineUsers[socket.id]?.roomId;
@@ -2545,9 +2595,8 @@ socket.on('leave room', async (data) => {
     const userRoomId = onlineUsers[socket.id]?.roomId;
     const room = rooms.find(r => r.id === userRoomId);
     
-    // السماح بتعديل الصورة في غرفة تخصيص المظهر أو غرفة الإدارة
-    const canEdit = (room && room.name === 'غرفة تخصيص المظهر') || 
-                   (username === currentUser.name) || 
+    // السماح بتعديل الصورة إذا كان المستخدم يعدل صورته الخاصة أو كان في غرفة الإدارة ولديه صلاحية
+    const canEdit = (username === currentUser.name) || 
                    (room && room.name === 'غرفة الإدارة' && canManageTargetUser(currentUser, username));
     
     if (!canEdit) {
@@ -2555,13 +2604,20 @@ socket.on('leave room', async (data) => {
       return;
     }
     
-    userAvatars[username] = avatarUrl;
-    await saveUserAvatar(username, avatarUrl);
+    if (avatarUrl === null) {
+      delete userAvatars[username];
+      await UserAvatar.destroy({ where: { username } });
+    } else {
+      userAvatars[username] = avatarUrl;
+      await saveUserAvatar(username, avatarUrl);
+    }
+    
+    const finalAvatarUrl = avatarUrl || DEFAULT_AVATAR_URL;
     
     // تحديث الصورة للمستخدمين المتصلين
     Object.keys(onlineUsers).forEach(socketId => {
       if (onlineUsers[socketId].name === username) {
-        onlineUsers[socketId].avatar = avatarUrl;
+        onlineUsers[socketId].avatar = finalAvatarUrl;
       }
     });
     
@@ -2569,7 +2625,7 @@ socket.on('leave room', async (data) => {
     rooms.forEach(r => {
       r.users.forEach(u => {
         if (u.name === username) {
-          u.avatar = avatarUrl;
+          u.avatar = finalAvatarUrl;
         }
       });
     });
@@ -2580,12 +2636,12 @@ socket.on('leave room', async (data) => {
       io.to(room.id).emit('users update', room.users);
     }
     
-    socket.emit('avatar updated', { username, avatarUrl });
-    io.emit('user avatar updated', { username, avatarUrl });
+    socket.emit('avatar updated', { username, avatarUrl: finalAvatarUrl });
+    io.emit('user avatar updated', { username, avatarUrl: finalAvatarUrl });
   });
 
   socket.on('get avatar', (username) => {
-    socket.emit('avatar data', { username, avatarUrl: userAvatars[username] || null });
+    socket.emit('avatar data', { username, avatarUrl: userAvatars[username] || DEFAULT_AVATAR_URL });
   });
 
   // أحداث الرسائل الخاصة
@@ -2594,7 +2650,7 @@ socket.on('leave room', async (data) => {
     const isOnline = Object.values(onlineUsers).some(user => user.name === username);
     const lastSeen = isOnline ? null : userLastSeen[username] || null;
     const userRank = userRanks[username] || null;
-    const avatar = userAvatars[username] || null;
+    const avatar = userAvatars[username] || DEFAULT_AVATAR_URL;
     const userData = users[username];
     
     const pointsData = userPoints[username] || { points: 0, level: 1 };
@@ -2603,7 +2659,7 @@ socket.on('leave room', async (data) => {
     const friendsList = userFriends[username] || [];
     const friendsDetails = friendsList.map(fName => ({
         username: fName,
-        avatar: userAvatars[fName] || null,
+        avatar: userAvatars[fName] || DEFAULT_AVATAR_URL,
         isOnline: Object.values(onlineUsers).some(u => u.name === fName)
     }));
 
@@ -2738,7 +2794,7 @@ socket.on('leave room', async (data) => {
         if (users[username]) {
             users[username].profileCover = coverUrl;
         }
-        socket.emit('cover success', 'تم تحديث غلاف الملف الشخصي بنجاح.');
+        socket.emit('cover success', { message: 'تم تحديث غلاف الملف الشخصي بنجاح.', coverUrl });
     } catch (error) {
         console.error('Error updating profile cover:', error);
         socket.emit('cover error', 'حدث خطأ أثناء تحديث الغلاف.');
@@ -2984,7 +3040,7 @@ socket.on('leave room', async (data) => {
       read: false,
       time: new Date().toLocaleTimeString('en-GB'),
       timestamp: new Date().getTime(),
-      avatar: userAvatars[fromUser] || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + fromUser
+      avatar: userAvatars[fromUser] || DEFAULT_AVATAR_URL
     };
     
     privateMessages[conversationId].push(privateMessage);
@@ -2993,17 +3049,12 @@ socket.on('leave room', async (data) => {
     // إرسال الرسالة للمرسل
     socket.emit('private message sent', privateMessage);
     
-    // إرسال الرسالة للمستلم إذا كان متصلاً
-    const recipientSocketId = Object.keys(onlineUsers).find(
-      socketId => onlineUsers[socketId].name === toUser
-    );
+    // إرسال الرسالة للمستلم
+    io.to(toUser).emit('new private message', privateMessage);
+    // إرسال حدث لتحديث قائمة المحادثات للمستلم
+    io.to(toUser).emit('get unread counts', toUser);
+    io.to(toUser).emit('private conversations updated');
     
-    if (recipientSocketId) {
-      io.to(recipientSocketId).emit('new private message', privateMessage);
-      // إرسال حدث لتحديث قائمة المحادثات للمستلم
-      io.to(recipientSocketId).emit('get unread counts', toUser);
-      io.to(recipientSocketId).emit('private conversations updated');
-    }
     // إرسال حدث لتحديث قائمة المحادثات للمرسل أيضاً
     socket.emit('private conversations updated');
   });
@@ -3018,26 +3069,19 @@ socket.on('get private messages', async (data) => {
   currentUser = currentUser.trim();
   
   const conversationId = [currentUser, otherUser].sort().join('_');
-  const normalizedConvId = [currentUser.toLowerCase(), otherUser.toLowerCase()].sort().join('_');
   
   try {
-    // جلب الرسائل النصية من قاعدة البيانات
-    // استخدام عدة طرق للبحث لضمان استرجاع الرسائل حتى لو اختلف تنسيق المعرف
+    // جلب الرسائل النصية من قاعدة البيانات باستخدام المعرف الموحد للأداء العالي
     const dbTextMessages = await PrivateMessage.findAll({
       where: {
         [Sequelize.Op.or]: [
           { conversationId: conversationId },
-          { conversationId: normalizedConvId },
-          {
-            [Sequelize.Op.or]: [
-              { fromUser: currentUser, toUser: otherUser },
-              { fromUser: otherUser, toUser: currentUser }
-            ]
-          }
+          { fromUser: currentUser, toUser: otherUser },
+          { fromUser: otherUser, toUser: currentUser }
         ]
       },
       order: [['timestamp', 'DESC']],
-      limit: 100
+      limit: 50 // تقليل الحد لزيادة السرعة
     });
 
     const textMessages = dbTextMessages.map(msg => ({
@@ -3046,7 +3090,7 @@ socket.on('get private messages', async (data) => {
       content: msg.content,
       time: msg.time,
       timestamp: Number(msg.timestamp),
-      avatar: userAvatars[msg.fromUser] || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + msg.fromUser
+      avatar: userAvatars[msg.fromUser] || DEFAULT_AVATAR_URL
     })).reverse();
     
     // جلب الصور من قاعدة البيانات للمحادثة الخاصة
@@ -3054,17 +3098,12 @@ socket.on('get private messages', async (data) => {
       where: {
         [Sequelize.Op.or]: [
           { conversationId: conversationId },
-          { conversationId: normalizedConvId },
-          {
-            [Sequelize.Op.or]: [
-              { fromUser: currentUser, toUser: otherUser },
-              { fromUser: otherUser, toUser: currentUser }
-            ]
-          }
+          { fromUser: currentUser, toUser: otherUser },
+          { fromUser: otherUser, toUser: currentUser }
         ]
       },
       order: [['timestamp', 'DESC']],
-      limit: 50
+      limit: 20 // تقليل الحد للصور لزيادة السرعة
     });
     
     // تحويل الصور إلى شكل مشابه للرسائل النصية
@@ -3076,7 +3115,7 @@ socket.on('get private messages', async (data) => {
       imageData: image.imageData,
       time: new Date(Number(image.timestamp)).toLocaleTimeString('ar-SA'),
       timestamp: Number(image.timestamp),
-      avatar: userAvatars[image.fromUser] || 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + image.fromUser
+      avatar: userAvatars[image.fromUser] || DEFAULT_AVATAR_URL
     })).reverse();
     
     // دمج الرسائل النصية والصورية وترتيبها حسب الوقت
@@ -3100,13 +3139,13 @@ socket.on('get private messages', async (data) => {
     if (!username) return;
     username = username.trim();
     try {
-      // جلب آخر 2000 رسالة لضمان العثور على أغلب المحادثات النشطة وتحسين الأداء
+      // جلب آخر 500 رسالة لتحسين الأداء بشكل كبير
       const conversations = await PrivateMessage.findAll({
         where: {
           [Sequelize.Op.or]: [{ fromUser: username }, { toUser: username }]
         },
         order: [['timestamp', 'DESC']],
-        limit: 2000
+        limit: 500
       });
 
       const conversationsMap = new Map();
@@ -3784,7 +3823,7 @@ socket.on('disconnect', async (reason) => {
         username: user.username,
         points: user.points,
         level: user.level,
-        avatar: userAvatars[user.username] || null
+        avatar: userAvatars[user.username] || DEFAULT_AVATAR_URL
       }));
 
       socket.emit('top users list', topUsersList);

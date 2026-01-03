@@ -345,14 +345,14 @@
         .friends-sidebar {
             background: rgba(15, 23, 42, 0.8);
             backdrop-filter: blur(10px);
-            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
             width: 300px;
             height: 100vh;
             position: fixed;
             top: 0;
-            left: 0;
+            right: 0;
             z-index: 40;
-            transform: translateX(-100%);
+            transform: translateX(100%);
             transition: transform 0.3s ease;
             padding: 1rem;
             overflow-y: auto;
@@ -435,7 +435,7 @@
 }
 /* إظهار خيارات الرسالة عند التمرير */
 .message-actions {
-    opacity: 0;
+    opacity: 1;
     transition: opacity 0.2s ease-in-out;
 }
 .chat-message:hover .message-actions {
@@ -982,6 +982,13 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-2 space-x-reverse mt-2 md:mt-0 chat-header-buttons">
+                    <!-- زر غرفة التحكم للمالك -->
+                    <button id="adminControlRoomBtn" onclick="openControlPanel()" class="hidden text-white p-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors" title="غرفة التحكم">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                    </button>
                     <!-- زر لعبة XO -->
                     <a href="https://xo-game-6m3e.onrender.com/" target="_blank" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors" title="لعبة XO">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -1069,13 +1076,6 @@
 
         <!-- المحتوى الرئيسي -->
         <div class="flex-1 flex overflow-hidden">
-            <!-- منطقة الرسائل -->
-            <div class="flex-1 flex flex-col overflow-hidden px-4 pt-4 relative">
-                <div id="messagesContainer" class="container mx-auto max-w-4xl space-y-4 messages-container custom-scrollbar pb-4">
-                    <!-- الرسائل ستظهر هنا -->
-                </div>
-            </div>
-
             <!-- قائمة المستخدمين المتصلين (للشاشات الكبيرة) -->
             <div id="onlineUsersPanel" class="hidden md:block w-80 bg-gray-800/70 backdrop-blur-lg border-l border-gray-700 p-4 users-container custom-scrollbar">
                 <h3 class="text-white font-bold mb-4 flex items-center space-x-2 space-x-reverse">
@@ -1088,6 +1088,14 @@
                     <!-- المستخدمون المتصلون سيتم تحميلهم ديناميكياً -->
                 </div>
             </div>
+
+            <!-- منطقة الرسائل -->
+            <div class="flex-1 flex flex-col overflow-hidden pt-4 relative">
+                <div id="messagesContainer" class="w-full max-w-5xl mr-0 ml-auto space-y-4 messages-container custom-scrollbar pb-4 px-4">
+                    <!-- الرسائل ستظهر هنا -->
+                </div>
+            </div>
+            
             <!-- زر إخفاء/إظهار قائمة المتصلين للجوال -->
             <div id="usersOverlay" class="users-overlay" onclick="toggleUsersList()"></div>
         </div>
@@ -1253,69 +1261,6 @@
                     </div>
                 </div>
 
-                <!-- لوحة إدارة الصور الشخصية -->
-                <div id="avatarManagementPanel" class="hidden mb-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-4 border border-purple-500/50">
-                    <h3 class="text-white font-bold mb-3 flex items-center space-x-2 space-x-reverse">
-                        <span>🖼️</span>
-                        <span>إدارة الصورة الشخصية</span>
-                    </h3>
-                    
-                    <div class="mb-4">
-                        <label class="block text-white text-sm font-semibold mb-2">الصور الافتراضية</label>
-                        <div class="grid grid-cols-3 gap-3 mb-4">
-                            <!-- صور الأولاد -->
-                            <div class="avatar-option" onclick="selectAvatar('boy1')">
-                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=boy1" class="w-full h-16 object-cover rounded-lg cursor-pointer" alt="صورة ولد 1">
-                            </div>
-                            <div class="avatar-option" onclick="selectAvatar('boy2')">
-                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=boy2" class="w-full h-16 object-cover rounded-lg cursor-pointer" alt="صورة ولد 2">
-                            </div>
-                            <div class="avatar-option" onclick="selectAvatar('boy3')">
-                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=boy3" class="w-full h-16 object-cover rounded-lg cursor-pointer" alt="صورة ولد 3">
-                            </div>
-                            <!-- صور البنات -->
-                            <div class="avatar-option" onclick="selectAvatar('girl1')">
-                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=girl1&hair=long" class="w-full h-16 object-cover rounded-lg cursor-pointer" alt="صورة بنت 1">
-                            </div>
-                            <div class="avatar-option" onclick="selectAvatar('girl2')">
-                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=girl2&hair=long" class="w-full h-16 object-cover rounded-lg cursor-pointer" alt="صورة بنت 2">
-                            </div>
-                            <div class="avatar-option" onclick="selectAvatar('girl3')">
-                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=girl3&hair=long" class="w-full h-16 object-cover rounded-lg cursor-pointer" alt="صورة بنت 3">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label class="block text-white text-sm font-semibold mb-2">رفع صورة شخصية</label>
-                        <div class="flex items-center space-x-3 space-x-reverse">
-                            <input 
-                                type="file"
-                                id="avatarUpload"
-                                accept="image/*"
-                                class="hidden"
-                                onchange="handleAvatarUpload()"
-                            >
-                            <label for="avatarUpload" class="flex-1 bg-gray-700 border border-purple-300/50 rounded-lg px-4 py-2 text-white text-center cursor-pointer hover:bg-gray-600">
-                                اختر صورة
-                            </label>
-                            <button
-                                onclick="resetAvatar()"
-                                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors"
-                            >
-                                إعادة تعيين
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <div class="text-center">
-                        <div class="inline-block bg-gray-700 p-2 rounded-lg mb-2">
-                            <img id="currentAvatarPreview" src="https://api.dicebear.com/7.x/avataaars/svg?seed=guest" class="w-16 h-16 rounded-full object-cover" alt="الصورة الحالية">
-                        </div>
-                        <p class="text-xs text-purple-200">الصورة الشخصية الحالية</p>
-                    </div>
-                </div>
-               
                 <div id="messageInputContainer" class="flex space-x-4 space-x-reverse">
                     <input 
                     type="text"
@@ -1371,9 +1316,17 @@
                         <button id="changeProfilePicBtn" onclick="openImageUploadForProfile()" class="hidden absolute bottom-0 right-0 bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110 border-2 border-gray-800" title="تغيير الصورة">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                         </button>
+                        <!-- زر حذف الصورة الشخصية -->
+                        <button id="removeProfilePicBtn" onclick="removeProfilePic()" class="hidden absolute bottom-0 left-0 bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-full shadow-lg transition-all duration-200 transform hover:scale-110 border-2 border-gray-800" title="حذف الصورة الشخصية">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
                         <!-- زر تغيير الغلاف (جديد) -->
                         <button id="changeCoverBtn" onclick="openCoverUpload()" class="hidden absolute top-0 right-0 -mt-1 -mr-1 bg-gray-800/80 hover:bg-gray-700 text-white p-1.5 rounded-full shadow-lg transition-all duration-200 border border-gray-600 z-20" title="تغيير الغلاف">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        </button>
+                        <!-- زر حذف الغلاف -->
+                        <button id="removeCoverBtn" onclick="removeCover()" class="hidden absolute top-0 left-0 -mt-1 -ml-1 bg-red-600/80 hover:bg-red-700 text-white p-1.5 rounded-full shadow-lg transition-all duration-200 border border-gray-600 z-20" title="حذف الغلاف">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </button>
                     </div>
 
@@ -1611,7 +1564,7 @@
         <div class="private-chat-header bg-slate-800 border-b border-white/10 px-4 py-3 flex items-center justify-between shadow-lg">
             <div class="flex items-center gap-3">
                 <div class="relative">
-                    <img id="privateChatAvatar" src="" class="w-10 h-10 rounded-full object-cover border-2 border-blue-500/20" onerror="this.src='https://api.dicebear.com/7.x/avataaars/svg?seed=guest'">
+                    <img id="privateChatAvatar" src="" class="w-10 h-10 rounded-full object-cover border-2 border-blue-500/20" onerror="this.src = '/my-avatar.png'">
                     <span id="privateChatStatusDot" class="absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-slate-800"></span>
                 </div>
                 <div>
@@ -2184,6 +2137,7 @@
             reconnectionDelayMax: 5000,
             timeout: 20000
         });
+        window.DEFAULT_AVATAR_URL = '/my-avatar.png';
         let currentUser = null;
 
         // --- دوال تبديل أقسام الملف الشخصي ---
@@ -2526,9 +2480,25 @@
         let isFirstUserLoad = true;
         const entrySound = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/pang/pop.mp3');
         entrySound.volume = 0.4;
-        const leaveSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2776/2776-preview.mp3'); // Air zoom vacuum
+        const leaveSound = new Audio('https://codeskulptor-demos.commondatastorage.googleapis.com/descent/Crumble.mp3'); // Leave sound
         leaveSound.volume = 0.6;
         leaveSound.preload = 'auto';
+
+        const mentionSound = new Audio('/sounds/mention.mp3'); // Local mention sound
+        mentionSound.volume = 0.8;
+        mentionSound.preload = 'auto';
+
+        // محاولة فك حظر الصوت عند أول تفاعل
+        const unlockAudio = () => {
+            mentionSound.play().then(() => {
+                mentionSound.pause();
+                mentionSound.currentTime = 0;
+            }).catch(e => console.log("Audio unlock failed:", e));
+            document.removeEventListener('click', unlockAudio);
+            document.removeEventListener('keydown', unlockAudio);
+        };
+        document.addEventListener('click', unlockAudio);
+        document.addEventListener('keydown', unlockAudio);
         
         window.onlineUsersData = {}; // تخزين بيانات المستخدمين للوصول السريع
         
@@ -2784,13 +2754,13 @@ function updateUnreadBadges() {
 }
         // صور افتراضية
         const defaultAvatars = {
-            'boy1': 'https://api.dicebear.com/7.x/avataaars/svg?seed=boy1',
-            'boy2': 'https://api.dicebear.com/7.x/avataaars/svg?seed=boy2',
-            'boy3': 'https://api.dicebear.com/7.x/avataaars/svg?seed=boy3',
-            'girl1': 'https://api.dicebear.com/7.x/avataaars/svg?seed=girl1&hair=long',
-            'girl2': 'https://api.dicebear.com/7.x/avataaars/svg?seed=girl2&hair=long',
-            'girl3': 'https://api.dicebear.com/7.x/avataaars/svg?seed=girl3&hair=long',
-            'guest': 'https://api.dicebear.com/7.x/avataaars/svg?seed=guest'
+            'boy1': DEFAULT_AVATAR_URL,
+            'boy2': DEFAULT_AVATAR_URL,
+            'boy3': DEFAULT_AVATAR_URL,
+            'girl1': DEFAULT_AVATAR_URL,
+            'girl2': DEFAULT_AVATAR_URL,
+            'girl3': DEFAULT_AVATAR_URL,
+            'guest': DEFAULT_AVATAR_URL
         };
 
         // عناصر واجهة المستخدم
@@ -2967,6 +2937,16 @@ function updateUnreadBadges() {
         // تحديث معلومات المستخدم في الرأس
         function updateHeaderUserInfo() {
             if (currentUser) {
+                // إظهار زر غرفة التحكم لصاحب الموقع
+                const adminControlRoomBtn = document.getElementById('adminControlRoomBtn');
+                if (adminControlRoomBtn) {
+                    if (currentUser.isSiteOwner || currentUser.name === 'Walid dz 31') {
+                        adminControlRoomBtn.classList.remove('hidden');
+                    } else {
+                        adminControlRoomBtn.classList.add('hidden');
+                    }
+                }
+
                 const headerUsernameElem = document.getElementById('headerUsername');
                 if (headerUsernameElem) {
                     headerUsernameElem.textContent = currentUser.name;
@@ -3122,9 +3102,9 @@ function updateUnreadBadges() {
             if (message.type === 'user' || (message.type === 'image' && message.user) || message.replyTo) {
                 addMessageToChat(message.user, message.content, message.time, message.user === currentUser.name, message.rank, message.avatar, message.messageId, message.replyTo, null, message.timestamp);
             } else if (message.type === 'system') {
-                addSystemMessage(message.content, message.time, null, message.timestamp);
+                addSystemMessage(message, message.time, null, message.timestamp);
             } else {
-                addSystemMessage(message.content, message.time, null, message.timestamp);
+                addSystemMessage(message, message.time, null, message.timestamp);
             }
             // تمرير إلى الأسفل عند استقبال رسالة جديدة
             setTimeout(scrollToBottom, 100);
@@ -3159,7 +3139,7 @@ socket.on('chat history', (messages) => {
         } else if (msg.type === 'image') {
             addImageMessageToChat(msg.user, msg.imageData, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, fragment, msg.timestamp, msg.replyTo);
         } else {
-            addSystemMessage(msg.content, msg.time, fragment, msg.timestamp);
+            addSystemMessage(msg, msg.time, fragment, msg.timestamp);
         }
     });
     
@@ -3253,22 +3233,41 @@ socket.on('chat history', (messages) => {
         // استقبال أحداث الصور
         socket.on('avatar updated', (data) => {
             showNotification(`تم تحديث الصورة الشخصية لـ ${data.username}`, 'success');
-            updateAvatarPreview();
             updateHeaderUserInfo();
+            // تحديث الصورة في الملف الشخصي إذا كان مفتوحاً
+            const profileUsername = document.getElementById('profileUsername').textContent;
+            if (profileUsername === data.username) {
+                const profileAvatar = document.getElementById('profileAvatar');
+                if (profileAvatar) {
+                    profileAvatar.src = data.avatarUrl;
+                    
+                    // تحديث زر الحذف إذا كان المستخدم هو صاحب الملف
+                    if (data.username === currentUser.name) {
+                        const removeProfilePicBtn = document.getElementById('removeProfilePicBtn');
+                        if (removeProfilePicBtn) {
+                            if (data.avatarUrl && data.avatarUrl !== DEFAULT_AVATAR_URL) {
+                                removeProfilePicBtn.classList.remove('hidden');
+                            } else {
+                                removeProfilePicBtn.classList.add('hidden');
+                            }
+                        }
+                    }
+                }
+            }
         });
 
         socket.on('avatar error', (error) => {
             showNotification(error, 'error');
         });
 
-        socket.on('avatar data', (data) => {
-            if (data.avatarUrl) {
-                document.getElementById('currentAvatarPreview').src = data.avatarUrl;
-            }
-        });
-
         socket.on('user avatar updated', (data) => {
             updateOnlineUsersAvatars(data.username, data.avatarUrl);
+            // تحديث الصورة في الملف الشخصي إذا كان مفتوحاً
+            const profileUsername = document.getElementById('profileUsername').textContent;
+            if (profileUsername === data.username) {
+                const profileAvatar = document.getElementById('profileAvatar');
+                if (profileAvatar) profileAvatar.src = data.avatarUrl;
+            }
         });
 
         // استقبال نتائج إدارة المستخدمين
@@ -3298,6 +3297,12 @@ socket.on('chat history', (messages) => {
         socket.on('user deleted', () => {
             showNotification('تم حذف حسابك من قبل الإدارة', 'error');
             logout();
+        });
+
+        socket.on('user warned', (data) => {
+            // عرض تنبيه منبثق للمستخدم
+            alert(`⚠️ تنبيه إداري!\n\nتم توجيه تحذير لك من قبل ${data.from}.\nالسبب: ${data.reason}`);
+            showNotification(`⚠️ تحذير: ${data.reason}`, 'warning');
         });
 
         // استقبال بيانات الملف الشخصي
@@ -3332,7 +3337,20 @@ socket.on('private messages history', (messages) => {
     const container = document.getElementById('privateChatMessages');
     if (!container) return;
     
+    // إزالة مؤشر التحميل أو تفريغ المحتوى القديم
     container.innerHTML = '';
+    
+    if (messages.length === 0) {
+        container.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full text-slate-500 opacity-50">
+                <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                </svg>
+                <p class="text-sm">لا توجد رسائل سابقة</p>
+            </div>
+        `;
+        return;
+    }
     
     messages.forEach(msg => {
         if (msg.type === 'image') {
@@ -3539,7 +3557,7 @@ socket.on('private messages history', (messages) => {
         container.innerHTML = '';
         
         friendsList.forEach(username => {
-            const avatarUrl = userAvatars[username] || null;
+            const avatarUrl = userAvatars[username] || DEFAULT_AVATAR_URL;
             const friendDiv = document.createElement('div');
             friendDiv.className = 'flex items-center justify-between bg-white/5 rounded-lg p-3 friend-item';
             
@@ -3851,24 +3869,15 @@ socket.on('private messages history', (messages) => {
             // إظهار/إخفاء لوحات الإدارة بناءً على نوع الغرفة
             const rankPanel = document.getElementById('rankManagementPanel');
             const userPanel = document.getElementById('userManagementPanel');
-            const avatarPanel = document.getElementById('avatarManagementPanel');
             const messageInputContainer = document.getElementById('messageInputContainer');
             
             if (roomName === 'غرفة الإدارة') {
                 rankPanel.classList.remove('hidden');
                 userPanel.classList.remove('hidden');
-                avatarPanel.classList.add('hidden');
                 messageInputContainer.classList.remove('hidden');
-            } else if (roomName === 'غرفة تخصيص المظهر') {
-                rankPanel.classList.add('hidden');
-                userPanel.classList.add('hidden');
-                avatarPanel.classList.remove('hidden');
-                messageInputContainer.classList.add('hidden');
-                updateAvatarPreview();
             } else {
                 rankPanel.classList.add('hidden');
                 userPanel.classList.add('hidden');
-                avatarPanel.classList.add('hidden');
                 messageInputContainer.classList.remove('hidden');
             }
             
@@ -3883,12 +3892,6 @@ socket.on('private messages history', (messages) => {
             if (roomName === 'غرفة الإدارة') {
                 password = prompt('أدخل كلمة سر غرفة الإدارة:');
                 if (password !== 'admin123') {
-                    showNotification('كلمة السر غير صحيحة!', 'error');
-                    return;
-                }
-            } else if (roomName === 'غرفة تخصيص المظهر') {
-                password = prompt('أدخل كلمة سر غرفة تخصيص المظهر:');
-                if (password !== 'a') {
                     showNotification('كلمة السر غير صحيحة!', 'error');
                     return;
                 }
@@ -4020,7 +4023,22 @@ window.addEventListener('beforeunload', function (e) {
 
         // إضافة رسالة إلى الدردشة (نسخة مدمجة)
 function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messageId = null, replyTo = null, targetContainer = null, timestamp = null) {
-    const formattedMessage = formatLinks(message);
+    let formattedMessage = formatLinks(message);
+    
+    // خاصية المنشن
+    let isMentioned = false;
+    if (currentUser && message.includes(`@${currentUser.name}`)) {
+        isMentioned = true;
+        // تلوين الاسم باللون الأصفر فقط للمستخدم المذكور
+        const mentionRegex = new RegExp(`@${currentUser.name}\\b`, 'g');
+        formattedMessage = formattedMessage.replace(mentionRegex, `<span class="text-yellow-400 font-bold bg-yellow-400/10 px-1 rounded">@${currentUser.name}</span>`);
+        
+        // تشغيل صوت العصفور إذا كانت رسالة حية (تم استبعاد شرط isOwn للسماح بالتجربة الشخصية)
+        if (!targetContainer) {
+            mentionSound.play().catch(e => console.log("Audio play blocked:", e));
+        }
+    }
+
     const container = targetContainer || document.getElementById('messagesContainer');
     const messageDiv = document.createElement('div');    
     messageDiv.setAttribute('data-message-id', messageId);
@@ -4069,31 +4087,52 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
 
         // زر الرد يظهر للجميع
         directActions = `
-            <button class="text-gray-400 hover:text-blue-400" title="رد" onclick="startReply('${messageId}', '${user}', '${message.replace(/'/g, "\\'")}')">↩️</button>
+            <button class="hover:opacity-80 transition-opacity" title="رد" onclick="startReply('${messageId}', '${user}', '${message.replace(/'/g, "\\'")}')">
+                <span class="inline-flex items-center justify-center w-5 h-5 bg-slate-700 rounded text-white shadow-sm">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+                </span>
+            </button>
         `;
 
         // إضافة زر الحذف فقط إذا كان مسموحاً
         if (canDelete) {
-            directActions += `<button class="text-red-400 hover:text-red-600" title="حذف" onclick="deleteRoomMessage('${messageId}')">🗑️</button>`;
+            directActions += `
+                <button class="text-gray-400 hover:text-red-500 transition-colors" title="حذف" onclick="deleteRoomMessage('${messageId}')">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>`;
         }
 
-        menuBtn = `
-        <div class=\"relative inline-block ml-2\">
-            <button class=\"menu-btn text-gray-400 hover:text-blue-500 text-xl font-bold\" title=\"خيارات إضافية\" data-message-id=\"${messageId}\" data-user=\"${user}\" data-content=\"${message.replace(/'/g, "\\'")}\">⋮</button>
-            <div class=\"message-menu hidden absolute left-0 z-50 bg-slate-800 text-white rounded shadow-lg mt-2 min-w-[160px] text-sm border border-slate-700\">
-                <button class=\"block w-full text-right px-4 py-2 hover:bg-slate-700\" data-action=\"mute\">🔇 كتم المستخدم</button>
-                <button class=\"block w-full text-right px-4 py-2 hover:bg-slate-700\" data-action=\"unmute\">🔊 إلغاء كتم المستخدم</button>
-                <button class=\"block w-full text-right px-4 py-2 hover:bg-slate-700\" data-action=\"banRoom\">🚫 حظر من الغرفة</button>
-                <button class=\"block w-full text-right px-4 py-2 hover:bg-slate-700\" data-action=\"unbanRoom\">✅ إلغاء حظر الغرفة</button>
+        const myLevel = currentUser.rank ? (ranks[currentUser.rank]?.level || 0) : 0;
+        const targetLevel = userRank ? (ranks[userRank]?.level || 0) : 0;
+        const canManage = (currentUser.isSiteOwner || (myLevel > targetLevel && myLevel >= 2)) && !isMessageOwner;
+
+        if (canManage) {
+            menuBtn = `
+            <div class=\"relative inline-block ml-2\">
+                <button class=\"menu-btn text-gray-400 hover:text-blue-500 text-xl font-bold\" title=\"خيارات إضافية\" data-message-id=\"${messageId}\" data-user=\"${user}\" data-content=\"${message.replace(/'/g, "\\'")}\">⋮</button>
+                <div class=\"message-menu hidden absolute left-0 z-50 bg-slate-800 text-white rounded shadow-lg mt-2 min-w-[160px] text-sm border border-slate-700\">
+                    <button class=\"block w-full text-right px-4 py-2 hover:bg-slate-700\" data-action=\"mute\">🔇 كتم المستخدم</button>
+                    <button class=\"block w-full text-right px-4 py-2 hover:bg-slate-700\" data-action=\"unmute\">🔊 إلغاء كتم المستخدم</button>
+                    <button class=\"block w-full text-right px-4 py-2 hover:bg-slate-700\" data-action=\"warn\">⚠️ تحذير المستخدم</button>
+                    <button class=\"block w-full text-right px-4 py-2 hover:bg-slate-700\" data-action=\"banRoom\">🚫 حظر من الغرفة</button>
+                    <button class=\"block w-full text-right px-4 py-2 hover:bg-slate-700\" data-action=\"unbanRoom\">✅ إلغاء حظر الغرفة</button>
+                </div>
             </div>
-        </div>
-        `;
+            `;
+        }
     }
 
     let replyHtml = '';
     if (replyTo) {
         const isImageReply = replyTo.content && (replyTo.content.startsWith('data:image') || replyTo.content.startsWith('http') || replyTo.content.includes('🖼️ صورة') || replyTo.content.includes('صورة 🖼️'));
-        const displayContent = isImageReply ? 'صورة 🖼️' : replyTo.content;
+        let displayContent = isImageReply ? 'صورة 🖼️' : replyTo.content;
+
+        // تطبيق تلوين المنشن في الرد أيضاً
+        if (!isImageReply && currentUser && displayContent.includes(`@${currentUser.name}`)) {
+            const mentionRegex = new RegExp(`@${currentUser.name}\\b`, 'g');
+            displayContent = displayContent.replace(mentionRegex, `<span class="text-yellow-400 font-bold">@${currentUser.name}</span>`);
+        }
+
         const imagePreview = (replyTo.content && (replyTo.content.startsWith('data:image') || replyTo.content.startsWith('http'))) 
             ? `<img src="${replyTo.content}" class="w-10 h-10 rounded-md object-cover ml-2 border border-white/10 shadow-sm">` 
             : '';
@@ -4121,27 +4160,30 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
     const messageTextColorClass = currentRoomSettings?.textColor || 'text-white';
     
     messageDiv.innerHTML = `
-        <div class="flex items-start gap-3 flex-row-reverse">
+        <div class="flex items-start gap-3">
             <div class="avatar-container flex-shrink-0 cursor-pointer" onclick="showUserProfileModal('${user}')">
                 ${avatarHtml}
             </div>
-            <div class="message-bubble relative group ${isOwn ? 'bg-blue-600 text-white' : messageBgClass + ' ' + messageTextColorClass} rounded-lg">
-                ${replyHtml}
-                <div class="message-content leading-snug">
-                    <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''}" onclick="showUserProfileModal('${user}')">${user}</span>
-                    ${rankBadge}
-                    <span class="mr-1">:</span>
-                    <span class="break-words">${formattedMessage}</span>
+            <div class="flex items-end gap-2 flex-wrap">
+                <div class="message-bubble relative ${messageBgClass + ' ' + messageTextColorClass} rounded-lg p-2 min-w-[50px]">
+                    ${replyHtml}
+                    <div class="message-content leading-snug flex items-center flex-wrap gap-1">
+                        <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''}" onclick="mentionUser('${user}')">${user}</span>
+                        ${rankBadge}
+                        <span class="font-bold">:</span>
+                        <span class="break-words">${formattedMessage}</span>
+                    </div>
                 </div>
-                <div class="absolute top-1 left-1 flex items-center gap-1 message-actions">
-                    <span class="timestamp-text opacity-70 text-gray-400 text-[10px]">${timeStr}</span> 
+                <div class="flex items-center gap-1 mb-1 message-actions">
+                    <span class="timestamp-text opacity-70 text-gray-400 text-[10px] ml-1">${timeStr}</span> 
                     ${directActions}
+                    ${menuBtn}
                 </div>
             </div>
         </div>
     `;
 
-    messageDiv.className = `chat-message flex justify-end`;
+    messageDiv.className = `chat-message flex justify-start w-full px-0`;
 
     container.appendChild(messageDiv);
     // التمرير فقط إذا كانت رسالة حية (ليست جزءاً من التاريخ)
@@ -4207,6 +4249,12 @@ document.addEventListener('click', function(e) {
                     socket.emit('unban from room', { username: user, currentUser });
                 }
                 break;
+            case 'warn':
+                const reason = prompt(`أدخل سبب التحذير للمستخدم ${user}:`);
+                if (reason !== null) {
+                    socket.emit('warn user', { username: user, reason, currentUser });
+                }
+                break;
         }
         closeAllMessageMenus();
     } else {
@@ -4267,20 +4315,40 @@ function scrollToMessage(messageId) {
 function addSystemMessage(message, time, targetContainer = null, timestamp = null) {
     const container = targetContainer || document.getElementById('messagesContainer');
     const messageDiv = document.createElement('div');
-    messageDiv.className = 'chat-message flex justify-center'; 
-   
-    const timeStr = formatMessageTime(timestamp || Date.now());
-
-    messageDiv.innerHTML = `
-        <div class="max-w-md px-3 py-2 rounded-2xl bg-gray-800 text-white text-center border border-blue-500/30">
-            <div class="flex items-center justify-center space-x-2 space-x-reverse mb-1">
-                <img src="https://api.dicebear.com/7.x/bottts-neutral/svg?seed=system-bot" class="w-5 h-5 rounded-full" alt="System Bot">
-                <div class="font-semibold text-sm text-blue-400">رسائل النظام</div>
+    
+    // التحقق مما إذا كانت رسالة انضمام
+    if (typeof message === 'object' && message.subType === 'join') {
+        messageDiv.className = 'chat-message flex justify-start w-full my-1 px-0';
+        const iconHtml = message.rankIcon ? getRankIconHtml(message.rankIcon, "text-xs") : '';
+        
+        messageDiv.innerHTML = `
+            <div class="flex items-start gap-3">
+                <div class="avatar-container flex-shrink-0 cursor-pointer" onclick="showUserProfileModal('${message.user}')">
+                    <img src="${message.avatar || 'icon.png'}" class="w-8 h-8 rounded-full border border-red-500/50 object-cover" alt="Avatar">
+                </div>
+                <div class="bg-[#2c2c2c]/80 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-sm border border-white/5 flex items-center flex-wrap text-sm">
+                    <span class="text-gray-200 font-bold cursor-pointer hover:underline" onclick="mentionUser('${message.user}')">${message.user}</span>
+                    <span class="text-red-500 font-bold mx-1">انضم للغرفة</span>
+                    ${message.rank ? `<span class="text-gray-400 text-xs">(# ${message.rank} #)</span>` : ''}
+                </div>
             </div>
-            <div class="text-sm leading-relaxed">${message}</div>
-            <div class="text-[10px] mt-1 opacity-60">${timeStr}</div>
-        </div>
-    `;
+        `;
+    } else {
+        messageDiv.className = 'chat-message flex justify-center'; 
+        const timeStr = formatMessageTime(timestamp || Date.now());
+        const content = typeof message === 'object' ? message.content : message;
+
+        messageDiv.innerHTML = `
+            <div class="max-w-md px-3 py-2 rounded-2xl bg-gray-800 text-white text-center border border-blue-500/30">
+                <div class="flex items-center justify-center space-x-2 space-x-reverse mb-1">
+                    <img src="${DEFAULT_AVATAR_URL}" class="w-5 h-5 rounded-full" alt="System Bot">
+                    <div class="font-semibold text-sm text-blue-400">رسائل النظام</div>
+                </div>
+                <div class="text-sm leading-relaxed">${content}</div>
+                <div class="text-[10px] mt-1 opacity-60">${timeStr}</div>
+            </div>
+        `;
+    }
    
     container.appendChild(messageDiv);
     if (!targetContainer) {
@@ -4508,58 +4576,6 @@ function updateOnlineUsersList(users) {
             });
         }
 
-        // دوال إدارة الصور
-        function selectAvatar(avatarKey) {
-            if (!currentUser) return;
-            
-            const avatarUrl = defaultAvatars[avatarKey];
-            socket.emit('update avatar', {
-                username: currentUser.name,
-                avatarUrl: avatarUrl,
-                currentUser: { ...currentUser, roomId: currentRoom.id }
-            });
-        }
-
-        function handleAvatarUpload() {
-            if (!currentUser) return;
-            
-            const fileInput = document.getElementById('avatarUpload');
-            const file = fileInput.files[0];
-            
-            if (!file) return;
-            
-            if (!file.type.startsWith('image/')) {
-                showNotification('يرجى اختيار ملف صورة فقط', 'error');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                socket.emit('update avatar', {
-                    username: currentUser.name,
-                    avatarUrl: e.target.result,
-                    currentUser: { ...currentUser, roomId: currentRoom.id }
-                });
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function resetAvatar() {
-            if (!currentUser) return;
-            
-            const defaultAvatar = currentUser.gender === 'female' ? defaultAvatars.girl1 : defaultAvatars.boy1;
-            socket.emit('update avatar', {
-                username: currentUser.name,
-                avatarUrl: defaultAvatar,
-                currentUser: { ...currentUser, roomId: currentRoom.id }
-            });
-        }
-
-        function updateAvatarPreview() {
-            if (!currentUser) return;
-            socket.emit('get avatar', currentUser.name);
-        }
-
         function updateOnlineUsersAvatars(username, avatarUrl) {
             const userElements = document.querySelectorAll('#onlineUsersList .flex.items-center');
             userElements.forEach(element => {
@@ -4674,11 +4690,21 @@ function updateOnlineUsersList(users) {
         }
 
         // دوال الملف الشخصي والمحادثة الخاصة
+        function mentionUser(username) {
+            const input = document.getElementById('messageInput');
+            if (!input) return;
+            
+            // إضافة المنشن في نهاية النص الموجود مع مسافة
+            const mentionText = `@${username} `;
+            input.value = input.value.trim() ? input.value.trim() + ' ' + mentionText : mentionText;
+            input.focus();
+        }
+
         function showUserProfileModal(username) {
     if (!currentUser) return;
     
     // الحصول على الصورة من الذاكرة المحلية أولاً
-    const avatarUrl = userAvatars[username] || null;
+    const avatarUrl = userAvatars[username] || DEFAULT_AVATAR_URL;
     
     socket.emit('get user profile', { username });
 }
@@ -4888,7 +4914,9 @@ function updateOnlineUsersList(users) {
             const editBioButton = document.getElementById('editBioButton');
             const saveBioButton = document.getElementById('saveBioButton');
             const changeProfilePicBtn = document.getElementById('changeProfilePicBtn');
+            const removeProfilePicBtn = document.getElementById('removeProfilePicBtn');
             const changeCoverBtn = document.getElementById('changeCoverBtn');
+            const removeCoverBtn = document.getElementById('removeCoverBtn');
             const featuresTabButton = document.getElementById('featuresTabButton');
             const specialUsers = ["Walid dz 31", "سيد احمد", "ميارا"]; 
             const profileHeader = document.getElementById('profileHeader');
@@ -4896,9 +4924,9 @@ function updateOnlineUsersList(users) {
             const profileBody = document.getElementById('profileBody');
             
             // تعبئة البيانات
-            avatar.src = profileData.avatar || (profileData.gender === 'female' ? defaultAvatars.girl1 : defaultAvatars.boy1);
+            avatar.src = profileData.avatar || DEFAULT_AVATAR_URL;
             avatar.onerror = function() {
-                this.src = profileData.gender === 'female' ? defaultAvatars.girl1 : defaultAvatars.boy1;
+                this.src = DEFAULT_AVATAR_URL;
             };
             
             // تطبيق إطار الصورة
@@ -5046,6 +5074,20 @@ function updateOnlineUsersList(users) {
             if (profileData.username === currentUser.name) {
                 changeProfilePicBtn.classList.remove('hidden'); // إظهار زر تغيير الصورة
                 changeCoverBtn.classList.remove('hidden'); // إظهار زر تغيير الغلاف
+                
+                // إظهار زر الحذف فقط إذا كانت الصورة/الغلاف غير افتراضية
+                if (profileData.avatar && profileData.avatar !== DEFAULT_AVATAR_URL) {
+                    removeProfilePicBtn.classList.remove('hidden');
+                } else {
+                    removeProfilePicBtn.classList.add('hidden');
+                }
+                
+                if (profileData.profileCover) {
+                    removeCoverBtn.classList.remove('hidden');
+                } else {
+                    removeCoverBtn.classList.add('hidden');
+                }
+
                 editBioButton.classList.remove('hidden');
                 saveBioButton.classList.add('hidden');
                 visitorActions.classList.add('hidden');
@@ -5053,7 +5095,9 @@ function updateOnlineUsersList(users) {
                 document.getElementById('accountTabButton').classList.remove('hidden');
             } else {
                 changeProfilePicBtn.classList.add('hidden'); // إخفاء زر تغيير الصورة
+                removeProfilePicBtn.classList.add('hidden'); // إخفاء زر حذف الصورة
                 changeCoverBtn.classList.add('hidden'); // إخفاء زر تغيير الغلاف
+                removeCoverBtn.classList.add('hidden'); // إخفاء زر حذف الغلاف
                 editBioButton.classList.add('hidden');
                 saveBioButton.classList.add('hidden');
                 visitorActions.classList.remove('hidden');
@@ -5103,6 +5147,7 @@ function updateOnlineUsersList(users) {
                             <div id="profileActionMenu" class="message-menu hidden absolute left-0 z-50 bg-slate-800 text-white rounded shadow-lg mt-2 min-w-[160px] text-sm border border-slate-700">
                                 <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" onclick="handleProfileMute('${profileData.username}')">🔇 كتم المستخدم</button>
                                 <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" onclick="handleProfileUnmute('${profileData.username}')">🔊 إلغاء الكتم</button>
+                                <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" onclick="handleProfileWarn('${profileData.username}')">⚠️ تحذير المستخدم</button>
                                 <div class="border-t border-slate-600 my-1"></div>
                                 <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" onclick="handleProfileBanRoom('${profileData.username}')">🚫 حظر من الغرفة</button>
                                 <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" onclick="handleProfileUnbanRoom('${profileData.username}')">✅ إلغاء حظر الغرفة</button>
@@ -5147,8 +5192,24 @@ function updateOnlineUsersList(users) {
             showNotification(error, 'error');
         });
 
-        socket.on('cover success', (msg) => {
-            showNotification(msg, 'success');
+        socket.on('cover success', (data) => {
+            const message = typeof data === 'string' ? data : data.message;
+            showNotification(message, 'success');
+            
+            if (typeof data === 'object' && data.coverUrl !== undefined) {
+                const coverDisplay = document.getElementById('profileCoverDisplay');
+                const removeCoverBtn = document.getElementById('removeCoverBtn');
+                
+                if (data.coverUrl) {
+                    coverDisplay.src = data.coverUrl;
+                    coverDisplay.classList.remove('hidden');
+                    if (removeCoverBtn) removeCoverBtn.classList.remove('hidden');
+                } else {
+                    coverDisplay.src = '';
+                    coverDisplay.classList.add('hidden');
+                    if (removeCoverBtn) removeCoverBtn.classList.add('hidden');
+                }
+            }
         });
 
         socket.on('cover error', (msg) => {
@@ -5179,6 +5240,14 @@ function updateOnlineUsersList(users) {
         function handleProfileUnmute(username) {
             if (confirm(`هل تريد إلغاء كتم المستخدم ${username}؟`)) {
                 socket.emit('unmute user', { username, currentUser });
+            }
+            document.getElementById('profileActionMenu')?.classList.add('hidden');
+        }
+
+        function handleProfileWarn(username) {
+            const reason = prompt(`أدخل سبب التحذير للمستخدم ${username}:`);
+            if (reason !== null) {
+                socket.emit('warn user', { username, reason, currentUser });
             }
             document.getElementById('profileActionMenu')?.classList.add('hidden');
         }
@@ -5384,10 +5453,10 @@ function makeDraggable(element, handle) {
     const statusDot = document.getElementById('privateChatStatusDot');
     
     // جلب رابط الصورة
-    const avatarUrl = userAvatars[username] || null;
-    avatar.src = avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
+    const avatarUrl = userAvatars[username] || DEFAULT_AVATAR_URL;
+    avatar.src = avatarUrl || DEFAULT_AVATAR_URL;
     avatar.onerror = function() {
-        this.src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`;
+        this.src = DEFAULT_AVATAR_URL;
     };
     
     usernameElem.textContent = username;
@@ -5412,6 +5481,15 @@ function makeDraggable(element, handle) {
     
     // إظهار النافذة
     modal.classList.add('show');
+    
+    // إظهار مؤشر التحميل داخل نافذة المحادثة
+    const container = document.getElementById('privateChatMessages');
+    container.innerHTML = `
+        <div id="privateChatLoader" class="flex flex-col items-center justify-center h-full space-y-3 text-slate-400">
+            <div class="spinner w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-xs font-medium">جاري تحميل المحادثة...</p>
+        </div>
+    `;
     
     // تحميل سجل المحادثة
     socket.emit('get private messages', {
@@ -5455,11 +5533,18 @@ function makeDraggable(element, handle) {
         function addPrivateMessageToChat(message, isOwn) {
     const formattedContent = formatLinks(message.content);
     const container = document.getElementById('privateChatMessages');
+    
+    // إزالة مؤشر التحميل إذا كان موجوداً
+    const loader = document.getElementById('privateChatLoader');
+    if (loader) {
+        container.innerHTML = '';
+    }
+    
     const messageDiv = document.createElement('div');
     messageDiv.className = `mb-4 flex ${isOwn ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 chat-message`;
     
     const timeStr = formatMessageTime(message.timestamp || Date.now());
-    const avatarUrl = message.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${message.from}`;
+    const avatarUrl = message.avatar || DEFAULT_AVATAR_URL;
 
     messageDiv.innerHTML = `
         <img src="${avatarUrl}" class="w-8 h-8 rounded-full border border-white/10" alt="avatar">
@@ -6114,6 +6199,26 @@ function openImageUploadForProfile() {
     document.getElementById('profileImageUpload').click();
 }
 
+function removeProfilePic() {
+    if (confirm('هل أنت متأكد من حذف صورتك الشخصية والعودة للصورة الافتراضية؟')) {
+        socket.emit('update avatar', {
+            username: currentUser.name,
+            avatarUrl: null,
+            currentUser: { ...currentUser, roomId: currentRoom ? currentRoom.id : null }
+        });
+    }
+}
+
+function removeCover() {
+    if (confirm('هل أنت متأكد من حذف غلاف الملف الشخصي؟')) {
+        socket.emit('update profile cover', {
+            username: currentUser.name,
+            coverUrl: null,
+            currentUser: currentUser
+        });
+    }
+}
+
 // معالجة تحميل صورة الملف الشخصي
 document.getElementById('profileImageUpload').addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -6278,10 +6383,17 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
     const container = targetContainer || document.getElementById('messagesContainer');
     const messageDiv = document.createElement('div');
     
+    // تشغيل صوت المنشن إذا كان هناك منشن في الرد (ReplyTo)
+    if (currentUser && replyTo && replyTo.content && replyTo.content.includes(`@${currentUser.name}`)) {
+        if (!targetContainer) {
+            mentionSound.play().catch(e => console.log("Audio play blocked:", e));
+        }
+    }
+
     const timeStr = formatMessageTime(timestamp || Date.now());
     
     // توحيد المحاذاة مع الرسائل النصية
-    messageDiv.className = `chat-message flex justify-end`;
+    messageDiv.className = `chat-message flex justify-start w-full`;
     
     if (!messageId) {
         messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
@@ -6302,18 +6414,30 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
     const canDelete = (currentUser.isSiteOwner) || (isMessageOwner && currentUser.rank) || (myLevel > senderLevel && myLevel >= 2);
 
     let directActions = `
-        <button class="text-gray-400 hover:text-blue-400" title="رد" onclick="startReply('${messageId}', '${user}', '${imageData}')">↩️</button>
+        <button class="hover:opacity-80 transition-opacity" title="رد" onclick="startReply('${messageId}', '${user}', '${imageData}')">
+            <span class="inline-flex items-center justify-center w-5 h-5 bg-slate-700 rounded text-white shadow-sm">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+            </span>
+        </button>
     `;
+
+    if (canDelete) {
+        directActions += `
+            <button class="text-gray-400 hover:text-red-500 transition-colors" title="حذف" onclick="deleteRoomMessage('${messageId}')">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>`;
+    }
 
     let extraMenuItems = '';
     if (canDelete) {
-        extraMenuItems += `<button class="block w-full text-right px-4 py-2 hover:bg-red-600/20 text-red-400" data-action="delete">🗑️ حذف الصورة</button>`;
+        extraMenuItems += `<button class="block w-full text-right px-4 py-2 hover:bg-red-600/20 text-red-400" data-action="delete">❌ حذف الصورة</button>`;
     }
     
     if ((currentUser.isSiteOwner || (myLevel > senderLevel && myLevel >= 2)) && !isMessageOwner) {
         extraMenuItems += `
             <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" data-action="mute">🔇 كتم المستخدم</button>
             <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" data-action="unmute">🔊 إلغاء كتم المستخدم</button>
+            <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" data-action="warn">⚠️ تحذير المستخدم</button>
             <button class="block w-full text-right px-4 py-2 hover:bg-slate-700" data-action="banRoom">🚫 حظر من الغرفة</button>
         `;
     }
@@ -6331,7 +6455,14 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
     let replyHtml = '';
     if (replyTo) {
         const isImageReply = replyTo.content && (replyTo.content.startsWith('data:image') || replyTo.content.startsWith('http') || replyTo.content.includes('🖼️ صورة') || replyTo.content.includes('صورة 🖼️'));
-        const displayContent = isImageReply ? 'صورة 🖼️' : replyTo.content;
+        let displayContent = isImageReply ? 'صورة 🖼️' : replyTo.content;
+
+        // تطبيق تلوين المنشن في الرد أيضاً
+        if (!isImageReply && currentUser && displayContent.includes(`@${currentUser.name}`)) {
+            const mentionRegex = new RegExp(`@${currentUser.name}\\b`, 'g');
+            displayContent = displayContent.replace(mentionRegex, `<span class="text-yellow-400 font-bold">@${currentUser.name}</span>`);
+        }
+
         const imagePreview = (replyTo.content && (replyTo.content.startsWith('data:image') || replyTo.content.startsWith('http'))) 
             ? `<img src="${replyTo.content}" class="w-10 h-10 rounded-md object-cover ml-2 border border-white/10 shadow-sm">` 
             : '';
@@ -6372,22 +6503,30 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
         ? `<div class="w-full h-full rounded-full relative ${(avatarFrameClass && !avatarFrameClass.startsWith('border-color:')) ? avatarFrameClass : ''}" style="${(avatarFrameClass && avatarFrameClass.startsWith('border-color:')) ? `border: 2px solid ${avatarFrameClass.split(':')[1]};` : ''}"><img src="${avatarUrl}" class="w-full h-full rounded-full object-cover" alt="${user}"></div>`
         : `<div class="w-full h-full rounded-full bg-gray-400 flex items-center justify-center text-white font-bold text-sm ${(avatarFrameClass && !avatarFrameClass.startsWith('border-color:')) ? avatarFrameClass : ''}" style="${(avatarFrameClass && avatarFrameClass.startsWith('border-color:')) ? `border: 2px solid ${avatarFrameClass.split(':')[1]};` : ''}">${user.charAt(0).toUpperCase()}</div>`;
 
+    const messageBgClass = currentRoomSettings?.messageBackground || 'bg-gray-800';
+    const messageTextColorClass = currentRoomSettings?.textColor || 'text-white';
+
     messageDiv.innerHTML = `
-        <div class="flex items-start gap-3 flex-row-reverse">
+        <div class="flex items-start gap-3">
             <div class="avatar-container flex-shrink-0 cursor-pointer" onclick="showUserProfileModal('${user}')">
                 ${avatarHtml}
             </div>
-            <div class="message-bubble relative group ${isOwn ? 'bg-blue-600 text-white' : 'bg-gray-800 text-white'} rounded-lg max-w-[250px] sm:max-w-md">
-                ${replyHtml}
-                <div class="message-content leading-snug">
-                    <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''}" onclick="showUserProfileModal('${user}')">${user}</span>
-                    ${rankBadge}
-                    <div class="mt-2 relative">
-                        <img src="${imageData}" class="max-w-full h-auto rounded-lg cursor-pointer chat-image" onclick="openImageModal('${imageData}')" alt="صورة محادثة">
+            <div class="flex items-end gap-2 flex-wrap">
+                <div class="message-bubble relative ${messageBgClass + ' ' + messageTextColorClass} rounded-lg p-2 max-w-[250px] sm:max-w-md w-fit">
+                    ${replyHtml}
+                    <div class="message-content leading-snug flex flex-col gap-1">
+                        <div class="flex items-center flex-wrap gap-1">
+                            <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''}" onclick="mentionUser('${user}')">${user}</span>
+                            ${rankBadge}
+                            <span class="font-bold">:</span>
+                        </div>
+                        <div class="relative">
+                            <img src="${imageData}" class="max-w-full h-auto rounded-lg cursor-pointer chat-image" onclick="openImageModal('${imageData}')" alt="صورة محادثة">
+                        </div>
                     </div>
                 </div>
-                <div class="absolute top-1 left-1 flex items-center gap-1 message-actions">
-                    <span class="timestamp-text opacity-70 text-gray-400 text-[10px]">${timeStr}</span> 
+                <div class="flex items-center gap-1 mb-1 message-actions">
+                    <span class="timestamp-text opacity-70 text-gray-400 text-[10px] ml-1">${timeStr}</span> 
                     ${directActions}
                     ${menuBtn}
                 </div>
@@ -6430,11 +6569,17 @@ function addPrivateImageMessage(message, isOwn) {
     const container = document.getElementById('privateChatMessages');
     if (!container) return;
 
+    // إزالة مؤشر التحميل إذا كان موجوداً
+    const loader = document.getElementById('privateChatLoader');
+    if (loader) {
+        container.innerHTML = '';
+    }
+
     const messageDiv = document.createElement('div');
     messageDiv.className = `mb-4 flex ${isOwn ? 'flex-row-reverse' : 'flex-row'} items-end gap-2 chat-message`;
     
     const timeStr = formatMessageTime(message.timestamp || Date.now());
-    const avatarUrl = message.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${message.from}`;
+    const avatarUrl = message.avatar || DEFAULT_AVATAR_URL;
     
     // استخدام صورة مؤقتة أثناء التحميل
     const loadingImage = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjMzMzIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iI2ZmZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPua1i+ivleWbvuWDjzwvdGV4dD48L3N2Zz4=';
