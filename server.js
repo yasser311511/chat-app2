@@ -8,15 +8,16 @@ const cookieParser = require('cookie-parser');
 const { Sequelize, DataTypes } = require('sequelize');
 const multer = require('multer');
 const fs = require('fs');
+const https = require('https');
 
-
-// إنشاء اتصال بقاعدة البيانات
+// متغيرات عامة
+let BOT_AVATAR_URL = '/icon.png';
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
   protocol: 'postgres',
   pool: {
-    max: 30,
-    min: 10,
+    max: 20,
+    min: 2,
     acquire: 60000,
     idle: 10000,
     evict: 10000
@@ -37,7 +38,8 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
       /SequelizeHostNotReachableError/,
       /SequelizeInvalidConnectionError/,
       /SequelizeConnectionTimedOutError/,
-      /TimeoutError/
+      /TimeoutError/,
+      /ECONNRESET/
     ],
     max: 5
   },
@@ -150,6 +152,18 @@ const UserLastSeen = sequelize.define('UserLastSeen', {
   lastSeen: { type: DataTypes.BIGINT, allowNull: false }
 });
 
+const SystemSettings = sequelize.define('SystemSettings', {
+  key: { type: DataTypes.STRING, primaryKey: true },
+  value: { type: DataTypes.TEXT, allowNull: false }
+});
+
+const QuizQuestion = sequelize.define('QuizQuestion', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    category: { type: DataTypes.STRING, allowNull: false, defaultValue: 'عام' },
+    question: { type: DataTypes.TEXT, allowNull: false },
+    answer: { type: DataTypes.STRING, allowNull: false }
+});
+
 // إضافة بعد نماذج قاعدة البيانات الأخرى
 const Notification = sequelize.define('Notification', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -232,7 +246,8 @@ let ranks = {
   'سوبر ادمن': { color: 'from-red-500 to-pink-600', icon: '⭐', level: 3 },
   'ادمن': { color: 'from-purple-500 to-indigo-600', icon: '🛡️', level: 2 },
   'بريميوم': { color: 'from-green-500 to-emerald-600', icon: '💎', level: 2 },
-  'جيد': { color: 'from-blue-500 to-cyan-600', icon: '❇️', level: 1 }
+  'جيد': { color: 'from-blue-500 to-cyan-600', icon: '❇️', level: 1 },
+  'زائر': { color: 'from-gray-500 to-gray-600', icon: '👤', level: 0 }
 };
 
 // قائمة المستخدمين الخاصين (نقاط ومستوى ثابت)
@@ -297,8 +312,153 @@ let postComments = {};
 let chatImages = {};
 let drawingHistory = []; // تخزين تاريخ الرسم
 
+// --- إعدادات QuizBot ---
+let quizState = {
+    active: false,
+    currentQuestion: null,
+    currentAnswer: null,
+    roomId: null,
+    timer: null,
+    answerTimer: null,
+    lastQuestionTime: 0,
+    lastQuestionId: null,
+    isWaitingForAnswer: false
+};
+
 // --- متغير للتحقق من جاهزية السيرفر ---
 let isServerReady = false;
+
+// دالة مساعدة لجلب البيانات من API خارجي بدون مكتبات إضافية
+function getJson(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, (res) => {
+            let data = '';
+            res.on('data', (chunk) => { data += chunk; });
+            res.on('end', () => {
+                try {
+                    resolve(JSON.parse(data));
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        }).on('error', (err) => {
+            reject(err);
+        });
+    });
+}
+
+// --- وظائف QuizBot ---
+async function askQuizQuestion() {
+    const entertainmentRoom = rooms.find(r => r.name === 'غرفة التسلية');
+    if (!entertainmentRoom || entertainmentRoom.users.length === 0) {
+        quizState.active = false;
+        if (quizState.timer) clearTimeout(quizState.timer);
+        quizState.timer = null;
+        return;
+    }
+
+    quizState.active = true;
+    quizState.roomId = entertainmentRoom.id;
+
+    let questionData;
+    
+    // ميكانيكية الخلط: 70% يدوي، 30% افتراضي عربي
+    const rand = Math.random();
+    
+    if (rand < 0.7) {
+        // محاولة جلب سؤال يدوي من قاعدة البيانات
+        try {
+            const manualQuestions = await QuizQuestion.findAll();
+            if (manualQuestions.length > 0) {
+                let availableQuestions = manualQuestions;
+                if (manualQuestions.length > 1 && quizState.lastQuestionId) {
+                    availableQuestions = manualQuestions.filter(q => q.id !== quizState.lastQuestionId);
+                }
+                const randomIdx = Math.floor(Math.random() * availableQuestions.length);
+                questionData = availableQuestions[randomIdx];
+                quizState.lastQuestionId = questionData.id;
+            }
+        } catch (err) {
+            console.error('Error fetching manual questions:', err);
+        }
+    }
+
+    // إذا لم يتوفر سؤال يدوي أو وقع الاختيار على الافتراضي، نستخدم قائمة عربية غنية
+    if (!questionData) {
+        const defaultQuestions = [
+            { category: "إسلاميات", question: "ما هو أطول سورة في القرآن الكريم؟", answer: "البقرة" },
+            { category: "تاريخ", question: "من هو القائد العربي الذي فتح الأندلس؟", answer: "طارق بن زياد" },
+            { category: "جغرافيا", question: "ما هو أطول نهر في العالم؟", answer: "النيل" },
+            { category: "علوم", question: "ما هو العضو المسؤول عن ضخ الدم في جسم الإنسان؟", answer: "القلب" },
+            { category: "ثقافة", question: "ما هي عاصمة اليابان؟", answer: "طوكيو" },
+            { category: "رياضة", question: "كم عدد لاعبين فريق كرة القدم في الملعب؟", answer: "11" },
+            { category: "أدب", question: "من هو الشاعر الملقب بأمير الشعراء؟", answer: "أحمد شوقي" },
+            { category: "جغرافيا", question: "ما هي أكبر دولة في العالم من حيث المساحة؟", answer: "روسيا" },
+            { category: "إسلاميات", question: "كم عدد الخلفاء الراشدين؟", answer: "4" },
+            { category: "علوم", question: "ما هو الكوكب الملقب بالكوكب الأحمر؟", answer: "المريخ" }
+        ];
+        
+        let availableDefaults = defaultQuestions;
+        if (quizState.currentQuestion) {
+            availableDefaults = defaultQuestions.filter(q => q.question !== quizState.currentQuestion);
+        }
+        
+        questionData = availableDefaults[Math.floor(Math.random() * availableDefaults.length)];
+        quizState.lastQuestionId = null;
+    }
+
+    quizState.currentQuestion = questionData.question;
+    quizState.currentAnswer = questionData.answer.trim().toLowerCase();
+    quizState.lastQuestionTime = Date.now();
+    quizState.isWaitingForAnswer = true;
+
+    const categoryPrefix = questionData.category ? `${questionData.category}: ` : '';
+    const quizMessage = {
+        type: 'system',
+        systemStatus: 'neutral', // سؤال المسابقة باللون الأبيض
+        user: 'بوت المسابقات',
+        avatar: BOT_AVATAR_URL,
+        content: `❓ **سؤال جديد:** ${categoryPrefix}${quizState.currentQuestion}\n\n⏱️ لديك 30 ثانية للإجابة!`,
+        time: new Date().toLocaleTimeString('ar-SA'),
+        isQuiz: true
+    };
+
+    io.to(quizState.roomId).emit('new message', quizMessage);
+    if (messages[quizState.roomId]) messages[quizState.roomId].push(quizMessage);
+
+    // مؤقت 30 ثانية للإجابة
+    if (quizState.answerTimer) clearTimeout(quizState.answerTimer);
+    quizState.answerTimer = setTimeout(() => {
+        if (quizState.isWaitingForAnswer) {
+            quizState.isWaitingForAnswer = false;
+            const noAnswerMessage = {
+                type: 'system',
+                systemStatus: 'negative', // انتهى الوقت باللون الأحمر
+                user: 'بوت المسابقات',
+                avatar: BOT_AVATAR_URL,
+                content: `⌛ انتهى الوقت! لم يجب أحد على السؤال الإجابة كانت: **${quizState.currentAnswer}**\n\n🔄 السؤال القادم بعد 30 ثانية...`,
+                time: new Date().toLocaleTimeString('ar-SA')
+            };
+            io.to(quizState.roomId).emit('new message', noAnswerMessage);
+            if (messages[quizState.roomId]) messages[quizState.roomId].push(noAnswerMessage);
+            
+            // مهلة 30 ثانية قبل السؤال التالي
+            quizState.timer = setTimeout(askQuizQuestion, 30000);
+        }
+    }, 30000);
+}
+
+function startQuizMonitor() {
+    setInterval(async () => {
+        const entertainmentRoom = rooms.find(r => r.name === 'غرفة التسلية');
+        if (entertainmentRoom && entertainmentRoom.users.length > 0 && !quizState.active) {
+            // إذا كان هناك مستخدمون والمسابقة متوقفة، ابدأ بعد 5 ثواني
+            if (!quizState.timer) {
+                quizState.timer = setTimeout(askQuizQuestion, 5000);
+            }
+        }
+    }, 10000);
+}
 
 // --- دالة للتحقق من وجود عمود في جدول ---
 async function columnExists(tableName, columnName) {
@@ -318,7 +478,6 @@ const SPAM_MESSAGE_COUNT = 10;
 const SPAM_TIME_WINDOW_MS = 15000; // 15 ثانية
 const SPAM_MUTE_DURATION_MIN = 10;
 const DEFAULT_AVATAR_URL = '/my-avatar.png';
-const BOT_AVATAR_URL = DEFAULT_AVATAR_URL;
 
 // --- متغير لتتبع آخر نشاط للمستخدم لمنع التكرار (Debounce) ---
 const userLastAction = {};
@@ -334,6 +493,21 @@ async function loadData() {
     await sequelize.sync();
     console.log('تم مزامنة قاعدة البيانات بنجاح');
 
+    // التحقق من وجود عمود الفئة في جدول الأسئلة
+    const hasCategoryColumn = await columnExists('QuizQuestions', 'category');
+    if (!hasCategoryColumn) {
+      try {
+        await sequelize.getQueryInterface().addColumn('QuizQuestions', 'category', {
+          type: DataTypes.STRING,
+          allowNull: false,
+          defaultValue: 'عام'
+        });
+        console.log('تم إضافة عمود category إلى جدول QuizQuestions بنجاح');
+      } catch (err) {
+        console.error('فشل إضافة عمود category:', err);
+      }
+    }
+
     // تحميل جميع البيانات بالتوازي لتقليل وقت بدء التشغيل
     const [
       usersData, ranksData, storedRankDefinitions,
@@ -343,7 +517,7 @@ async function loadData() {
       roomBgData, roomSettingsData, dbRooms,
       inventoriesData, requestsData, privateMessagesData,
       chatImagesData, privateImagesData, postsData,
-      likesData, commentsData
+      likesData, commentsData, systemSettingsData
     ] = await Promise.all([
       User.findAll(), UserRank.findAll(), RankDefinition.findAll(),
       UserManagement.findAll({ where: { type: 'mute' } }), UserManagement.findAll({ where: { type: 'room_ban' } }), UserManagement.findAll({ where: { type: 'site_ban' } }),
@@ -353,8 +527,13 @@ async function loadData() {
       UserInventory.findAll(), FriendRequest.findAll(), PrivateMessage.findAll({ order: [['timestamp', 'DESC']], limit: 500 }),
       ChatImage.findAll({ where: { roomId: { [Sequelize.Op.ne]: null } }, order: [['timestamp', 'DESC']], limit: 300 }), 
       ChatImage.findAll({ where: { conversationId: { [Sequelize.Op.ne]: null } }, order: [['timestamp', 'DESC']], limit: 300 }),
-      Post.findAll({ order: [['timestamp', 'DESC']], limit: 100 }), PostLike.findAll(), PostComment.findAll({ order: [['timestamp', 'ASC']] })
+      Post.findAll({ order: [['timestamp', 'DESC']], limit: 100 }), PostLike.findAll(), PostComment.findAll({ order: [['timestamp', 'ASC']] }),
+      SystemSettings.findAll()
     ]);
+
+    systemSettingsData.forEach(setting => {
+      if (setting.key === 'botAvatar') BOT_AVATAR_URL = setting.value;
+    });
 
     // معالجة البيانات المحملة
     usersData.forEach(user => {
@@ -406,49 +585,72 @@ async function loadData() {
       if (!roomManagers[manager.roomId]) roomManagers[manager.roomId] = [];
       roomManagers[manager.roomId].push(manager.managerUsername);
     });
-    roomBgData.forEach(bg => roomBackgrounds[bg.roomId] = { type: bg.backgroundType, value: bg.backgroundValue });
-    roomSettingsData.forEach(setting => {
-      roomSettings[setting.roomId] = { description: setting.description, textColor: setting.textColor, messageBackground: setting.messageBackground };
+    roomBgData.forEach(bg => {
+      const data = bg.get ? bg.get({ plain: true }) : bg;
+      const roomId = parseInt(data.roomId);
+      if (roomId) {
+        roomBackgrounds[roomId] = { type: data.backgroundType, value: data.backgroundValue };
+      }
     });
+    console.log(`تم تحميل ${roomBgData.length} خلفيات غرف:`, Object.keys(roomBackgrounds));
+    
+    roomSettingsData.forEach(setting => {
+      const data = setting.get ? setting.get({ plain: true }) : setting;
+      const roomId = parseInt(data.roomId);
+      if (roomId) {
+        roomSettings[roomId] = { description: data.description, textColor: data.textColor, messageBackground: data.messageBackground };
+      }
+    });
+    console.log(`تم تحميل ${roomSettingsData.length} إعدادات غرف:`, Object.keys(roomSettings));
 
     if (dbRooms.length > 0) {
       rooms = dbRooms
-        .filter(room => room.name !== 'غرفة تخصيص المظهر')
-        .map(room => ({ 
-        id: room.id, 
-        name: room.name, 
-        icon: room.icon, 
-        description: room.description, 
-        protected: room.protected, 
-        order: room.order, 
-        users: [], 
-        managers: roomManagers[room.id] || [],
-        background: roomBackgrounds[room.id],
-        settings: roomSettings[room.id]
-      }));
+        .filter(roomInstance => {
+          const room = roomInstance.get({ plain: true });
+          return room.name !== 'غرفة تخصيص المظهر';
+        })
+        .map(roomInstance => {
+          const room = roomInstance.get({ plain: true });
+          return { 
+            id: room.id, 
+            name: room.name, 
+            icon: room.icon, 
+            description: room.description, 
+            protected: room.protected, 
+            order: room.order, 
+            users: [], 
+            managers: roomManagers[room.id] || [],
+            background: roomBackgrounds[room.id] || { type: 'color', value: '#000000' },
+            settings: roomSettings[room.id] || { description: room.description, textColor: 'text-white', messageBackground: 'bg-gray-800' }
+          };
+        });
     } else {
       const defaultRooms = [
         { name: 'غرفة العامة', icon: '💬', description: 'محادثات عامة ومتنوعة', protected: false, order: 1 },
         { name: 'غرفة التقنية', icon: '💻', description: 'مناقشات تقنية وبرمجة', protected: false, order: 2 },
         { name: 'غرفة الرياضة', icon: '⚽', description: 'أخبار ومناقشات رياضية', protected: false, order: 3 },
-        { name: 'غرفة الألعاب', icon: '🎮', description: 'مناقشات الألعاب والجيمرز', protected: false, order: 4 }
+        { name: 'غرفة الألعاب', icon: '🎮', description: 'مناقشات الألعاب والجيمرز', protected: false, order: 4 },
+        { name: 'غرفة التسلية', icon: '🎡', description: 'مسابقات وألعاب وبوت الأسئلة', protected: false, order: 5 }
       ];
       for (const defaultRoom of defaultRooms) {
         await Room.findOrCreate({ where: { name: defaultRoom.name }, defaults: { ...defaultRoom, createdBy: 'Walid dz 31' } });
       }
       const createdRooms = await Room.findAll({ order: [['order', 'ASC'], ['id', 'ASC']] });
-      rooms = createdRooms.map(room => ({ 
-        id: room.id, 
-        name: room.name, 
-        icon: room.icon, 
-        description: room.description, 
-        protected: room.protected, 
-        order: room.order, 
-        users: [], 
-        managers: roomManagers[room.id] || [],
-        background: roomBackgrounds[room.id],
-        settings: roomSettings[room.id]
-      }));
+      rooms = createdRooms.map(roomInstance => {
+        const room = roomInstance.get({ plain: true });
+        return { 
+          id: room.id, 
+          name: room.name, 
+          icon: room.icon, 
+          description: room.description, 
+          protected: room.protected, 
+          order: room.order, 
+          users: [], 
+          managers: roomManagers[room.id] || [],
+          background: roomBackgrounds[room.id] || { type: 'color', value: '#000000' },
+          settings: roomSettings[room.id] || { description: room.description, textColor: 'text-white', messageBackground: 'bg-gray-800' }
+        };
+      });
     }
 
     const existingShopItems = await ShopItem.count();
@@ -1563,6 +1765,51 @@ socket.on('send private image', async (data) => {
   socket.emit('ranks update', ranks);
 });
 
+  // حدث دخول زائر
+  socket.on('user guest login', async (userData) => {
+    try {
+      const username = userData.username.trim();
+      
+      // تحقق من وجود ايموجي
+      const emojiRegex = /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
+      if (emojiRegex.test(username)) {
+        socket.emit('guest error', 'عذراً، لا يمكن استخدام الرموز التعبيرية (Emojis) في اسم الزائر!');
+        return;
+      }
+
+      if (users[username]) {
+        socket.emit('guest error', 'اسم المستخدم هذا مسجل بالفعل كعضو، يرجى تسجيل الدخول أو اختيار اسم آخر.');
+        return;
+      }
+
+      // التحقق من أن الاسم غير مستخدم حالياً من قبل زائر آخر متصل
+      const isNameTaken = Object.values(onlineUsers).some(u => u.name === username);
+      if (isNameTaken) {
+        socket.emit('guest error', 'هذا الاسم مستخدم حالياً في المحادثة، يرجى اختيار اسم آخر.');
+        return;
+      }
+
+      const sessionId = 'guest_' + Date.now() + Math.random().toString(36).substr(2, 9);
+      
+      socket.emit('guest success', {
+        name: username,
+        rank: 'زائر',
+        isSiteOwner: false,
+        isGuest: true, // إضافة علامة أنه زائر
+        gender: userData.gender,
+        socketId: socket.id,
+        sessionId: sessionId,
+        nameColor: null
+      });
+      
+      socket.join(username);
+      socket.emit('ranks update', ranks);
+    } catch (error) {
+      console.error('خطأ في عملية دخول الزائر:', error);
+      socket.emit('guest error', 'حدث خطأ في الخادم، يرجى المحاولة مرة أخرى.');
+    }
+  });
+
   // في حدث join room - البحث عن هذا الجزء واستبداله
 socket.on('join room', (data) => {
     const { roomId, user } = data;
@@ -1572,6 +1819,7 @@ socket.on('join room', (data) => {
         socket.emit('join error', 'الغرفة غير موجودة.');
         return;
     }
+
     // --- التحقق من الحظر من الغرفة ---
     if (userManagement.bannedFromRoom[room.name] && userManagement.bannedFromRoom[room.name][user.name]) {
         socket.emit('banned from room', { room: room.name, reason: userManagement.bannedFromRoom[room.name][user.name].reason });
@@ -1772,7 +2020,14 @@ socket.on('join room', (data) => {
 
             userMessageHistory[roomId][user.name] = []; // Reset spam history
 
-            const muteAnnouncement = { type: 'system', user: 'رسائل النظام', avatar: BOT_AVATAR_URL, content: `🔇 تم كتم المستخدم <strong class="text-white">${user.name}</strong> لمدة ${SPAM_MUTE_DURATION_MIN} دقائق بسبب تكرار الرسائل بهدف جمع النقاط بطريقة غير شرعية.`, time: new Date().toLocaleTimeString('ar-SA') };
+            const muteAnnouncement = { 
+                type: 'system', 
+                systemStatus: 'negative', 
+                user: 'رسائل النظام', 
+                avatar: BOT_AVATAR_URL, 
+                content: `🔇 تم كتم المستخدم <strong class="text-white">${user.name}</strong> لمدة ${SPAM_MUTE_DURATION_MIN} دقائق بسبب تكرار الرسائل بهدف جمع النقاط بطريقة غير شرعية.`, 
+                time: new Date().toLocaleTimeString('ar-SA') 
+            };
             io.to(roomId).emit('new message', muteAnnouncement);
             if (messages[roomId]) messages[roomId].push(muteAnnouncement);
 
@@ -1841,6 +2096,41 @@ socket.on('join room', (data) => {
     messages[roomId].push(newMessage);
     
     io.to(roomId).emit('new message', newMessage);
+
+    // التحقق من إجابة المسابقة
+    if (quizState.active && quizState.isWaitingForAnswer && roomId === quizState.roomId && message) {
+        const userAnswer = message.trim().toLowerCase();
+        if (userAnswer === quizState.currentAnswer) {
+            quizState.isWaitingForAnswer = false;
+            // إلغاء مؤقت "لم يجب أحد"
+            if (quizState.answerTimer) {
+                clearTimeout(quizState.answerTimer);
+                quizState.answerTimer = null;
+            }
+            
+            // منح النقاط
+            if (!userPoints[user.name]) {
+                userPoints[user.name] = { points: 0, level: 1 };
+            }
+            userPoints[user.name].points += 200;
+            await saveUserPoints(user.name, userPoints[user.name].points, userPoints[user.name].level);
+
+            const winMessage = {
+                type: 'system',
+                systemStatus: 'positive', // إجابة صحيحة باللون الأخضر
+                user: 'بوت المسابقات',
+                avatar: BOT_AVATAR_URL,
+                content: `🎉 إجابة صحيحة! <strong class="text-white">${user.name}</strong> حصل على 200 نقطة. الإجابة هي: <strong class="text-yellow-300">${quizState.currentAnswer}</strong>\n\n🔄 السؤال القادم بعد 30 ثانية...`,
+                time: new Date().toLocaleTimeString('ar-SA')
+            };
+            io.to(roomId).emit('new message', winMessage);
+            if (messages[roomId]) messages[roomId].push(winMessage);
+
+            // جدولة السؤال التالي بعد 30 ثانية
+            if (quizState.timer) clearTimeout(quizState.timer);
+            quizState.timer = setTimeout(askQuizQuestion, 30000);
+        }
+    }
   });
 
   // حدث حذف رسالة من محادثة الغرفة (وليس الخاصة)
@@ -1954,6 +2244,7 @@ socket.on('leave room', async (data) => {
     const iconHtml = getRankIconHtml(rankInfo.icon);
     const notificationMessage = {
       type: 'system',
+      systemStatus: 'positive', // منح رتبة باللون الأخضر
       user: 'رسائل النظام',
       avatar: BOT_AVATAR_URL,
       content: `👑 تم منح رتبة ${iconHtml} ${rank} للمستخدم ${username} من قبل ${currentUser.name}`, 
@@ -2015,6 +2306,7 @@ socket.on('leave room', async (data) => {
       
       const notificationMessage = {
         type: 'system',
+        systemStatus: 'negative', // إزالة رتبة باللون الأحمر
         user: 'رسائل النظام',
         avatar: BOT_AVATAR_URL, 
         content: `👑 تم إزالة رتبة ${oldRank} من المستخدم ${username} من قبل ${currentUser.name}`, 
@@ -2106,6 +2398,7 @@ socket.on('leave room', async (data) => {
     
     const notificationMessage = {
       type: 'system',
+      systemStatus: 'negative',
       user: 'رسائل النظام',
       avatar: BOT_AVATAR_URL, 
       content: `🔇 تم كتم المستخدم ${username} لمدة ${duration} دقيقة من قبل ${currentUser.name} (في جميع الغرف)`, 
@@ -2136,6 +2429,7 @@ socket.on('leave room', async (data) => {
       
       const notificationMessage = {
         type: 'system',
+        systemStatus: 'positive',
         user: 'رسائل النظام',
         avatar: BOT_AVATAR_URL, 
         content: `🔊 تم إلغاء كتم المستخدم ${username} من قبل ${currentUser.name} (في جميع الغرف)`, 
@@ -2195,6 +2489,7 @@ socket.on('leave room', async (data) => {
     
     const notificationMessage = {
       type: 'system',
+      systemStatus: 'negative',
       user: 'رسائل النظام',
       avatar: BOT_AVATAR_URL, 
       content: `🚫 تم حظر المستخدم ${username} من الغرفة ${room.name} من قبل ${currentUser.name}. السبب: ${reason || 'غير محدد'}`, 
@@ -2235,6 +2530,7 @@ socket.on('leave room', async (data) => {
       
       const notificationMessage = {
         type: 'system',
+        systemStatus: 'positive',
         user: 'رسائل النظام',
         avatar: BOT_AVATAR_URL, 
         content: `✅ تم إلغاء حظر المستخدم ${username} من الغرفة ${room.name} من قبل ${currentUser.name}`, 
@@ -2286,6 +2582,7 @@ socket.on('leave room', async (data) => {
     
     const notificationMessage = {
       type: 'system',
+      systemStatus: 'negative',
       user: 'رسائل النظام',
       avatar: BOT_AVATAR_URL, 
       content: `⛔ تم حظر المستخدم ${username} من الموقع بالكامل من قبل ${currentUser.name}. السبب: ${reason || 'غير محدد'}`, 
@@ -2315,6 +2612,7 @@ socket.on('leave room', async (data) => {
       
       const notificationMessage = {
         type: 'system',
+        systemStatus: 'positive',
         user: 'رسائل النظام',
         avatar: BOT_AVATAR_URL, 
         content: `🌐 تم إلغاء حظر المستخدم ${username} من الموقع بالكامل من قبل ${currentUser.name}`, 
@@ -2365,6 +2663,7 @@ socket.on('leave room', async (data) => {
     if (userRoomId) {
       const notificationMessage = {
         type: 'system',
+        systemStatus: 'negative',
         user: 'رسائل النظام',
         avatar: BOT_AVATAR_URL,
         content: `⚠️ تم توجيه تحذير للمستخدم <strong class="text-white">${username}</strong> من قبل ${currentUser.name}. السبب: ${warningData.reason}`,
@@ -2436,6 +2735,7 @@ socket.on('leave room', async (data) => {
       
       const notificationMessage = {
         type: 'system',
+        systemStatus: 'negative', // حذف المستخدم باللون الأحمر
         user: 'رسائل النظام',
         avatar: BOT_AVATAR_URL, 
         content: `🗑️ تم حذف المستخدم ${username} من قبل ${currentUser.name}`, 
@@ -2648,8 +2948,9 @@ socket.on('leave room', async (data) => {
   socket.on('get user profile', (data) => {
     const { username } = data;
     const isOnline = Object.values(onlineUsers).some(user => user.name === username);
+    const onlineUser = Object.values(onlineUsers).find(user => user.name === username);
     const lastSeen = isOnline ? null : userLastSeen[username] || null;
-    const userRank = userRanks[username] || null;
+    const userRank = userRanks[username] || (onlineUser ? onlineUser.rank : null);
     const avatar = userAvatars[username] || DEFAULT_AVATAR_URL;
     const userData = users[username];
     
@@ -2669,7 +2970,7 @@ socket.on('leave room', async (data) => {
         lastSeen,
         rank: userRank,
         avatar,
-        gender: userData ? userData.gender : null,
+        gender: userData ? userData.gender : (onlineUser ? onlineUser.gender : null),
         bio: userData ? userData.bio : null,
         points: pointsData.points,
         level: pointsData.level,
@@ -3416,6 +3717,7 @@ socket.on('get private messages', async (data) => {
 
         const notificationMessage = {
           type: 'system',
+          systemStatus: 'positive', // تعيين مدير باللون الأخضر
           user: 'رسائل النظام',
           avatar: BOT_AVATAR_URL,
           content: `👮 تم تعيين ${managerUsername} كمدير لغرفة ${room.name} من قبل ${currentUser.name}`,
@@ -3465,6 +3767,7 @@ socket.on('get private messages', async (data) => {
 
         const notificationMessage = {
           type: 'system',
+          systemStatus: 'negative', // إزالة مدير باللون الأحمر
           user: 'رسائل النظام',
           avatar: BOT_AVATAR_URL,
           content: `👮 تم إزالة ${managerUsername} من منصب مدير غرفة ${room.name} من قبل ${currentUser.name}`,
@@ -3780,6 +4083,20 @@ socket.on('get private messages', async (data) => {
     }
   });
   
+  socket.on('logout', () => {
+    const user = onlineUsers[socket.id];
+    if (user) {
+      const roomId = user.roomId;
+      const room = rooms.find(r => r.id === roomId);
+      if (room) {
+        room.users = room.users.filter(u => u.id !== socket.id);
+        broadcastRoomsUpdate();
+        io.to(roomId).emit('users update', room.users);
+      }
+      delete onlineUsers[socket.id];
+    }
+  });
+
   // في حدث disconnect - البحث عن هذا الجزء واستبداله
 socket.on('disconnect', async (reason) => {
     const user = onlineUsers[socket.id];
@@ -3893,6 +4210,7 @@ socket.on('disconnect', async (reason) => {
       // إرسال إشعار عام لجميع الغرف
       const notificationMessage = {
         type: 'system',
+        systemStatus: 'positive', // إرسال النقاط باللون الأخضر
         user: 'رسائل النظام',
         avatar: BOT_AVATAR_URL,
         content: `🎁 أرسل <strong class="text-white">${fromUser}</strong> عدد <strong class="text-yellow-300">${amount}</strong> نقطة إلى <strong class="text-white">${toUser}</strong>.`,
@@ -4646,6 +4964,62 @@ socket.on('disconnect', async (reason) => {
         socket.emit('control success', `تم حذف الرتبة "${rankName}"`);
     }
   });
+
+  // --- أحداث إدارة المسابقات ---
+  socket.on('get quiz questions', async (data) => {
+    const { currentUser } = data;
+    if (!currentUser || currentUser.name !== SITE_OWNER.username) return;
+    try {
+        const questions = await QuizQuestion.findAll();
+        socket.emit('quiz questions list', questions);
+    } catch (error) {
+        socket.emit('control error', 'حدث خطأ أثناء جلب الأسئلة');
+    }
+  });
+
+  socket.on('add quiz question', async (data) => {
+    const { category, question, answer, currentUser } = data;
+    if (!currentUser || currentUser.name !== SITE_OWNER.username) return;
+    if (!question || !answer || !category) {
+        socket.emit('control error', 'يجب إدخال الفئة والسؤال والإجابة');
+        return;
+    }
+    try {
+        await QuizQuestion.create({ category, question, answer });
+        const questions = await QuizQuestion.findAll();
+        socket.emit('quiz questions list', questions);
+        socket.emit('control success', 'تم إضافة السؤال بنجاح');
+    } catch (error) {
+        socket.emit('control error', 'حدث خطأ أثناء إضافة السؤال');
+    }
+  });
+
+  socket.on('update bot avatar', async (data) => {
+    const { avatarUrl, currentUser } = data;
+    if (!currentUser || currentUser.name !== SITE_OWNER.username) return;
+    if (!avatarUrl) return;
+    try {
+        await SystemSettings.upsert({ key: 'botAvatar', value: avatarUrl });
+        BOT_AVATAR_URL = avatarUrl;
+        socket.emit('control success', 'تم تحديث صورة البوت بنجاح');
+        // تحديث صورة البوت في جميع الرسائل النظامية المستقبلية
+    } catch (error) {
+        socket.emit('control error', 'حدث خطأ أثناء تحديث صورة البوت');
+    }
+  });
+
+  socket.on('delete quiz question', async (data) => {
+    const { id, currentUser } = data;
+    if (!currentUser || currentUser.name !== SITE_OWNER.username) return;
+    try {
+        await QuizQuestion.destroy({ where: { id } });
+        const questions = await QuizQuestion.findAll();
+        socket.emit('quiz questions list', questions);
+        socket.emit('control success', 'تم حذف السؤال بنجاح');
+    } catch (error) {
+        socket.emit('control error', 'حدث خطأ أثناء حذف السؤال');
+    }
+  });
 });
 
 app.get('/api/rooms', (req, res) => {
@@ -4704,6 +5078,7 @@ app.get('*', (req, res) => {
 async function startServer() {
   await loadData(); // انتظر حتى تكتمل عملية تحميل ومزامنة البيانات
   isServerReady = true; // تعيين السيرفر كجاهز
+  startQuizMonitor(); // بدء مراقبة غرفة التسلية
   server.listen(PORT, () => {
     console.log(`السيرفر يعمل على المنفذ ${PORT}`);
   });
