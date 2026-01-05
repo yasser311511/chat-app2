@@ -322,8 +322,98 @@ let quizState = {
     answerTimer: null,
     lastQuestionTime: 0,
     lastQuestionId: null,
-    isWaitingForAnswer: false
+    isWaitingForAnswer: false,
+    questionsQueue: [],
+    currentQuestionIndex: 0
 };
+
+// --- إعدادات بوت الذكاء الاصطناعي ---
+const AI_BOT_CONFIG = {
+    name: "الذكاء الاصطناعي",
+    avatar: "/images.png",
+    apiUrl: "https://router.huggingface.co/v1/chat/completions",
+    model: "Qwen/Qwen2.5-7B-Instruct",
+    apiKey: process.env.HF_API_KEY || "" 
+};
+
+async function askAIBot(question) {
+    if (!AI_BOT_CONFIG.apiKey || AI_BOT_CONFIG.apiKey === "your_huggingface_api_key_here") {
+        return "⚠️ عذراً، لم يتم وضع مفتاح API الحقيقي في ملف .env. يرجى استبدال 'your_huggingface_api_key_here' بمفتاحك الخاص من Hugging Face.";
+    }
+
+    const payload = JSON.stringify({
+        model: AI_BOT_CONFIG.model,
+        messages: [
+            { role: "system", content: "You are a helpful assistant in an Arabic chat application called WalChat. Keep your responses concise and friendly in Arabic." },
+            { role: "user", content: question }
+        ],
+        max_tokens: 400,
+        temperature: 0.7
+    });
+
+    const options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${AI_BOT_CONFIG.apiKey.trim()}`
+        }
+    };
+
+    return new Promise((resolve) => {
+        const req = https.request(AI_BOT_CONFIG.apiUrl, options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => { data += chunk; });
+            res.on('end', () => {
+                try {
+                    if (res.statusCode !== 200) {
+                        console.error(`AI Bot Error: Status ${res.statusCode}`, data);
+                        let errorDetail = "";
+                        try {
+                            const errorJson = JSON.parse(data);
+                            errorDetail = errorJson.error?.message || errorJson.error || "";
+                        } catch (e) {}
+
+                        if (res.statusCode === 404) {
+                            resolve("عذراً، الرابط المستخدم غير صحيح أو النموذج غير متوفر حالياً. يرجى المحاولة لاحقاً.");
+                        } else if (res.statusCode === 401) {
+                            resolve("⚠️ خطأ في المصادقة: مفتاح API غير صحيح. تأكد من نسخه بشكل صحيح من إعدادات Hugging Face.");
+                        } else if (errorDetail) {
+                            resolve(`عذراً، حدث خطأ: ${errorDetail}`);
+                        } else {
+                            resolve(`عذراً، حدث خطأ في الخادم (Status ${res.statusCode}).`);
+                        }
+                        return;
+                    }
+
+                    const response = JSON.parse(data);
+                    if (response.choices && response.choices[0] && response.choices[0].message) {
+                        resolve(response.choices[0].message.content.trim());
+                    } else if (response.error) {
+                        const errorMsg = response.error.message || response.error;
+                        if (errorMsg.includes("currently loading")) {
+                            resolve("جاري تشغيل محرك الذكاء الاصطناعي، يرجى المحاولة بعد لحظات...");
+                        } else {
+                            resolve(`عذراً، حدث خطأ: ${errorMsg}`);
+                        }
+                    } else {
+                        resolve("عذراً، حدث خطأ في معالجة الرد.");
+                    }
+                } catch (e) {
+                    console.error('AI Bot Parse Error:', e, 'Raw Data:', data);
+                    resolve("عذراً، حدث خطأ في التواصل مع الذكاء الاصطناعي.");
+                }
+            });
+        });
+
+        req.on('error', (e) => {
+            console.error('AI Bot Request Error:', e);
+            resolve("عذراً، حدث خطأ في الاتصال.");
+        });
+
+        req.write(payload);
+        req.end();
+    });
+}
 
 // --- متغير للتحقق من جاهزية السيرفر ---
 let isServerReady = false;
@@ -347,6 +437,15 @@ function getJson(url) {
     });
 }
 
+// دالة لخلط المصفوفة
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
 // --- وظائف QuizBot ---
 async function askQuizQuestion() {
     const entertainmentRoom = rooms.find(r => r.name === 'غرفة التسلية');
@@ -360,53 +459,44 @@ async function askQuizQuestion() {
     quizState.active = true;
     quizState.roomId = entertainmentRoom.id;
 
-    let questionData;
-    
-    // ميكانيكية الخلط: 70% يدوي، 30% افتراضي عربي
-    const rand = Math.random();
-    
-    if (rand < 0.7) {
-        // محاولة جلب سؤال يدوي من قاعدة البيانات
+    // إذا كانت القائمة فارغة أو انتهينا من جميع الأسئلة، نقوم بتحميلها وخلطها
+    if (quizState.questionsQueue.length === 0 || quizState.currentQuestionIndex >= quizState.questionsQueue.length) {
         try {
             const manualQuestions = await QuizQuestion.findAll();
-            if (manualQuestions.length > 0) {
-                let availableQuestions = manualQuestions;
-                if (manualQuestions.length > 1 && quizState.lastQuestionId) {
-                    availableQuestions = manualQuestions.filter(q => q.id !== quizState.lastQuestionId);
-                }
-                const randomIdx = Math.floor(Math.random() * availableQuestions.length);
-                questionData = availableQuestions[randomIdx];
-                quizState.lastQuestionId = questionData.id;
-            }
+            const defaultQuestions = [
+                { category: "إسلاميات", question: "ما هو أطول سورة في القرآن الكريم؟", answer: "البقرة" },
+                { category: "تاريخ", question: "من هو القائد العربي الذي فتح الأندلس؟", answer: "طارق بن زياد" },
+                { category: "جغرافيا", question: "ما هو أطول نهر في العالم؟", answer: "النيل" },
+                { category: "علوم", question: "ما هو العضو المسؤول عن ضخ الدم في جسم الإنسان؟", answer: "القلب" },
+                { category: "ثقافة", question: "ما هي عاصمة اليابان؟", answer: "طوكيو" },
+                { category: "رياضة", question: "كم عدد لاعبين فريق كرة القدم في الملعب؟", answer: "11" },
+                { category: "أدب", question: "من هو الشاعر الملقب بأمير الشعراء؟", answer: "أحمد شوقي" },
+                { category: "جغرافيا", question: "ما هي أكبر دولة في العالم من حيث المساحة؟", answer: "روسيا" },
+                { category: "إسلاميات", question: "كم عدد الخلفاء الراشدين؟", answer: "4" },
+                { category: "علوم", question: "ما هو الكوكب الملقب بالكوكب الأحمر؟", answer: "المريخ" }
+            ];
+            
+            // دمج الأسئلة اليدوية مع الافتراضية
+            const allQuestions = [...manualQuestions.map(q => q.get ? q.get({ plain: true }) : q), ...defaultQuestions];
+            
+            // خلط جميع الأسئلة
+            quizState.questionsQueue = shuffleArray(allQuestions);
+            quizState.currentQuestionIndex = 0;
         } catch (err) {
-            console.error('Error fetching manual questions:', err);
+            console.error('Error loading quiz questions:', err);
+            // في حالة الخطأ، نستخدم الأسئلة الافتراضية
+            const defaultQuestions = [
+                { category: "إسلاميات", question: "ما هو أطول سورة في القرآن الكريم؟", answer: "البقرة" },
+                { category: "تاريخ", question: "من هو القائد العربي الذي فتح الأندلس؟", answer: "طارق بن زياد" }
+            ];
+            quizState.questionsQueue = shuffleArray(defaultQuestions);
+            quizState.currentQuestionIndex = 0;
         }
     }
 
-    // إذا لم يتوفر سؤال يدوي أو وقع الاختيار على الافتراضي، نستخدم قائمة عربية غنية
-    if (!questionData) {
-        const defaultQuestions = [
-            { category: "إسلاميات", question: "ما هو أطول سورة في القرآن الكريم؟", answer: "البقرة" },
-            { category: "تاريخ", question: "من هو القائد العربي الذي فتح الأندلس؟", answer: "طارق بن زياد" },
-            { category: "جغرافيا", question: "ما هو أطول نهر في العالم؟", answer: "النيل" },
-            { category: "علوم", question: "ما هو العضو المسؤول عن ضخ الدم في جسم الإنسان؟", answer: "القلب" },
-            { category: "ثقافة", question: "ما هي عاصمة اليابان؟", answer: "طوكيو" },
-            { category: "رياضة", question: "كم عدد لاعبين فريق كرة القدم في الملعب؟", answer: "11" },
-            { category: "أدب", question: "من هو الشاعر الملقب بأمير الشعراء؟", answer: "أحمد شوقي" },
-            { category: "جغرافيا", question: "ما هي أكبر دولة في العالم من حيث المساحة؟", answer: "روسيا" },
-            { category: "إسلاميات", question: "كم عدد الخلفاء الراشدين؟", answer: "4" },
-            { category: "علوم", question: "ما هو الكوكب الملقب بالكوكب الأحمر؟", answer: "المريخ" }
-        ];
-        
-        let availableDefaults = defaultQuestions;
-        if (quizState.currentQuestion) {
-            availableDefaults = defaultQuestions.filter(q => q.question !== quizState.currentQuestion);
-        }
-        
-        questionData = availableDefaults[Math.floor(Math.random() * availableDefaults.length)];
-        quizState.lastQuestionId = null;
-    }
-
+    const questionData = quizState.questionsQueue[quizState.currentQuestionIndex];
+    quizState.currentQuestionIndex++;
+    
     quizState.currentQuestion = questionData.question;
     quizState.currentAnswer = questionData.answer.trim().toLowerCase();
     quizState.lastQuestionTime = Date.now();
@@ -2097,10 +2187,84 @@ socket.on('join room', (data) => {
     
     io.to(roomId).emit('new message', newMessage);
 
+    // --- AI Bot Integration ---
+    const aiMention = "@الذكاء الاصطناعي";
+    if (message && message.includes(aiMention)) {
+        const question = message.replace(aiMention, "").trim();
+        if (question) {
+            askAIBot(question).then(aiResponse => {
+                const aiMessage = {
+                    type: 'user',
+                    roomId: roomId,
+                    messageId: 'ai_' + Date.now(),
+                    user: AI_BOT_CONFIG.name,
+                    content: aiResponse,
+                    time: new Date().toLocaleTimeString('en-GB'),
+                    replyTo: {
+                        messageId: messageId,
+                        user: user.name,
+                        content: message
+                    },
+                    timestamp: Date.now(),
+                    gender: 'male',
+                    rank: 'بوت الذكاء الاصطناعي',
+                    avatar: AI_BOT_CONFIG.avatar,
+                    nameBackground: '',
+                    avatarFrame: ''
+                };
+                
+                if (messages[roomId]) {
+                    messages[roomId].push(aiMessage);
+                    if (messages[roomId].length > 300) messages[roomId].shift();
+                }
+                io.to(roomId).emit('new message', aiMessage);
+            });
+        }
+    }
+
+    // --- System Welcome Mention ---
+    const systemMention = "@رسائل النظام";
+    if (message && message.includes(systemMention) && message.includes("ترحيب")) {
+        setTimeout(() => {
+            const welcomeMsg = {
+                type: 'system',
+                messageId: 'sys_welcome_' + Date.now(),
+                user: 'رسائل النظام',
+                content: 'منورين مرحبا بالزوار الجدد في موقع WalChat نتمنى لكم قضاء وقت سعيد',
+                time: new Date().toLocaleTimeString('en-GB'),
+                timestamp: Date.now(),
+                rank: 'نظام',
+                avatar: '/icon.png'
+            };
+            if (messages[roomId]) {
+                messages[roomId].push(welcomeMsg);
+                if (messages[roomId].length > 300) messages[roomId].shift();
+            }
+            io.to(roomId).emit('new message', welcomeMsg);
+        }, 5000); // مهلة 5 ثواني
+    }
+
     // التحقق من إجابة المسابقة
     if (quizState.active && quizState.isWaitingForAnswer && roomId === quizState.roomId && message) {
-        const userAnswer = message.trim().toLowerCase();
-        if (userAnswer === quizState.currentAnswer) {
+        const cleanMessage = message.trim().toLowerCase();
+        const botMention = "@رسائل النظام";
+        
+        // التحقق مما إذا كانت الإجابة موجودة في الرسالة
+        let isCorrect = false;
+        const answer = quizState.currentAnswer.toLowerCase().trim();
+        
+        if (cleanMessage.includes(answer)) {
+            // التأكد من أن الإجابة ليست مجرد جزء من كلمة أخرى (اختياري ولكن أفضل للدقة)
+            // في حالتنا سنكتفي بـ includes كما طلبت ليكون البوت مرناً
+            isCorrect = true;
+        } else if (cleanMessage.includes(botMention.toLowerCase())) {
+            const textWithoutMention = cleanMessage.replace(botMention.toLowerCase(), "").trim();
+            if (textWithoutMention.includes(answer)) {
+                isCorrect = true;
+            }
+        }
+
+        if (isCorrect) {
             quizState.isWaitingForAnswer = false;
             // إلغاء مؤقت "لم يجب أحد"
             if (quizState.answerTimer) {
@@ -2115,20 +2279,23 @@ socket.on('join room', (data) => {
             userPoints[user.name].points += 200;
             await saveUserPoints(user.name, userPoints[user.name].points, userPoints[user.name].level);
 
-            const winMessage = {
-                type: 'system',
-                systemStatus: 'positive', // إجابة صحيحة باللون الأخضر
-                user: 'بوت المسابقات',
-                avatar: BOT_AVATAR_URL,
-                content: `🎉 إجابة صحيحة! <strong class="text-white">${user.name}</strong> حصل على 200 نقطة. الإجابة هي: <strong class="text-yellow-300">${quizState.currentAnswer}</strong>\n\n🔄 السؤال القادم بعد 30 ثانية...`,
-                time: new Date().toLocaleTimeString('ar-SA')
-            };
-            io.to(roomId).emit('new message', winMessage);
-            if (messages[roomId]) messages[roomId].push(winMessage);
+            // الانتظار 5 ثواني قبل إعلان الفائز
+            setTimeout(() => {
+                const winMessage = {
+                    type: 'system',
+                    systemStatus: 'positive', // إجابة صحيحة باللون الأخضر
+                    user: 'بوت المسابقات',
+                    avatar: BOT_AVATAR_URL,
+                    content: `🎉 إجابة صحيحة! <strong class="text-white">${user.name}</strong> حصل على 200 نقطة. الإجابة هي: <strong class="text-yellow-300">${quizState.currentAnswer}</strong>\n\n🔄 السؤال القادم بعد 30 ثانية...`,
+                    time: new Date().toLocaleTimeString('ar-SA')
+                };
+                io.to(roomId).emit('new message', winMessage);
+                if (messages[roomId]) messages[roomId].push(winMessage);
 
-            // جدولة السؤال التالي بعد 30 ثانية
-            if (quizState.timer) clearTimeout(quizState.timer);
-            quizState.timer = setTimeout(askQuizQuestion, 30000);
+                // جدولة السؤال التالي بعد 30 ثانية من إعلان الفوز
+                if (quizState.timer) clearTimeout(quizState.timer);
+                quizState.timer = setTimeout(askQuizQuestion, 30000);
+            }, 5000);
         }
     }
   });
@@ -4986,6 +5153,7 @@ socket.on('disconnect', async (reason) => {
     }
     try {
         await QuizQuestion.create({ category, question, answer });
+        quizState.questionsQueue = []; // إعادة تعيين القائمة لتشمل السؤال الجديد
         const questions = await QuizQuestion.findAll();
         socket.emit('quiz questions list', questions);
         socket.emit('control success', 'تم إضافة السؤال بنجاح');
@@ -5013,6 +5181,7 @@ socket.on('disconnect', async (reason) => {
     if (!currentUser || currentUser.name !== SITE_OWNER.username) return;
     try {
         await QuizQuestion.destroy({ where: { id } });
+        quizState.questionsQueue = []; // إعادة تعيين القائمة
         const questions = await QuizQuestion.findAll();
         socket.emit('quiz questions list', questions);
         socket.emit('control success', 'تم حذف السؤال بنجاح');

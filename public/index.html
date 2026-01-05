@@ -4315,7 +4315,7 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
         let displayContent = isImageReply ? 'صورة 🖼️' : replyTo.content;
 
         // تطبيق تلوين المنشن في الرد أيضاً
-        if (!isImageReply && currentUser && displayContent.includes(`@${currentUser.name}`)) {
+        if (!isImageReply && currentUser && displayContent && typeof displayContent === 'string' && displayContent.includes(`@${currentUser.name}`)) {
             const mentionRegex = new RegExp(`@${currentUser.name}\\b`, 'g');
             displayContent = displayContent.replace(mentionRegex, `<span class="text-yellow-400 font-bold">@${currentUser.name}</span>`);
         }
@@ -6669,7 +6669,7 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
         let displayContent = isImageReply ? 'صورة 🖼️' : replyTo.content;
 
         // تطبيق تلوين المنشن في الرد أيضاً
-        if (!isImageReply && currentUser && displayContent.includes(`@${currentUser.name}`)) {
+        if (!isImageReply && currentUser && displayContent && typeof displayContent === 'string' && displayContent.includes(`@${currentUser.name}`)) {
             const mentionRegex = new RegExp(`@${currentUser.name}\\b`, 'g');
             displayContent = displayContent.replace(mentionRegex, `<span class="text-yellow-400 font-bold">@${currentUser.name}</span>`);
         }
