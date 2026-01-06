@@ -3953,7 +3953,7 @@ socket.on('private messages history', (messages) => {
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                         </svg>
-                        <span>${room.users.length}</span>
+                        <span>${room.userCount !== undefined ? room.userCount : (room.users ? room.users.length : 0)}</span>
                     </div>
                     <div class="cursor-pointer" onclick="${room.protected ? `openProtectedChat(${room.id}, '${room.name}', '${room.icon}')` : `openChat(${room.id}, '${room.name}', '${room.icon}')`}">
                         <div class="text-4xl mb-4 text-center">${room.icon}</div>
@@ -4003,7 +4003,8 @@ socket.on('private messages history', (messages) => {
 
         // فتح غرفة الدردشة
         function openChat(roomId, roomName, icon) {
-            showLoading();
+            // لا نحتاج لإظهار شاشة تحميل كاملة تعطل المستخدم
+            // سنكتفي بتبديل الواجهة فوراً
             
             // إعادة تعيين تتبع المستخدمين عند دخول غرفة جديدة
             previousOnlineUsernames.clear();
@@ -4038,11 +4039,16 @@ socket.on('private messages history', (messages) => {
             // حفظ الغرفة الحالية
             localStorage.setItem('currentRoom', JSON.stringify(currentRoom));
             
+            // تبديل الواجهات فوراً
             document.getElementById('mainPage').classList.add('hidden');
             document.getElementById('chatPage').classList.remove('hidden');
             document.getElementById('chatTitle').textContent = roomName;
             document.getElementById('chatIcon').textContent = icon;
             
+            // تهيئة الحاوية لتكون جاهزة (فارغة مؤقتاً)
+            const container = document.getElementById('messagesContainer');
+            container.innerHTML = '<div class="flex items-center justify-center h-full"><div class="text-gray-400">جاري تحميل المحادثة...</div></div>';
+
             // إظهار الأزرار في رأس المحادثة
             document.getElementById('chatPostsButton').classList.remove('hidden');
             document.getElementById('chatMessagesButtonContainer').classList.remove('hidden');
@@ -4066,7 +4072,7 @@ socket.on('private messages history', (messages) => {
                 messageInputContainer.classList.remove('hidden');
             }
             
-            // الانضمام للغرفة
+            // الانضمام للغرفة في الخلفية
             socket.emit('join room', { roomId, user: currentUser });
         }
 
@@ -7127,7 +7133,7 @@ function updateRoomsListTable() {
     
     sortedRooms.forEach(room => {
         const row = document.createElement('tr');
-        const usersCount = room.users ? room.users.length : 0;
+        const usersCount = room.userCount !== undefined ? room.userCount : (room.users ? room.users.length : 0);
         const status = room.protected ? '🔒 محمية' : '🔓 عامة';
         
         row.innerHTML = `

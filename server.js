@@ -229,6 +229,20 @@ const Room = sequelize.define('Room', {
 const compression = require('compression');
 const app = express();
 app.use(compression());
+
+// إعداد التخزين المؤقت للملفات الثابتة لتحسين السرعة
+const cacheTime = 86400000 * 30; // 30 يوم
+app.use(express.static(path.join(__dirname, 'public'), {
+    maxAge: cacheTime,
+    setHeaders: (res, path) => {
+        if (path.endsWith('.html')) {
+            res.setHeader('Cache-Control', 'public, max-age=0'); // لا تخزن HTML لضمان التحديثات
+        } else {
+            res.setHeader('Cache-Control', `public, max-age=${cacheTime}`);
+        }
+    }
+}));
+
 const server = http.createServer(app);
 const io = socketIo(server, {
   pingTimeout: 30000,
@@ -1318,7 +1332,7 @@ setInterval(async () => {
                 if (u.name === username) u.rank = null;
             }));
             
-            io.emit('rooms update', rooms);
+            broadcastRoomsUpdate();
         }
     }
 }, 60000); // فحص كل دقيقة
@@ -1434,12 +1448,26 @@ app.post('/api/upload-room-background', upload.single('image'), (req, res) => {
 app.use(express.static(path.join(__dirname, 'public', 'uploads')));
 
 // إعداد Socket.io
+// دالة للحصول على نسخة خفيفة من الغرف لتقليل حجم البيانات
+function getLightRooms() {
+  return rooms.map(r => ({
+    id: r.id,
+    name: r.name,
+    icon: r.icon,
+    description: r.description,
+    protected: r.protected,
+    order: r.order,
+    userCount: r.users ? r.users.length : 0,
+    managers: r.managers || []
+  }));
+}
+
 // دالة لإرسال تحديث الغرف مع تقليل الضغط (Throttling)
 let roomsUpdateTimeout = null;
 function broadcastRoomsUpdate() {
   if (roomsUpdateTimeout) return;
   roomsUpdateTimeout = setTimeout(() => {
-    io.emit('rooms update', rooms);
+    io.emit('rooms update', getLightRooms());
     roomsUpdateTimeout = null;
   }, 2000); // إرسال التحديث كل ثانيتين كحد أقصى
 }
@@ -1456,7 +1484,7 @@ io.on('connection', (socket) => {
   // إرسال الإعلان الحالي للمستخدم الجديد
   socket.emit('announcement update', globalAnnouncement);
   socket.emit('ranks update', ranks); // إرسال الرتب فور الاتصال لضمان تحميل الرتب الخاصة
-  socket.emit('rooms update', rooms); // إرسال الغرف فوراً لضمان سرعة العرض
+  socket.emit('rooms update', getLightRooms()); // إرسال الغرف فوراً لضمان سرعة العرض
   
   // إرسال بيانات الصور عند الطلب
 socket.on('get user avatars', () => {
@@ -1998,8 +2026,8 @@ socket.on('join room', (data) => {
     // إرسال تاريخ المحادثة للمستخدم الجديد (الرسائل الحديثة فقط)
     // تأكد أن كل رسالة لديها messageId (لنتمكن من التعامل معها في الواجهة)
     const roomMessages = messages[roomId] || [];
-    // إرسال آخر 25 رسالة فقط لتسريع التحميل
-    const initialMessages = roomMessages.slice(-25);
+    // إرسال آخر 15 رسالة فقط لتسريع التحميل الأولي (يمكن للمستخدم تحميل المزيد)
+    const initialMessages = roomMessages.slice(-15);
     const formattedMessages = initialMessages.map((msg, idx) => {
       // اعطِ معرفًا فريداً إن لم يكن موجودًا لأي رسالة (نصية أو صورة)
       if (!msg.messageId) {
@@ -2403,7 +2431,7 @@ socket.on('leave room', async (data) => {
     });
     
     // إرسال تحديث الغرف والمستخدمين
-    io.emit('rooms update', rooms);
+    broadcastRoomsUpdate();
     io.to(room.id).emit('users update', room.users);
     
     // إرسال إشعار للجميع
@@ -2468,7 +2496,7 @@ socket.on('leave room', async (data) => {
       });
       
       // إرسال تحديث الغرف والمستخدمين
-      io.emit('rooms update', rooms);
+      broadcastRoomsUpdate();
       io.to(room.id).emit('users update', room.users);
       
       const notificationMessage = {
@@ -3098,7 +3126,7 @@ socket.on('leave room', async (data) => {
     });
     
     // إرسال تحديث الغرف والمستخدمين
-    io.emit('rooms update', rooms);
+    broadcastRoomsUpdate();
     if (room) {
       io.to(room.id).emit('users update', room.users);
     }
@@ -3188,7 +3216,7 @@ socket.on('leave room', async (data) => {
           if (u.name === username) u.nameColor = shopItem.itemValue;
         }));
         
-        io.emit('rooms update', rooms);
+        broadcastRoomsUpdate();
         
         // تحديث قائمة المستخدمين في الغرفة الحالية
         const userRoom = rooms.find(r => r.users.some(u => u.name === username));
@@ -3241,7 +3269,7 @@ socket.on('leave room', async (data) => {
         
         socket.emit('feature success', 'تم تحديث الميزة بنجاح');
         // نرسل تحديث الغرف لتحديث القوائم
-        io.emit('rooms update', rooms);
+        broadcastRoomsUpdate();
     } catch (error) {
         console.error('Error updating feature:', error);
         socket.emit('feature error', 'حدث خطأ أثناء تحديث الميزة.');
@@ -3894,7 +3922,7 @@ socket.on('get private messages', async (data) => {
         io.to(roomId).emit('new message', notificationMessage);
         messages[roomId] = messages[roomId] || [];
         messages[roomId].push(notificationMessage);
-        io.emit('rooms update', rooms);
+        broadcastRoomsUpdate();
 
         socket.emit('management success', `تم تعيين ${managerUsername} كمدير للغرفة بنجاح`);
       } catch (error) {
@@ -3944,7 +3972,7 @@ socket.on('get private messages', async (data) => {
         io.to(roomId).emit('new message', notificationMessage);
         messages[roomId] = messages[roomId] || [];
         messages[roomId].push(notificationMessage);
-        io.emit('rooms update', rooms);
+        broadcastRoomsUpdate();
 
         socket.emit('management success', `تم إزالة ${managerUsername} من منصب مدير الغرفة بنجاح`);
       } catch (error) {
@@ -4010,7 +4038,7 @@ socket.on('get private messages', async (data) => {
       };
 
       room.settings = roomSettings[roomIdInt];
-      io.emit('rooms update', rooms);
+      broadcastRoomsUpdate();
       io.emit('management success', 'تم تحديث إعدادات الغرفة بنجاح');
     } catch (error) {
       socket.emit('management error', 'حدث خطأ في تحديث الإعدادات');
@@ -4047,7 +4075,7 @@ socket.on('get private messages', async (data) => {
       };
 
       room.background = roomBackgrounds[roomIdInt];
-      io.emit('rooms update', rooms);
+      broadcastRoomsUpdate();
       io.emit('management success', 'تم تحديث خلفية الغرفة بنجاح');
     } catch (error) {
       socket.emit('management error', 'حدث خطأ في تحديث الخلفية');
@@ -4123,7 +4151,7 @@ socket.on('get private messages', async (data) => {
       // إعادة ترتيب الغرف في الذاكرة
       rooms.sort((a, b) => (a.order - b.order) || (a.id - b.id));
       
-      io.emit('rooms update', rooms);
+      broadcastRoomsUpdate();
       socket.emit('management success', `تم إنشاء الغرفة "${name}" بنجاح`);
     } catch (error) {
       socket.emit('management error', 'حدث خطأ في إنشاء الغرفة');
@@ -4146,7 +4174,7 @@ socket.on('get private messages', async (data) => {
     if (roomInMemory) {
       roomInMemory.order = parseInt(newOrder);
       rooms.sort((a, b) => (a.order - b.order) || (a.id - b.id));
-      io.emit('rooms update', rooms);
+      broadcastRoomsUpdate();
     }
 
     try {
@@ -4163,7 +4191,7 @@ socket.on('get private messages', async (data) => {
       if (roomInMemory) {
         roomInMemory.order = oldOrder;
         rooms.sort((a, b) => (a.order - b.order) || (a.id - b.id));
-        io.emit('rooms update', rooms);
+        broadcastRoomsUpdate();
       }
       
       let errorMsg = 'حدث خطأ في تحديث الترتيب بقاعدة البيانات';
@@ -4216,7 +4244,7 @@ socket.on('get private messages', async (data) => {
       delete roomManagers[roomIdInt];
       delete messages[roomIdInt];
 
-      io.emit('rooms update', rooms);
+      broadcastRoomsUpdate();
       socket.emit('management success', `تم حذف الغرفة "${room.name}" بنجاح`);
     } catch (error) {
       socket.emit('management error', 'حدث خطأ في حذف الغرفة');
@@ -4452,7 +4480,7 @@ socket.on('disconnect', async (reason) => {
           rooms.forEach(r => r.users.forEach(u => {
               if (u.name === username) u.rank = newRank;
           }));
-          io.emit('rooms update', rooms);
+          broadcastRoomsUpdate();
       }
 
       // 3. إرسال إشعار نجاح وطلب تحديث الصفحة
@@ -4700,7 +4728,7 @@ socket.on('disconnect', async (reason) => {
     };
     
     rooms.push(newRoom);
-    io.emit('rooms update', rooms);
+    broadcastRoomsUpdate();
     socket.emit('control success', 'تم إنشاء الغرفة بنجاح');
   });
 
@@ -4715,7 +4743,7 @@ socket.on('disconnect', async (reason) => {
         return;
       }
       rooms.splice(roomIndex, 1);
-      io.emit('rooms update', rooms);
+      broadcastRoomsUpdate();
       socket.emit('control success', 'تم حذف الغرفة بنجاح');
     }
   });
@@ -5081,7 +5109,7 @@ socket.on('disconnect', async (reason) => {
             });
         });
 
-        io.emit('rooms update', rooms);
+        broadcastRoomsUpdate();
 
         const notificationMessage = {
             type: 'system',
@@ -5127,7 +5155,7 @@ socket.on('disconnect', async (reason) => {
         });
 
         io.emit('ranks update', ranks);
-        io.emit('rooms update', rooms); // لتحديث القوائم
+        broadcastRoomsUpdate(); // لتحديث القوائم
         socket.emit('control success', `تم حذف الرتبة "${rankName}"`);
     }
   });
