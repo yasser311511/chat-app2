@@ -164,7 +164,6 @@
             z-index: 9999;
         }
         
-        /* Responsive adjustments for small screens */
         @media (max-width: 768px) {
             .users-container {
                 position: fixed;
@@ -198,63 +197,33 @@
             .users-overlay.show {
                 display: block;
             }
-
-            /* Private chat modal on mobile */
-            .private-chat-modal {
-                width: 95% !important;
-                right: 2.5% !important;
-                left: 2.5% !important;
-                height: 80vh !important;
-                bottom: 10vh !important;
-            }
-
-            /* Responsive modals */
-            .profile-content {
-                width: 95% !important;
-                max-height: 90vh !important;
-                margin: 2vh auto !important;
-            }
         }
 
-        /* Small screens improvements (mobile landscape or larger phones) */
-        @media (max-width: 640px) {
-            #messageInputContainer {
-                gap: 0.5rem !important;
-            }
-            #messageInputContainer button {
-                padding-left: 0.75rem !important;
-                padding-right: 0.75rem !important;
-            }
-            #sendMessageButton span {
-                display: none;
-            }
-            #messageInput {
-                padding-left: 0.75rem !important;
-                padding-right: 0.75rem !important;
-            }
-        }
-
-        /* Very small screens (iPhone SE, etc) */
+        /* Responsive adjustments for very small screens */
         @media (max-width: 380px) {
-            .chat-header-buttons {
-                gap: 0.25rem !important;
-            }
-            .chat-header-buttons button {
-                padding: 0.4rem !important;
-            }
-            .chat-header-buttons svg {
-                width: 1.1rem !important;
-                height: 1.1rem !important;
-            }
-            
+            /* Reduce padding on main chat send button */
             #messageInputContainer button {
-                padding: 0.5rem !important;
+                padding-left: 1rem;
+                padding-right: 1rem;
             }
-            
-            /* Smaller avatar in online users */
-            .user-item img {
-                width: 2rem !important;
-                height: 2rem !important;
+            #messageInputContainer span {
+                display: none; /* Hide the "Send" text */
+            }
+            #messageInputContainer svg {
+                margin: auto;
+            }
+
+            /* Reduce padding on login/register form */
+            #loginPage .p-8 {
+                padding: 1.5rem;
+            }
+
+            /* Reduce font size on room cards */
+            #roomsContainer h3 {
+                font-size: 1.1rem;
+            }
+            #roomsContainer p {
+                font-size: 0.8rem;
             }
         }
 
@@ -1459,10 +1428,10 @@
                         type="text"
                         id="messageInput"
                         placeholder="اكتب رسالتك هنا..."
-                        class="flex-1 bg-gray-800 border border-gray-700 rounded-full px-4 md:px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
+                        class="flex-1 bg-gray-800 border border-gray-700 rounded-full px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
                         onkeypress="handleKeyPress(event)"
                         oninput="checkMessageLength()"
-                        style="text-align: start; direction: rtl; position: relative; z-index: 10;"
+                        style="text-align: start; direction: rtl; padding-left: 20px; position: relative; z-index: 10;"
                     >                      
                         <button 
                             id="sendMessageButton"
@@ -2364,14 +2333,14 @@
         <div class="p-4 bg-gray-800 flex justify-center overflow-auto">
             <canvas id="sharedCanvas" width="750" height="500" class="bg-white rounded shadow-lg cursor-crosshair touch-none"></canvas>
         </div>
-        <div class="p-4 bg-gray-800 border-t border-gray-700 flex justify-center gap-4 md:gap-6 items-center flex-wrap">
+        <div class="p-4 bg-gray-800 border-t border-gray-700 flex justify-center gap-6 items-center flex-wrap">
              <div class="flex items-center gap-2">
-                <label class="text-white text-xs md:text-sm font-semibold">اللون:</label>
+                <label class="text-white text-sm font-semibold">اللون:</label>
                 <input type="color" id="drawingColor" value="#000000" class="h-8 w-10 rounded cursor-pointer bg-transparent border-0 p-0">
              </div>
              <div class="flex items-center gap-2">
-                <label class="text-white text-xs md:text-sm font-semibold">الحجم:</label>
-                <input type="range" id="drawingWidth" min="1" max="20" value="3" class="w-24 md:w-32 accent-blue-500">
+                <label class="text-white text-sm font-semibold">الحجم:</label>
+                <input type="range" id="drawingWidth" min="1" max="20" value="3" class="w-32 accent-blue-500">
              </div>
         </div>
     </div>
@@ -2404,34 +2373,26 @@
         let BOT_AVATAR_URL = '/icon.png';
 
         const animatedEmojis = [
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f60d/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f602/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f62d/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f618/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f60e/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f929/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f973/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f44d/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f525/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f4af/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/2764_fe0f/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f923/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f607/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f60b/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f92a/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f609/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f970/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f61c/512.gif",
-            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f917/512.gif"
+            "/f/1.png", "/f/2.png", "/f/3.png", "/f/4.png", "/f/5.png",
+            "/f/6.png", "/f/7.png", "/f/8.png", "/f/9.png", "/f/10.png",
+            "/f/11.png", "/f/12.png", "/f/13.png", "/f/14.png", "/f/15.png",
+            "/f/16.png", "/f/17.png", "/f/18.png", "/f/19.png", "/f/20.png",
+            "/f/21.png", "/f/22.png", "/f/23.png", "/f/24.png", "/f/25.png",
+            "/f/26.png", "/f/27.png", "/f/28.png", "/f/29.png", "/f/30.png",
+            "/f/31.png", "/f/32.png", "/f/33.png", "/f/34.png", "/f/35.png",
+            "/f/36.png", "/f/37.png", "/f/38.png", "/f/39.png", "/f/40.png",
+            "/f/41.png", "/f/42.png", "/f/43.png", "/f/44.png", "/f/45.png",
+            "/f/46.png", "/f/47.png", "/f/48.png", "/f/49.png", "/f/50.png",
+            "/f/51.png", "/f/52.png", "/f/53.png", "/f/54.png", "/f/55.png",
+            "/f/56.png", "/f/57.png", "/f/58.png"
         ];
 
         const localEmojis = [
-            "/emoji/1.gif", "/emoji/29.gif", "/emoji/30.gif", "/emoji/31.gif", 
-            "/emoji/32.gif", "/emoji/34.gif", "/emoji/35.gif", "/emoji/36.gif", 
-            "/emoji/38.gif", "/emoji/50.gif", "/emoji/51.gif", "/emoji/52.gif", 
-            "/emoji/57.gif", "/emoji/62.gif", "/emoji/63.gif", "/emoji/64.gif", 
-            "/emoji/65.gif", "/emoji/66.gif"
+            "/e/1.gif", "/e/29.gif", "/e/30.gif", "/e/31.gif", 
+            "/e/32.gif", "/e/34.gif", "/e/35.gif", "/e/36.gif", 
+            "/e/38.gif", "/e/50.gif", "/e/51.gif", "/e/52.gif", 
+            "/e/57.gif", "/e/62.gif", "/e/63.gif", "/e/64.gif", 
+            "/e/65.gif", "/e/66.gif"
         ];
 
         let currentEmojiTab = 'animated';
@@ -2460,8 +2421,8 @@
             const picker = document.getElementById(pickerId);
             picker.innerHTML = `
                 <div class="emoji-picker-header">
-                    <div class="emoji-tab ${currentEmojiTab === 'animated' ? 'active' : ''}" onclick="switchEmojiTab(event, 'animated', '${pickerId}', ${isPrivate})">متحركة</div>
-                    <div class="emoji-tab ${currentEmojiTab === 'local' ? 'active' : ''}" onclick="switchEmojiTab(event, 'local', '${pickerId}', ${isPrivate})">محلي</div>
+                    <div class="emoji-tab ${currentEmojiTab === 'animated' ? 'active' : ''}" onclick="switchEmojiTab(event, 'animated', '${pickerId}', ${isPrivate})">ثابتة</div>
+                    <div class="emoji-tab ${currentEmojiTab === 'local' ? 'active' : ''}" onclick="switchEmojiTab(event, 'local', '${pickerId}', ${isPrivate})">متحركة</div>
                 </div>
                 <div class="emoji-grid custom-scrollbar"></div>
             `;
@@ -4708,18 +4669,32 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
 
     let replyHtml = '';
     if (replyTo) {
-        const isAnimatedEmojiReply = replyTo.content && (animatedEmojis.includes(replyTo.content) || localEmojis.includes(replyTo.content));
+        // التحقق مما إذا كان المحتوى يحتوي على إيموجي (سواء وحده أو مع نص)
+        const allEmojis = [...new Set([...animatedEmojis, ...localEmojis])];
+        const containsEmoji = replyTo.content && allEmojis.some(e => replyTo.content.includes(e));
         const isImageReply = replyTo.content && (replyTo.content.startsWith('data:image') || replyTo.content.startsWith('http') || replyTo.content.includes('🖼️ صورة') || replyTo.content.includes('صورة 🖼️'));
-        let displayContent = isAnimatedEmojiReply ? 'ايموجي متحرك 😊' : (isImageReply ? 'صورة 🖼️' : replyTo.content);
+        
+        let displayContent = replyTo.content;
+        if (containsEmoji) {
+            displayContent = formatMessageWithInlineEmojis(replyTo.content);
+        } else if (isImageReply) {
+            displayContent = 'صورة 🖼️';
+        }
 
         // تطبيق تلوين المنشن في الرد أيضاً
-        if (!isImageReply && !isAnimatedEmojiReply && currentUser && displayContent && typeof displayContent === 'string' && displayContent.includes(`@${currentUser.name}`)) {
+        if (!isImageReply && currentUser && displayContent && typeof displayContent === 'string' && displayContent.includes(`@${currentUser.name}`)) {
             const mentionRegex = new RegExp(`@${currentUser.name}\\b`, 'g');
             displayContent = displayContent.replace(mentionRegex, `<span class="text-yellow-400 font-bold">@${currentUser.name}</span>`);
         }
 
-        const imagePreview = (replyTo.content && (replyTo.content.startsWith('data:image') || replyTo.content.startsWith('http'))) 
-            ? `<img src="${replyTo.content}" class="w-10 h-10 rounded-md object-cover ml-2 border border-white/10 shadow-sm">` 
+        // البحث عن أول إيموجي لعرضه في المعاينة إذا لم تكن صورة
+        let emojiPreviewUrl = null;
+        if (containsEmoji && !isImageReply) {
+            emojiPreviewUrl = allEmojis.find(e => replyTo.content.includes(e));
+        }
+
+        const imagePreview = (isImageReply || emojiPreviewUrl) 
+            ? `<img src="${isImageReply ? replyTo.content : emojiPreviewUrl}" class="w-10 h-10 rounded-md object-cover ml-2 border border-white/10 shadow-sm">` 
             : '';
 
         replyHtml = `
@@ -7169,18 +7144,32 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
     // معالجة الرد (ReplyTo)
     let replyHtml = '';
     if (replyTo) {
-        const isAnimatedEmojiReply = replyTo.content && (animatedEmojis.includes(replyTo.content) || localEmojis.includes(replyTo.content));
+        // التحقق مما إذا كان المحتوى يحتوي على إيموجي (سواء وحده أو مع نص)
+        const allEmojis = [...new Set([...animatedEmojis, ...localEmojis])];
+        const containsEmoji = replyTo.content && allEmojis.some(e => replyTo.content.includes(e));
         const isImageReply = replyTo.content && (replyTo.content.startsWith('data:image') || replyTo.content.startsWith('http') || replyTo.content.includes('🖼️ صورة') || replyTo.content.includes('صورة 🖼️'));
-        let displayContent = isAnimatedEmojiReply ? 'ايموجي متحرك 😊' : (isImageReply ? 'صورة 🖼️' : replyTo.content);
+        
+        let displayContent = replyTo.content;
+        if (containsEmoji) {
+            displayContent = formatMessageWithInlineEmojis(replyTo.content);
+        } else if (isImageReply) {
+            displayContent = 'صورة 🖼️';
+        }
 
         // تطبيق تلوين المنشن في الرد أيضاً
-        if (!isImageReply && !isAnimatedEmojiReply && currentUser && displayContent && typeof displayContent === 'string' && displayContent.includes(`@${currentUser.name}`)) {
+        if (!isImageReply && currentUser && displayContent && typeof displayContent === 'string' && displayContent.includes(`@${currentUser.name}`)) {
             const mentionRegex = new RegExp(`@${currentUser.name}\\b`, 'g');
             displayContent = displayContent.replace(mentionRegex, `<span class="text-yellow-400 font-bold">@${currentUser.name}</span>`);
         }
 
-        const imagePreview = (replyTo.content && (replyTo.content.startsWith('data:image') || replyTo.content.startsWith('http'))) 
-            ? `<img src="${replyTo.content}" class="w-10 h-10 rounded-md object-cover ml-2 border border-white/10 shadow-sm">` 
+        // البحث عن أول إيموجي لعرضه في المعاينة إذا لم تكن صورة
+        let emojiPreviewUrl = null;
+        if (containsEmoji && !isImageReply) {
+            emojiPreviewUrl = allEmojis.find(e => replyTo.content.includes(e));
+        }
+
+        const imagePreview = (isImageReply || emojiPreviewUrl) 
+            ? `<img src="${isImageReply ? replyTo.content : emojiPreviewUrl}" class="w-10 h-10 rounded-md object-cover ml-2 border border-white/10 shadow-sm">` 
             : '';
 
         replyHtml = `
@@ -7382,7 +7371,7 @@ function updateUIWithImageButtons() {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                 </svg>
             `;
-            imageButton.className = 'bg-green-600 hover:bg-green-700 text-white px-3 md:px-4 py-3 rounded-full font-semibold transition-colors flex items-center justify-center';
+            imageButton.className = 'bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-full font-semibold transition-colors flex items-center justify-center';
             imageButton.onclick = openImageUpload;
             imageButton.title = 'إرسال صورة';
             
@@ -7399,7 +7388,7 @@ function updateUIWithImageButtons() {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
             `;
-            emojiButton.className = 'bg-yellow-500 hover:bg-yellow-600 text-white px-3 md:px-4 py-3 rounded-full font-semibold transition-colors flex items-center justify-center';
+            emojiButton.className = 'bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-3 rounded-full font-semibold transition-colors flex items-center justify-center';
             emojiButton.onclick = (e) => {
                 e.stopPropagation();
                 toggleEmojiPicker(false);
