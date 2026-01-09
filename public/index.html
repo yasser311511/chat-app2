@@ -78,6 +78,47 @@
             align-items: center;
             margin-left: 5px;
         }
+        .achievement-badge {
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            margin-right: 2px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: help;
+        }
+        .achievement-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 10px;
+            transition: all 0.3s ease;
+        }
+        .achievement-card.completed {
+            border-color: #10B981;
+            background: rgba(16, 185, 129, 0.1);
+        }
+        .achievement-count-badge {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            width: 14px;
+            height: 14px;
+            background: #6B7280;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            font-weight: bold;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            z-index: 5;
+        }
         .messages-container {
             height: 100%;
             overflow-y: auto;
@@ -123,6 +164,7 @@
             z-index: 9999;
         }
         
+        /* Responsive adjustments for small screens */
         @media (max-width: 768px) {
             .users-container {
                 position: fixed;
@@ -156,33 +198,63 @@
             .users-overlay.show {
                 display: block;
             }
+
+            /* Private chat modal on mobile */
+            .private-chat-modal {
+                width: 95% !important;
+                right: 2.5% !important;
+                left: 2.5% !important;
+                height: 80vh !important;
+                bottom: 10vh !important;
+            }
+
+            /* Responsive modals */
+            .profile-content {
+                width: 95% !important;
+                max-height: 90vh !important;
+                margin: 2vh auto !important;
+            }
         }
 
-        /* Responsive adjustments for very small screens */
-        @media (max-width: 380px) {
-            /* Reduce padding on main chat send button */
+        /* Small screens improvements (mobile landscape or larger phones) */
+        @media (max-width: 640px) {
+            #messageInputContainer {
+                gap: 0.5rem !important;
+            }
             #messageInputContainer button {
-                padding-left: 1rem;
-                padding-right: 1rem;
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
             }
-            #messageInputContainer span {
-                display: none; /* Hide the "Send" text */
+            #sendMessageButton span {
+                display: none;
             }
-            #messageInputContainer svg {
-                margin: auto;
+            #messageInput {
+                padding-left: 0.75rem !important;
+                padding-right: 0.75rem !important;
             }
+        }
 
-            /* Reduce padding on login/register form */
-            #loginPage .p-8 {
-                padding: 1.5rem;
+        /* Very small screens (iPhone SE, etc) */
+        @media (max-width: 380px) {
+            .chat-header-buttons {
+                gap: 0.25rem !important;
             }
-
-            /* Reduce font size on room cards */
-            #roomsContainer h3 {
-                font-size: 1.1rem;
+            .chat-header-buttons button {
+                padding: 0.4rem !important;
             }
-            #roomsContainer p {
-                font-size: 0.8rem;
+            .chat-header-buttons svg {
+                width: 1.1rem !important;
+                height: 1.1rem !important;
+            }
+            
+            #messageInputContainer button {
+                padding: 0.5rem !important;
+            }
+            
+            /* Smaller avatar in online users */
+            .user-item img {
+                width: 2rem !important;
+                height: 2rem !important;
             }
         }
 
@@ -386,6 +458,66 @@
         }
 
         /* إضافة هذه الأنماط في قسم style */
+        /* نمط نافذة الايموجيات المتحركة المطور */
+        .emoji-picker {
+            position: absolute;
+            bottom: 70px;
+            left: 20px;
+            width: 320px;
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 0;
+            margin-bottom: 5px;
+            display: none;
+            flex-direction: column;
+            max-height: 350px;
+            overflow: hidden;
+            z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .emoji-picker.show {
+            display: flex;
+        }
+        .emoji-picker-header {
+            display: flex;
+            background: rgba(30, 41, 59, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .emoji-tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .emoji-tab.active {
+            color: #fff;
+            background: rgba(59, 130, 246, 0.5);
+        }
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .animated-emoji {
+            width: 100%;
+            aspect-ratio: 1/1;
+            object-fit: contain;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .animated-emoji:hover {
+            transform: scale(1.2);
+        }
+
 .bg-option {
     cursor: pointer;
     transition: all 0.3s ease;
@@ -450,6 +582,7 @@
 .chat-message .avatar-container {
     width: 2rem !important; /* 32px */
     height: 2rem !important; /* 32px */
+    overflow: visible !important;
 }
 
 /* تعديل فقاعة الرسالة */
@@ -1301,41 +1434,47 @@
                         </button>
                     </div>
                 </div>
-                <!-- منطقة عرض الرد -->
-                <div id="replyPreview" class="hidden mb-2 bg-gray-700 rounded-lg p-2 max-w-4xl mx-auto">
-                    <div class="flex justify-between items-center">
-                        <div class="text-xs text-white overflow-hidden">
-                            <div class="font-semibold">الرد على <span id="replyUsername"></span></div>
-                            <p id="replyContent" class="truncate opacity-70"></p>
+                <!-- حاوية إدخال الرسالة والرد -->
+                <div class="relative">
+                    <!-- نافذة الايموجيات المتحركة -->
+                    <div id="emojiPicker" class="emoji-picker custom-scrollbar"></div>
+
+                    <!-- منطقة عرض الرد -->
+                    <div id="replyPreview" class="hidden mb-2 bg-gray-700 rounded-lg p-2 max-w-4xl mx-auto relative z-20">
+                        <div class="flex justify-between items-center">
+                            <div class="text-xs text-white overflow-hidden">
+                                <div class="font-semibold">الرد على <span id="replyUsername"></span></div>
+                                <p id="replyContent" class="truncate opacity-70"></p>
+                            </div>
+                            <button onclick="cancelReply()" class="text-white hover:text-red-400 p-1">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
                         </div>
-                        <button onclick="cancelReply()" class="text-white hover:text-red-400 p-1">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </div>
+
+                    <div id="messageInputContainer" class="flex space-x-4 space-x-reverse relative z-10">
+                        <input 
+                        type="text"
+                        id="messageInput"
+                        placeholder="اكتب رسالتك هنا..."
+                        class="flex-1 bg-gray-800 border border-gray-700 rounded-full px-4 md:px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
+                        onkeypress="handleKeyPress(event)"
+                        oninput="checkMessageLength()"
+                        style="text-align: start; direction: rtl; position: relative; z-index: 10;"
+                    >                      
+                        <button 
+                            id="sendMessageButton"
+                            onclick="sendMessage()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse disabled:bg-gray-500 disabled:cursor-not-allowed"
+                        >
+                            <span>إرسال</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                             </svg>
                         </button>
                     </div>
-                </div>
-
-                <div id="messageInputContainer" class="flex space-x-4 space-x-reverse">
-                    <input 
-                    type="text"
-                    id="messageInput"
-                    placeholder="اكتب رسالتك هنا..."
-                    class="flex-1 bg-gray-800 border border-gray-700 rounded-full px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
-                    onkeypress="handleKeyPress(event)"
-                    oninput="checkMessageLength()"
-                    style="text-align: start; direction: rtl; padding-left: 20px; position: relative; z-index: 10;"
-                >                      
-                    <button 
-                        id="sendMessageButton"
-                        onclick="sendMessage()"
-                        class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse disabled:bg-gray-500 disabled:cursor-not-allowed"
-                    >
-                        <span>إرسال</span>
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                        </svg>
-                    </button>
                 </div>
             </div>
         </div>
@@ -1400,9 +1539,10 @@
             </div>
 
             <!-- أقسام الملف الشخصي -->
-            <div class="flex border-b border-gray-700/50 px-2">
+            <div class="flex border-b border-gray-700/50 px-2 overflow-x-auto whitespace-nowrap custom-scrollbar">
                 <button onclick="switchProfileTab(event, 'details')" class="profile-tab-btn active">تفاصيل</button>
                 <button onclick="switchProfileTab(event, 'friends')" class="profile-tab-btn">الأصدقاء</button>
+                <button onclick="switchProfileTab(event, 'achievements')" class="profile-tab-btn">🏅 الإنجازات</button>
                 <button id="featuresTabButton" onclick="switchProfileTab(event, 'features')" class="profile-tab-btn hidden">ميزات 🌟</button>
                 <button id="accountTabButton" onclick="switchProfileTab(event, 'account')" class="profile-tab-btn hidden">حول الحساب</button>
             </div>
@@ -1476,6 +1616,18 @@
                     </div>
                 </div>
 
+                <!-- قسم الإنجازات (جديد) -->
+                <div id="profileTab-achievements" class="profile-tab-content hidden">
+                    <div class="mb-4">
+                        <h3 class="text-sm font-bold text-slate-300 mb-4 flex items-center gap-2">
+                            <span>🏆</span> الإنجازات والأوسمة
+                        </h3>
+                        <div id="profileAchievementsList" class="space-y-3">
+                            <!-- سيتم ملء الإنجازات هنا -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- قسم الميزات (للرتب العالية) -->
                 <div id="profileTab-features" class="profile-tab-content hidden space-y-6">
                     <!-- تبويبات فرعية للميزات -->
@@ -1485,6 +1637,7 @@
                         <button onclick="switchFeatureSubTab('avatarFrame')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold text-slate-400 hover:bg-gray-700" id="btn-avatarFrame">إطار الصورة</button>
                         <button onclick="switchFeatureSubTab('userCardBackground')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold text-slate-400 hover:bg-gray-700" id="btn-userCardBackground">خلفية البطاقة</button>
                          <button onclick="switchFeatureSubTab('profileBackground')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold text-slate-400 hover:bg-gray-700" id="btn-profileBackground">لون البروفايل</button>
+                        <button onclick="switchFeatureSubTab('nameCardBorder')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold text-slate-400 hover:bg-gray-700" id="btn-nameCardBorder">إطار البطاقة</button>
                         <button onclick="switchFeatureSubTab('changeName')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold text-slate-400 hover:bg-gray-700" id="btn-changeName">تغيير الاسم</button>
                     </div>
 
@@ -1576,6 +1729,19 @@
                         </div>
                     </div>
 
+                    <!-- محتوى إطار بطاقة الاسم (جديد) -->
+                    <div id="feature-nameCardBorder" class="feature-content hidden">
+                        <h4 class="text-sm font-bold text-slate-300 mb-3">اختر لوناً لإطار البطاقة:</h4>
+                        <p class="text-xs text-slate-400 mb-3">يمكنك اختيار لون الإطار من الإنجازات التي حققتها فقط</p>
+                        <div class="grid grid-cols-4 gap-3" id="nameCardBorderGrid">
+                            <!-- سيتم ملؤها بواسطة JS -->
+                        </div>
+                        <div class="mt-4 p-2 rounded-lg border border-gray-700" id="cardBorderPreview">
+                            <p class="text-xs text-slate-400 mb-2">معاينة:</p>
+                            <div class="flex items-center space-x-3 space-x-reverse p-3 rounded-lg" id="previewCardBorderDiv" style="border: 3px solid #6366f1;"><div class="w-8 h-8 rounded-full bg-gray-500"></div><span class="text-white text-sm">اسم المستخدم</span></div>
+                        </div>
+                    </div>
+
                     <!-- محتوى تغيير الاسم (جديد) -->
                     <div id="feature-changeName" class="feature-content hidden">
                         <h4 class="text-sm font-bold text-slate-300 mb-3">تغيير اسم المستخدم:</h4>
@@ -1638,7 +1804,8 @@
             <!-- الرسائل الخاصة ستظهر هنا -->
         </div>
         
-        <div class="private-chat-input bg-slate-800/50 p-3">
+        <div class="private-chat-input bg-slate-800/50 p-3 relative">
+            <div id="privateEmojiPicker" class="emoji-picker custom-scrollbar"></div>
             <div class="flex items-center gap-2">
                 <input
                     type="text"
@@ -1842,8 +2009,9 @@
                 <input 
                     type="number"
                     id="pointsAmountInput"
-                    placeholder="أدخل عدد النقاط..."
+                    placeholder="أدخل عدد النقاط (الحد الأقصى 10,000)..."
                     min="1"
+                    max="10000"
                     class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                 >
             </div>
@@ -2196,14 +2364,14 @@
         <div class="p-4 bg-gray-800 flex justify-center overflow-auto">
             <canvas id="sharedCanvas" width="750" height="500" class="bg-white rounded shadow-lg cursor-crosshair touch-none"></canvas>
         </div>
-        <div class="p-4 bg-gray-800 border-t border-gray-700 flex justify-center gap-6 items-center flex-wrap">
+        <div class="p-4 bg-gray-800 border-t border-gray-700 flex justify-center gap-4 md:gap-6 items-center flex-wrap">
              <div class="flex items-center gap-2">
-                <label class="text-white text-sm font-semibold">اللون:</label>
+                <label class="text-white text-xs md:text-sm font-semibold">اللون:</label>
                 <input type="color" id="drawingColor" value="#000000" class="h-8 w-10 rounded cursor-pointer bg-transparent border-0 p-0">
              </div>
              <div class="flex items-center gap-2">
-                <label class="text-white text-sm font-semibold">الحجم:</label>
-                <input type="range" id="drawingWidth" min="1" max="20" value="3" class="w-32 accent-blue-500">
+                <label class="text-white text-xs md:text-sm font-semibold">الحجم:</label>
+                <input type="range" id="drawingWidth" min="1" max="20" value="3" class="w-24 md:w-32 accent-blue-500">
              </div>
         </div>
     </div>
@@ -2234,6 +2402,108 @@
         };
         let currentUser = null;
         let BOT_AVATAR_URL = '/icon.png';
+
+        const animatedEmojis = [
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f600/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f60d/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f602/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f62d/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f618/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f60e/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f929/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f973/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f44d/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f525/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f4af/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/2764_fe0f/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f923/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f607/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f60b/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f92a/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f609/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f970/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f61c/512.gif",
+            "https://fonts.gstatic.com/s/e/notoemoji/latest/1f917/512.gif"
+        ];
+
+        const localEmojis = [
+            "/emoji/1.gif", "/emoji/29.gif", "/emoji/30.gif", "/emoji/31.gif", 
+            "/emoji/32.gif", "/emoji/34.gif", "/emoji/35.gif", "/emoji/36.gif", 
+            "/emoji/38.gif", "/emoji/50.gif", "/emoji/51.gif", "/emoji/52.gif", 
+            "/emoji/57.gif", "/emoji/62.gif", "/emoji/63.gif", "/emoji/64.gif", 
+            "/emoji/65.gif", "/emoji/66.gif"
+        ];
+
+        let currentEmojiTab = 'animated';
+
+        function toggleEmojiPicker(isPrivate = false) {
+            if (event) event.stopPropagation();
+            if (typeof isPrivate !== 'boolean') isPrivate = false;
+            
+            const pickerId = isPrivate ? 'privateEmojiPicker' : 'emojiPicker';
+            const picker = document.getElementById(pickerId);
+            
+            if (picker.classList.contains('show')) {
+                picker.classList.remove('show');
+                return;
+            }
+
+            const otherPickerId = isPrivate ? 'emojiPicker' : 'privateEmojiPicker';
+            const otherPicker = document.getElementById(otherPickerId);
+            if (otherPicker) otherPicker.classList.remove('show');
+
+            renderEmojiPicker(pickerId, isPrivate);
+            picker.classList.add('show');
+        }
+
+        function renderEmojiPicker(pickerId, isPrivate) {
+            const picker = document.getElementById(pickerId);
+            picker.innerHTML = `
+                <div class="emoji-picker-header">
+                    <div class="emoji-tab ${currentEmojiTab === 'animated' ? 'active' : ''}" onclick="switchEmojiTab(event, 'animated', '${pickerId}', ${isPrivate})">متحركة</div>
+                    <div class="emoji-tab ${currentEmojiTab === 'local' ? 'active' : ''}" onclick="switchEmojiTab(event, 'local', '${pickerId}', ${isPrivate})">محلي</div>
+                </div>
+                <div class="emoji-grid custom-scrollbar"></div>
+            `;
+            
+            const grid = picker.querySelector('.emoji-grid');
+            const emojis = currentEmojiTab === 'animated' ? animatedEmojis : localEmojis;
+            
+            emojis.forEach(url => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = 'animated-emoji';
+                img.onclick = (e) => {
+                    e.stopPropagation();
+                    sendAnimatedEmoji(url, isPrivate);
+                };
+                grid.appendChild(img);
+            });
+        }
+
+        function switchEmojiTab(event, tab, pickerId, isPrivate) {
+            if (event) event.stopPropagation();
+            currentEmojiTab = tab;
+            renderEmojiPicker(pickerId, isPrivate);
+        }
+
+        function sendAnimatedEmoji(url, isPrivate) {
+            if (isPrivate) {
+                const privateInput = document.getElementById('privateMessageInput');
+                if (privateInput) {
+                    privateInput.value = (privateInput.value.trim() ? privateInput.value + ' ' : '') + url;
+                    privateInput.focus();
+                }
+                document.getElementById('privateEmojiPicker').classList.remove('show');
+            } else {
+                const input = document.getElementById('messageInput');
+                if (input) {
+                    input.value = (input.value.trim() ? input.value + ' ' : '') + url;
+                    input.focus();
+                }
+                document.getElementById('emojiPicker').classList.remove('show');
+            }
+        }
 
         function triggerBotAvatarUpload() {
             if (currentUser && currentUser.name === SITE_OWNER.username) {
@@ -2444,6 +2714,40 @@
                 } else {
                     previewDiv.className = `p-4 rounded-lg text-center ${value || 'bg-gradient-to-b from-gray-800 to-gray-900'}`;
                 }
+            } else if (feature === 'nameCardBorder') {
+                document.querySelectorAll('#nameCardBorderGrid > div').forEach(el => el.style.borderColor = '');
+                if (event && event.currentTarget) {
+                    event.currentTarget.style.borderColor = '#3b82f6';
+                }
+                
+                const previewDiv = document.getElementById('previewCardBorderDiv');
+                previewDiv.style.borderColor = '#6366f1';
+                if (value && value.startsWith('border-color:')) {
+                    previewDiv.style.borderColor = value.split(':')[1];
+                }
+            }
+        }
+
+        function updateNameCardBorderGrid(profileData) {
+            const nameCardBorderGrid = document.getElementById('nameCardBorderGrid');
+            if (!nameCardBorderGrid || !profileData || !profileData.achievements) return;
+            
+            nameCardBorderGrid.innerHTML = '';
+            const completedAchievements = profileData.achievements.filter(a => a.completed);
+            
+            if (completedAchievements.length > 0) {
+                completedAchievements.forEach(ach => {
+                    const div = document.createElement('div');
+                    let borderColor = ach.cardColor || '#6366f1';
+                    
+                    div.className = 'cursor-pointer p-3 rounded-lg border-2 hover:border-white text-center flex flex-col items-center gap-2 bg-gray-800/50';
+                    div.style.borderColor = borderColor;
+                    div.innerHTML = `<span class="text-2xl">${ach.icon || '🏆'}</span><span class="text-[10px] text-slate-300">${ach.name}</span>`;
+                    div.onclick = (e) => selectFeature('nameCardBorder', `border-color:${borderColor}`);
+                    nameCardBorderGrid.appendChild(div);
+                });
+            } else {
+                nameCardBorderGrid.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">لا توجد إنجازات محققة بعد</div>';
             }
         }
 
@@ -2562,6 +2866,10 @@
                 div.onclick = (e) => selectFeature('profileBackground', bg);
                 profileBgGrid.appendChild(div);
             });
+
+            // 6. ألوان إطار البطاقة (بناءً على الإنجازات)
+            // ملاحظة: يتم تحديث هذا من بيانات الملف الشخصي
+            // سيتم استدعاء updateNameCardBorderGrid عند تحميل بيانات الملف الشخصي
         }
 
         let currentRoom = null;
@@ -2730,6 +3038,11 @@
 
             if (isNaN(amount) || amount <= 0) {
                 showNotification('يرجى إدخال عدد نقاط صحيح وأكبر من صفر.', 'error');
+                return;
+            }
+
+            if (amount > 10000) {
+                showNotification('الحد الأقصى لإرسال النقاط هو 10,000 نقطة.', 'error');
                 return;
             }
 
@@ -3017,6 +3330,9 @@ function updateUnreadBadges() {
         // استقبال نتائج التحقق من الجلسة
         function handleSessionValid(userData) {
             currentUser = userData;
+            // ضمان وجود كافة الحقول في currentUser
+            if (userData.nameCardBorder) currentUser.nameCardBorder = userData.nameCardBorder;
+            
             updateHeaderUserInfo();
             showNotification(`مرحباً بعودتك ${userData.name}! 😊`, 'success');
             
@@ -3156,14 +3472,7 @@ function updateUnreadBadges() {
             showLoading();
             const username = document.getElementById('registerUsername').value;
             const password = document.getElementById('registerPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
             const gender = document.querySelector('input[name="gender"]:checked')?.value;
-            
-            if (password !== confirmPassword) {
-                showNotification('كلمة السر غير متطابقة!', 'error');
-                hideLoading();
-                return;
-            }
             
             if (!gender) {
                 showNotification('يرجى اختيار الجنس!', 'error');
@@ -3220,6 +3529,7 @@ function updateUnreadBadges() {
             currentUser.userCardBackground = userData.userCardBackground;
             currentUser.profileBackground = userData.profileBackground;
             currentUser.profileCover = userData.profileCover;
+            currentUser.nameCardBorder = userData.nameCardBorder;
 
             document.cookie = `sessionId=${userData.sessionId}; path=/; max-age=31536000; SameSite=Lax`; // صلاحية لمدة سنة
             handleSessionValid(userData);
@@ -3241,6 +3551,7 @@ function updateUnreadBadges() {
             currentUser = userData; // تحديث المستخدم الحالي فوراً
             currentUser.nameColor = null; // القيمة الافتراضية للحساب الجديد
             currentUser.bio = null; // القيمة الافتراضية للحساب الجديد
+            currentUser.nameCardBorder = null;
 
             document.cookie = `sessionId=${userData.sessionId}; path=/; max-age=31536000; SameSite=Lax`; // صلاحية لمدة سنة
             handleSessionValid(userData);
@@ -3285,7 +3596,7 @@ function updateUnreadBadges() {
         // استقبال رسائل جديدة
         socket.on('new message', (message) => {
             if (message.type === 'user' || (message.type === 'image' && message.user) || message.replyTo) {
-                addMessageToChat(message.user, message.content, message.time, message.user === currentUser.name, message.rank, message.avatar, message.messageId, message.replyTo, null, message.timestamp);
+                addMessageToChat(message.user, message.content, message.time, message.user === currentUser.name, message.rank, message.avatar, message.messageId, message.replyTo, null, message.timestamp, message.badges, message.nameCardBorder);
             } else if (message.type === 'system') {
                 addSystemMessage(message, message.time, null, message.timestamp);
             } else {
@@ -3320,9 +3631,9 @@ socket.on('chat history', (messages) => {
             msg.messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
         if (msg.type === 'user') {
-            addMessageToChat(msg.user, msg.content, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, msg.replyTo, fragment, msg.timestamp);
+            addMessageToChat(msg.user, msg.content, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, msg.replyTo, fragment, msg.timestamp, msg.badges, msg.nameCardBorder);
         } else if (msg.type === 'image') {
-            addImageMessageToChat(msg.user, msg.imageData, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, fragment, msg.timestamp, msg.replyTo);
+            addImageMessageToChat(msg.user, msg.imageData, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, fragment, msg.timestamp, msg.replyTo, msg.badges, msg.nameCardBorder);
         } else {
             addSystemMessage(msg, msg.time, fragment, msg.timestamp);
         }
@@ -3372,9 +3683,9 @@ socket.on('chat history', (messages) => {
 
             messages.forEach(msg => {
                 if (msg.type === 'user') {
-                    addMessageToChat(msg.user, msg.content, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, msg.replyTo, fragment, msg.timestamp);
+                    addMessageToChat(msg.user, msg.content, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, msg.replyTo, fragment, msg.timestamp, msg.badges, msg.nameCardBorder);
                 } else if (msg.type === 'image') {
-                    addImageMessageToChat(msg.user, msg.imageData, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, fragment, msg.timestamp, msg.replyTo);
+                    addImageMessageToChat(msg.user, msg.imageData, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, fragment, msg.timestamp, msg.replyTo, msg.badges, msg.nameCardBorder);
                 }
             });
 
@@ -3647,6 +3958,20 @@ socket.on('private messages history', (messages) => {
         socket.on('friend removed you', (data) => {
             showNotification(`أزالك ${data.byUser} من قائمة الأصدقاء`, 'info');
             updateFriendsList();
+        });
+
+        // استقبال إشعار فتح إنجاز جديد
+        socket.on('achievement_unlocked', (data) => {
+            const ach = data.achievement;
+            showNotification(`🏆 تهانينا! لقد حصلت على وسام جديد: ${ach.name}`, 'success');
+            
+            // تحديث بيانات المستخدم المحلي فوراً
+            if (currentUser) {
+                currentUser.badges = data.allBadges || [];
+            }
+
+            // تشغيل صوت الإنجاز إذا وجد أو صوت النجاح
+            if (window.successSound) successSound.play().catch(e => {});
         });
 
         socket.on('friend error', (error) => {
@@ -4208,15 +4533,62 @@ window.addEventListener('beforeunload', function (e) {
         }
 
         function formatLinks(text) {
-            const urlRegex = /(https?:\/\/[^\s]+)/g;
-            return text.replace(urlRegex, function(url) {
-                return `<a href="${url}" target="_blank" class="text-blue-400 underline hover:text-blue-300 transition-colors">${url}</a>`;
+            const allEmojis = [...new Set([...animatedEmojis, ...localEmojis])];
+            
+            let result = text;
+            let insideTag = false;
+            let output = '';
+            
+            for (let i = 0; i < result.length; i++) {
+                if (result[i] === '<') insideTag = true;
+                if (result[i] === '>') insideTag = false;
+                
+                if (!insideTag) {
+                    const remaining = result.substring(i);
+                    const urlMatch = remaining.match(/^(https?:\/\/[^\s<]+)/);
+                    
+                    if (urlMatch) {
+                        const url = urlMatch[1];
+                        if (allEmojis.includes(url)) {
+                            output += url;
+                        } else {
+                            output += `<a href="${url}" target="_blank" class="text-blue-400 underline hover:text-blue-300 transition-colors">${url}</a>`;
+                        }
+                        i += url.length - 1;
+                        continue;
+                    }
+                }
+                
+                output += result[i];
+            }
+            
+            return output;
+        }
+
+        function formatMessageWithInlineEmojis(text) {
+            let result = text;
+            
+            const allEmojis = [...new Set([...animatedEmojis, ...localEmojis])];
+            
+            allEmojis.forEach(emojiUrl => {
+                const escapedUrl = emojiUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const regex = new RegExp(escapedUrl, 'g');
+                result = result.replace(regex, `<img src="${emojiUrl}" class="h-10 inline-block align-text-bottom mx-1" alt="emoji" style="max-height: 2em; vertical-align: text-bottom;">`);
             });
+            
+            return result;
         }
 
         // إضافة رسالة إلى الدردشة (نسخة مدمجة)
-function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messageId = null, replyTo = null, targetContainer = null, timestamp = null) {
-    let formattedMessage = formatLinks(message);
+function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messageId = null, replyTo = null, targetContainer = null, timestamp = null, badges = null, nameCardBorder = null) {
+    let formattedMessage;
+    
+    if (animatedEmojis.includes(message) || localEmojis.includes(message)) {
+        formattedMessage = `<img src="${message}" class="w-12 h-12 inline-block" alt="emoji">`;
+    } else {
+        formattedMessage = formatMessageWithInlineEmojis(message);
+        formattedMessage = formatLinks(formattedMessage);
+    }
     
     // خاصية المنشن
     let isMentioned = false;
@@ -4247,13 +4619,24 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
         rankBadge = `<span title="${userRank}" class="mx-1 inline-flex items-center align-middle">${iconHtml}</span>`;
     }
 
+    // إحضار عدد الأوسمة
+    let achievementCount = 0;
+    if (badges && Array.isArray(badges)) {
+        achievementCount = badges.length;
+    } else {
+        const onlineUserForBadges = isOwn ? currentUser : (window.onlineUsersData ? window.onlineUsersData[user] : null);
+        achievementCount = (onlineUserForBadges && onlineUserForBadges.badges) ? onlineUserForBadges.badges.length : 0;
+    }
+    const achievementCountBadge = achievementCount > 0 ? `<div class="achievement-count-badge" title="${achievementCount} أوسمة">${achievementCount}</div>` : '';
+
     // --- إصلاح: تحديد لون الاسم والخلفية والإطار بشكل صحيح ---
-    let nameColorClass, nameBgClass, avatarFrameClass;
+    let nameColorClass, nameBgClass, avatarFrameClass, currentNameCardBorder;
 
     if (isOwn) {
         nameColorClass = currentUser.nameColor || 'text-blue-100';
         nameBgClass = currentUser.nameBackground || '';
         avatarFrameClass = currentUser.avatarFrame || '';
+        currentNameCardBorder = nameCardBorder || currentUser.nameCardBorder || null;
     } else {
         // استخدام البيانات المخزنة في الذاكرة بدلاً من البحث في DOM (أسرع بكثير)
         const onlineUser = window.onlineUsersData ? window.onlineUsersData[user] : null;
@@ -4261,11 +4644,19 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
             nameColorClass = (onlineUser.nameColor && onlineUser.nameColor !== 'null') ? onlineUser.nameColor : 'text-blue-200';
             nameBgClass = (onlineUser.nameBackground && onlineUser.nameBackground !== 'null') ? onlineUser.nameBackground : '';
             avatarFrameClass = (onlineUser.avatarFrame && onlineUser.avatarFrame !== 'null') ? onlineUser.avatarFrame : '';
+            currentNameCardBorder = nameCardBorder || onlineUser.nameCardBorder || null;
         } else {
             nameColorClass = 'text-blue-200';
             nameBgClass = '';
             avatarFrameClass = '';
+            currentNameCardBorder = nameCardBorder || null;
         }
+    }
+
+    // تجهيز نمط إطار الفقاعة
+    let bubbleStyle = '';
+    if (currentNameCardBorder && currentNameCardBorder.startsWith('border-color:')) {
+        bubbleStyle = `border: 2px solid ${currentNameCardBorder.split(':')[1]};`;
     }
 
     // زر الحذف: يظهر دائماً للاختبار
@@ -4317,11 +4708,12 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
 
     let replyHtml = '';
     if (replyTo) {
+        const isAnimatedEmojiReply = replyTo.content && (animatedEmojis.includes(replyTo.content) || localEmojis.includes(replyTo.content));
         const isImageReply = replyTo.content && (replyTo.content.startsWith('data:image') || replyTo.content.startsWith('http') || replyTo.content.includes('🖼️ صورة') || replyTo.content.includes('صورة 🖼️'));
-        let displayContent = isImageReply ? 'صورة 🖼️' : replyTo.content;
+        let displayContent = isAnimatedEmojiReply ? 'ايموجي متحرك 😊' : (isImageReply ? 'صورة 🖼️' : replyTo.content);
 
         // تطبيق تلوين المنشن في الرد أيضاً
-        if (!isImageReply && currentUser && displayContent && typeof displayContent === 'string' && displayContent.includes(`@${currentUser.name}`)) {
+        if (!isImageReply && !isAnimatedEmojiReply && currentUser && displayContent && typeof displayContent === 'string' && displayContent.includes(`@${currentUser.name}`)) {
             const mentionRegex = new RegExp(`@${currentUser.name}\\b`, 'g');
             displayContent = displayContent.replace(mentionRegex, `<span class="text-yellow-400 font-bold">@${currentUser.name}</span>`);
         }
@@ -4345,8 +4737,8 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
 
 
     const avatarHtml = avatarUrl 
-        ? `<div class="w-full h-full rounded-full relative ${(avatarFrameClass && !avatarFrameClass.startsWith('border-color:')) ? avatarFrameClass : ''}" style="${(avatarFrameClass && avatarFrameClass.startsWith('border-color:')) ? `border: 2px solid ${avatarFrameClass.split(':')[1]};` : ''}"><img src="${avatarUrl}" class="w-full h-full rounded-full object-cover" alt="${user}"></div>`
-        : `<div class="w-full h-full rounded-full bg-gray-400 flex items-center justify-center text-white font-bold text-sm ${(avatarFrameClass && !avatarFrameClass.startsWith('border-color:')) ? avatarFrameClass : ''}" style="${(avatarFrameClass && avatarFrameClass.startsWith('border-color:')) ? `border: 2px solid ${avatarFrameClass.split(':')[1]};` : ''}">${user.charAt(0).toUpperCase()}</div>`;
+        ? `<div class="w-full h-full rounded-full relative ${(avatarFrameClass && !avatarFrameClass.startsWith('border-color:')) ? avatarFrameClass : ''}" style="${(avatarFrameClass && avatarFrameClass.startsWith('border-color:')) ? `border: 2px solid ${avatarFrameClass.split(':')[1]};` : ''}">${achievementCountBadge}<img src="${avatarUrl}" class="w-full h-full rounded-full object-cover" alt="${user}"></div>`
+        : `<div class="w-full h-full rounded-full relative bg-gray-400 flex items-center justify-center text-white font-bold text-sm ${(avatarFrameClass && !avatarFrameClass.startsWith('border-color:')) ? avatarFrameClass : ''}" style="${(avatarFrameClass && avatarFrameClass.startsWith('border-color:')) ? `border: 2px solid ${avatarFrameClass.split(':')[1]};` : ''}">${achievementCountBadge}${user.charAt(0).toUpperCase()}</div>`;
 
     // --- التصميم الجديد المدمج ---
     const messageBgClass = currentRoomSettings?.messageBackground || 'bg-gray-800';
@@ -4358,7 +4750,7 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
                 ${avatarHtml}
             </div>
             <div class="flex items-end gap-2 flex-wrap">
-                <div class="message-bubble relative ${messageBgClass + ' ' + messageTextColorClass} rounded-lg p-2 min-w-[50px]">
+                <div class="message-bubble relative ${messageBgClass + ' ' + messageTextColorClass} rounded-lg p-2 min-w-[50px]" style="${bubbleStyle}">
                     ${replyHtml}
                     <div class="message-content leading-snug flex items-center flex-wrap gap-1">
                         <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''}" onclick="mentionUser('${user}')">${user}</span>
@@ -4451,8 +4843,20 @@ document.addEventListener('click', function(e) {
         }
         closeAllMessageMenus();
     } else {
-        // إذا تم النقر في أي مكان آخر، أغلق جميع القوائم
+        // إغلاق قوائم الرسائل والايموجيات عند النقر في الخارج
         closeAllMessageMenus();
+    }
+    
+    const emojiPicker = document.getElementById('emojiPicker');
+    const privateEmojiPicker = document.getElementById('privateEmojiPicker');
+    const emojiButton = e.target.closest('#emojiButton');
+    const privateEmojiButton = e.target.closest('#privateEmojiButton');
+    
+    if (emojiPicker && emojiPicker.classList.contains('show') && !emojiButton && !e.target.closest('#emojiPicker')) {
+        emojiPicker.classList.remove('show');
+    }
+    if (privateEmojiPicker && privateEmojiPicker.classList.contains('show') && !privateEmojiButton && !e.target.closest('#privateEmojiPicker')) {
+        privateEmojiPicker.classList.remove('show');
     }
 });
 
@@ -4707,6 +5111,16 @@ function updateOnlineUsersList(users) {
                 } else {
                     userDiv.className = `group flex items-center space-x-3 space-x-reverse p-2 rounded-lg transition-all duration-200 ease-in-out cursor-pointer mb-1 border border-transparent hover:border-white/10 ${cardBgValue}`;
                     userDiv.style.backgroundColor = '';
+                }
+                
+                // تطبيق لون إطار البطاقة
+                if (user.nameCardBorder && user.nameCardBorder.startsWith('border-color:')) {
+                    const borderColor = user.nameCardBorder.split(':')[1];
+                    userDiv.style.borderColor = borderColor;
+                    userDiv.style.borderWidth = '2px';
+                } else {
+                    userDiv.style.borderColor = 'transparent';
+                    userDiv.style.borderWidth = '1px';
                 }
 
                 // تطبيق لون الاسم
@@ -5155,6 +5569,35 @@ function updateOnlineUsersList(users) {
             }
             usernameElem.textContent = profileData.username;
 
+            const isOwner = currentUser && profileData.username === currentUser.name;
+            if (isOwner) {
+                // تحديث بيانات المستخدم الحالي لضمان المزامنة
+                currentUser.nameCardBorder = profileData.nameCardBorder;
+            }
+
+            // تطبيق لون إطار البطاقة في الملف الشخصي
+            if (profileContent) {
+                profileContent.style.border = '';
+                if (profileData.nameCardBorder && profileData.nameCardBorder.startsWith('border-color:')) {
+                    const borderColor = profileData.nameCardBorder.split(':')[1];
+                    profileContent.style.border = `2px solid ${borderColor}`;
+                }
+            }
+
+            // تحديث المعاينة إذا كان هذا هو الملف الشخصي للمستخدم الحالي
+            if (isOwner) {
+                const previewCardBorderDiv = document.getElementById('previewCardBorderDiv');
+                if (previewCardBorderDiv) {
+                    previewCardBorderDiv.style.borderColor = '#6366f1'; // اللون الافتراضي
+                    if (profileData.nameCardBorder && profileData.nameCardBorder.startsWith('border-color:')) {
+                        previewCardBorderDiv.style.borderColor = profileData.nameCardBorder.split(':')[1];
+                        previewCardBorderDiv.style.borderWidth = '2px';
+                    } else {
+                        previewCardBorderDiv.style.borderWidth = '1px';
+                    }
+                }
+            }
+
             // عرض غلاف الملف الشخصي
             const coverDisplay = document.getElementById('profileCoverDisplay');
             if (profileData.profileCover) {
@@ -5272,19 +5715,58 @@ function updateOnlineUsersList(users) {
                 document.getElementById('profilePoints').textContent = profileData.points;
                 document.getElementById('profileLevel').textContent = profileData.level;
             }
+
+            // عرض الإنجازات
+            const achievementsListElem = document.getElementById('profileAchievementsList');
+            if (achievementsListElem) {
+                achievementsListElem.innerHTML = '';
+                if (profileData.achievements && profileData.achievements.length > 0) {
+                    profileData.achievements.forEach(ach => {
+                        const card = document.createElement('div');
+                        card.className = `achievement-card flex items-center gap-3 ${ach.completed ? 'completed' : 'opacity-60'}`;
+                        
+                        const progressPercent = Math.min(100, Math.round((ach.currentValue / ach.targetValue) * 100));
+                        
+                        const borderColor = ach.cardColor || (ach.completed ? '#10b981' : '#4b5563');
+                        
+                        card.innerHTML = `
+                            <div class="achievement-badge w-12 h-12 text-2xl bg-gray-800 border-2 rounded-full flex items-center justify-center" 
+                                 style="border-color: ${borderColor}; box-shadow: 0 0 5px ${borderColor}44;">
+                                ${ach.icon}
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex justify-between items-center mb-1">
+                                    <h4 class="text-sm font-bold text-white">${ach.name}</h4>
+                                    <span class="text-[10px] ${ach.completed ? 'text-green-400' : 'text-slate-400'}">
+                                        ${ach.completed ? 'مكتمل' : `${ach.currentValue} / ${ach.targetValue}`}
+                                    </span>
+                                </div>
+                                <p class="text-[10px] text-slate-400 mb-2">${ach.description}</p>
+                                <div class="w-full bg-gray-700 rounded-full h-1.5 overflow-hidden">
+                                    <div class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" style="width: ${progressPercent}%"></div>
+                                </div>
+                            </div>
+                        `;
+                        achievementsListElem.appendChild(card);
+                    });
+                } else {
+                    achievementsListElem.innerHTML = '<div class="text-center text-slate-500 text-xs py-4">لا توجد إنجازات متاحة</div>';
+                }
+            }
  
             // التحقق من الرتبة لإظهار تبويب الميزات
-            const isOwner = profileData.username === currentUser.name;
+            // ملاحظة: تم تعريف isOwner سابقاً في السطر 5532
             const userRankLevel = profileData.rank ? (ranks[profileData.rank]?.level || 0) : 0;
             if (isOwner && (userRankLevel >= 4 || profileData.username === "Walid dz 31")) {
                 featuresTabButton.classList.remove('hidden');
                 initFeaturesUI(); // تهيئة واجهة الميزات
+                updateNameCardBorderGrid(profileData); // تحديث شبكة إطار البطاقة
             } else {
                 featuresTabButton.classList.add('hidden');
             }
 
             // إظهار/إخفاء أزرار التعديل وقائمة الإدارة
-            if (profileData.username === currentUser.name) {
+            if (isOwner) {
                 changeProfilePicBtn.classList.remove('hidden'); // إظهار زر تغيير الصورة
                 changeCoverBtn.classList.remove('hidden'); // إظهار زر تغيير الغلاف
                 
@@ -5744,7 +6226,13 @@ function makeDraggable(element, handle) {
         }
 
         function addPrivateMessageToChat(message, isOwn) {
-    const formattedContent = formatLinks(message.content);
+    let formattedContent = formatLinks(message.content);
+
+    // التحقق مما إذا كانت الرسالة ايموجي متحرك (Google أو محلي)
+    if (animatedEmojis.includes(message.content) || localEmojis.includes(message.content)) {
+        formattedContent = `<img src="${message.content}" class="w-12 h-12 inline-block" alt="emoji">`;
+    }
+
     const container = document.getElementById('privateChatMessages');
     
     // إزالة مؤشر التحميل إذا كان موجوداً
@@ -6592,7 +7080,7 @@ socket.on('private image sent', (message) => {
 
 // إضافة رسالة صورة إلى المحادثة العامة
 // إضافة رسالة صورة إلى الدردشة (نسخة مدمجة)
-function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl, messageId = null, targetContainer = null, timestamp = null, replyTo = null) {
+function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl, messageId = null, targetContainer = null, timestamp = null, replyTo = null, badges = null, nameCardBorder = null) {
     const container = targetContainer || document.getElementById('messagesContainer');
     const messageDiv = document.createElement('div');
     
@@ -6605,6 +7093,16 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
 
     const timeStr = formatMessageTime(timestamp || Date.now());
     
+    // إحضار عدد الأوسمة
+    let achievementCount = 0;
+    if (badges && Array.isArray(badges)) {
+        achievementCount = badges.length;
+    } else {
+        const onlineUserForBadges = isOwn ? currentUser : (window.onlineUsersData ? window.onlineUsersData[user] : null);
+        achievementCount = (onlineUserForBadges && onlineUserForBadges.badges) ? onlineUserForBadges.badges.length : 0;
+    }
+    const achievementCountBadge = achievementCount > 0 ? `<div class="achievement-count-badge" title="${achievementCount} أوسمة">${achievementCount}</div>` : '';
+
     // توحيد المحاذاة مع الرسائل النصية
     messageDiv.className = `chat-message flex flex-row items-start w-full user-message`;
     
@@ -6671,11 +7169,12 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
     // معالجة الرد (ReplyTo)
     let replyHtml = '';
     if (replyTo) {
+        const isAnimatedEmojiReply = replyTo.content && (animatedEmojis.includes(replyTo.content) || localEmojis.includes(replyTo.content));
         const isImageReply = replyTo.content && (replyTo.content.startsWith('data:image') || replyTo.content.startsWith('http') || replyTo.content.includes('🖼️ صورة') || replyTo.content.includes('صورة 🖼️'));
-        let displayContent = isImageReply ? 'صورة 🖼️' : replyTo.content;
+        let displayContent = isAnimatedEmojiReply ? 'ايموجي متحرك 😊' : (isImageReply ? 'صورة 🖼️' : replyTo.content);
 
         // تطبيق تلوين المنشن في الرد أيضاً
-        if (!isImageReply && currentUser && displayContent && typeof displayContent === 'string' && displayContent.includes(`@${currentUser.name}`)) {
+        if (!isImageReply && !isAnimatedEmojiReply && currentUser && displayContent && typeof displayContent === 'string' && displayContent.includes(`@${currentUser.name}`)) {
             const mentionRegex = new RegExp(`@${currentUser.name}\\b`, 'g');
             displayContent = displayContent.replace(mentionRegex, `<span class="text-yellow-400 font-bold">@${currentUser.name}</span>`);
         }
@@ -6698,27 +7197,36 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
     }
 
     // تحديد الألوان والإطارات
-    let nameColorClass, nameBgClass, avatarFrameClass;
+    let nameColorClass, nameBgClass, avatarFrameClass, currentNameCardBorder;
     if (isOwn) {
         nameColorClass = currentUser.nameColor || 'text-blue-100';
         nameBgClass = currentUser.nameBackground || '';
         avatarFrameClass = currentUser.avatarFrame || '';
+        currentNameCardBorder = nameCardBorder || currentUser.nameCardBorder || null;
     } else {
         const onlineUser = window.onlineUsersData ? window.onlineUsersData[user] : null;
         if (onlineUser) {
             nameColorClass = (onlineUser.nameColor && onlineUser.nameColor !== 'null') ? onlineUser.nameColor : 'text-blue-200';
             nameBgClass = (onlineUser.nameBackground && onlineUser.nameBackground !== 'null') ? onlineUser.nameBackground : '';
             avatarFrameClass = (onlineUser.avatarFrame && onlineUser.avatarFrame !== 'null') ? onlineUser.avatarFrame : '';
+            currentNameCardBorder = nameCardBorder || onlineUser.nameCardBorder || null;
         } else {
             nameColorClass = 'text-blue-200';
             nameBgClass = '';
             avatarFrameClass = '';
+            currentNameCardBorder = nameCardBorder || null;
         }
     }
 
+    // تجهيز نمط إطار الفقاعة
+    let bubbleStyle = '';
+    if (currentNameCardBorder && currentNameCardBorder.startsWith('border-color:')) {
+        bubbleStyle = `border: 2px solid ${currentNameCardBorder.split(':')[1]};`;
+    }
+
     const avatarHtml = avatarUrl 
-        ? `<div class="w-full h-full rounded-full relative ${(avatarFrameClass && !avatarFrameClass.startsWith('border-color:')) ? avatarFrameClass : ''}" style="${(avatarFrameClass && avatarFrameClass.startsWith('border-color:')) ? `border: 2px solid ${avatarFrameClass.split(':')[1]};` : ''}"><img src="${avatarUrl}" class="w-full h-full rounded-full object-cover" alt="${user}"></div>`
-        : `<div class="w-full h-full rounded-full bg-gray-400 flex items-center justify-center text-white font-bold text-sm ${(avatarFrameClass && !avatarFrameClass.startsWith('border-color:')) ? avatarFrameClass : ''}" style="${(avatarFrameClass && avatarFrameClass.startsWith('border-color:')) ? `border: 2px solid ${avatarFrameClass.split(':')[1]};` : ''}">${user.charAt(0).toUpperCase()}</div>`;
+        ? `<div class="w-full h-full rounded-full relative ${(avatarFrameClass && !avatarFrameClass.startsWith('border-color:')) ? avatarFrameClass : ''}" style="${(avatarFrameClass && avatarFrameClass.startsWith('border-color:')) ? `border: 2px solid ${avatarFrameClass.split(':')[1]};` : ''}">${achievementCountBadge}<img src="${avatarUrl}" class="w-full h-full rounded-full object-cover" alt="${user}"></div>`
+        : `<div class="w-full h-full rounded-full relative bg-gray-400 flex items-center justify-center text-white font-bold text-sm ${(avatarFrameClass && !avatarFrameClass.startsWith('border-color:')) ? avatarFrameClass : ''}" style="${(avatarFrameClass && avatarFrameClass.startsWith('border-color:')) ? `border: 2px solid ${avatarFrameClass.split(':')[1]};` : ''}">${achievementCountBadge}${user.charAt(0).toUpperCase()}</div>`;
 
     messageDiv.innerHTML = `
         <div class="flex items-start gap-3">
@@ -6726,7 +7234,7 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
                 ${avatarHtml}
             </div>
             <div class="flex items-end gap-2 flex-wrap">
-                <div class="message-bubble relative ${messageBgClass + ' ' + messageTextColorClass} rounded-lg p-2 max-w-[250px] sm:max-w-md w-fit">
+                <div class="message-bubble relative ${messageBgClass + ' ' + messageTextColorClass} rounded-lg p-2 max-w-[250px] sm:max-w-md w-fit" style="${bubbleStyle}">
                     ${replyHtml}
                     <div class="message-content leading-snug flex flex-col gap-1">
                         <div class="flex items-center flex-wrap gap-1">
@@ -6860,36 +7368,88 @@ function closeImageModal() {
     }
 }
 
-// تحديث واجهة المستخدم لإضافة أزرار الصور
+// تحديث واجهة المستخدم لإضافة أزرار الصور والايموجيات
 function updateUIWithImageButtons() {
     // تحديث واجهة المحادثة العامة
     const messageInputContainer = document.getElementById('messageInputContainer');
-    if (messageInputContainer && !messageInputContainer.querySelector('#imageButton')) {
-        const imageButton = document.createElement('button');
-        imageButton.id = 'imageButton';
-        imageButton.innerHTML = '🖼️';
-        imageButton.className = 'bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse';
-        imageButton.onclick = openImageUpload;
-        imageButton.title = 'إرسال صورة';
-        
-        // إدراج الزر قبل زر الإرسال
-        const sendButton = messageInputContainer.querySelector('button[onclick="sendMessage()"]');
-        messageInputContainer.insertBefore(imageButton, sendButton);
+    if (messageInputContainer) {
+        // زر الصور
+        if (!messageInputContainer.querySelector('#imageButton')) {
+            const imageButton = document.createElement('button');
+            imageButton.id = 'imageButton';
+            imageButton.innerHTML = `
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+            `;
+            imageButton.className = 'bg-green-600 hover:bg-green-700 text-white px-3 md:px-4 py-3 rounded-full font-semibold transition-colors flex items-center justify-center';
+            imageButton.onclick = openImageUpload;
+            imageButton.title = 'إرسال صورة';
+            
+            const sendButton = messageInputContainer.querySelector('#sendMessageButton');
+            messageInputContainer.insertBefore(imageButton, sendButton);
+        }
+
+        // زر الايموجيات المتحركة
+        if (!messageInputContainer.querySelector('#emojiButton')) {
+            const emojiButton = document.createElement('button');
+            emojiButton.id = 'emojiButton';
+            emojiButton.innerHTML = `
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            `;
+            emojiButton.className = 'bg-yellow-500 hover:bg-yellow-600 text-white px-3 md:px-4 py-3 rounded-full font-semibold transition-colors flex items-center justify-center';
+            emojiButton.onclick = (e) => {
+                e.stopPropagation();
+                toggleEmojiPicker(false);
+            };
+            emojiButton.title = 'ايموجيات متحركة';
+            
+            const imageButton = messageInputContainer.querySelector('#imageButton');
+            messageInputContainer.insertBefore(emojiButton, imageButton);
+        }
     }
     
     // تحديث واجهة المحادثة الخاصة
     const privateChatInput = document.querySelector('.private-chat-input .flex');
-    if (privateChatInput && !privateChatInput.querySelector('#privateImageButton')) {
-        const privateImageButton = document.createElement('button');
-        privateImageButton.id = 'privateImageButton';
-        privateImageButton.innerHTML = '🖼️';
-        privateImageButton.className = 'bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse text-sm';
-        privateImageButton.onclick = openPrivateImageUpload;
-        privateImageButton.title = 'إرسال صورة';
-        
-        // إدراج الزر قبل زر الإرسال
-        const privateSendButton = privateChatInput.querySelector('button[onclick="sendPrivateMessage()"]');
-        privateChatInput.insertBefore(privateImageButton, privateSendButton);
+    if (privateChatInput) {
+        // زر الصور الخاص
+        if (!privateChatInput.querySelector('#privateImageButton')) {
+            const privateImageButton = document.createElement('button');
+            privateImageButton.id = 'privateImageButton';
+            privateImageButton.innerHTML = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+            `;
+            privateImageButton.className = 'bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-full font-semibold transition-colors flex items-center justify-center text-sm';
+            privateImageButton.onclick = openPrivateImageUpload;
+            privateImageButton.title = 'إرسال صورة';
+            
+            const privateSendButton = privateChatInput.querySelector('button[onclick="sendPrivateMessage()"]');
+            privateChatInput.insertBefore(privateImageButton, privateSendButton);
+        }
+
+        // زر الايموجيات المتحركة الخاص (يمكنك إضافته للمحادثة الخاصة أيضاً إذا أردت)
+        if (!privateChatInput.querySelector('#privateEmojiButton')) {
+            const privateEmojiButton = document.createElement('button');
+            privateEmojiButton.id = 'privateEmojiButton';
+            privateEmojiButton.innerHTML = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            `;
+            privateEmojiButton.className = 'bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded-full font-semibold transition-colors flex items-center justify-center text-sm';
+            privateEmojiButton.onclick = (e) => {
+                e.stopPropagation();
+                toggleEmojiPicker(true);
+            };
+            privateEmojiButton.title = 'ايموجيات متحركة';
+            
+            const privateImageButton = privateChatInput.querySelector('#privateImageButton');
+            privateChatInput.insertBefore(privateEmojiButton, privateImageButton);
+        }
     }
 }
 // تهيئة ميزات الصور عند تحميل الصفحة

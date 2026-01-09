@@ -57,7 +57,8 @@ const User = sequelize.define('User', {
   avatarFrame: { type: DataTypes.STRING, allowNull: true },
   userCardBackground: { type: DataTypes.STRING, allowNull: true },
   profileBackground: { type: DataTypes.STRING, allowNull: true },
-  profileCover: { type: DataTypes.TEXT, allowNull: true }
+  profileCover: { type: DataTypes.TEXT, allowNull: true },
+  nameCardBorder: { type: DataTypes.STRING, allowNull: true }
 });
 
 const UserRank = sequelize.define('UserRank', {
@@ -221,6 +222,27 @@ const Room = sequelize.define('Room', {
   createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW }
 });
 
+const Achievement = sequelize.define('Achievement', {
+  id: { type: DataTypes.STRING, primaryKey: true },
+  name: { type: DataTypes.STRING, allowNull: false },
+  description: { type: DataTypes.TEXT, allowNull: false },
+  icon: { type: DataTypes.STRING, allowNull: false },
+  targetValue: { type: DataTypes.INTEGER, allowNull: false },
+  type: { type: DataTypes.STRING, allowNull: false }, // 'messages', 'days', 'interactions', 'gifts'
+  cardColor: { type: DataTypes.STRING, allowNull: true }
+});
+
+const UserAchievement = sequelize.define('UserAchievement', {
+  username: { type: DataTypes.STRING, allowNull: false },
+  achievementId: { type: DataTypes.STRING, allowNull: false },
+  currentValue: { type: DataTypes.INTEGER, defaultValue: 0 },
+  completed: { type: DataTypes.BOOLEAN, defaultValue: false },
+  completedAt: { type: DataTypes.DATE, allowNull: true },
+  lastUpdateDate: { type: DataTypes.STRING, allowNull: true } // YYYY-MM-DD
+}, {
+  indexes: [{ fields: ['username'] }, { fields: ['achievementId'] }]
+});
+
 // استدعاء التهيئة بعد الاتصال
 // loadData(); // تم نقله إلى startServer() لمنع التكرار
 
@@ -317,6 +339,9 @@ let userPoints = {};
 let shopItems = [];
 let userInventories = {};
 let userLastSeen = {}; // لتخزين آخر ظهور للمستخدم
+let achievements = {}; // لتخزين تعريفات الإنجازات
+let userAchievements = {}; // لتخزين إنجازات المستخدمين في الذاكرة
+let userInteractions = {}; // لتخزين المستخدمين الذين تفاعل معهم كل مستخدم { username: Set([other_users]) }
 let roomManagers = {}; // لتخزين مديري الغرف { roomId: [usernames] }
 let roomBackgrounds = {}; // لتخزين خلفيات الغرف { roomId: { type, value } }
 let roomSettings = {}; // لتخزين إعدادات الغرف { roomId: { description, textColor, messageBackground } }
@@ -587,7 +612,118 @@ const DEFAULT_AVATAR_URL = '/my-avatar.png';
 const userLastAction = {};
 
 
+function getUserBadges(username) {
+  const userAchs = userAchievements[username] || {};
+  return Object.values(achievements)
+    .filter(ach => userAchs[ach.id] && userAchs[ach.id].completed)
+    .map(ach => ({
+      id: ach.id,
+      name: ach.name,
+      icon: ach.icon,
+      cardColor: ach.cardColor
+    }));
+}
+
 // تحميل البيانات من قاعدة البيانات
+async function updateAchievementProgress(username, type, value = 1, targetUsername = null) {
+  try {
+    const typeAchievements = Object.values(achievements).filter(a => a.type === type);
+    if (typeAchievements.length === 0) return;
+
+    if (!userAchievements[username]) userAchievements[username] = {};
+
+    // معالجة التفاعلات الاجتماعية بشكل خاص
+    if (type === 'interactions' && targetUsername && targetUsername !== username) {
+      if (!userInteractions[username]) userInteractions[username] = new Set();
+      if (!userInteractions[username].has(targetUsername)) {
+        userInteractions[username].add(targetUsername);
+        value = userInteractions[username].size;
+      } else {
+        return; // تفاعل مكرر مع نفس الشخص
+      }
+    }
+
+    for (const ach of typeAchievements) {
+      let ua = userAchievements[username][ach.id];
+      if (ua && ua.completed && type !== 'days' && type !== 'hours') continue; // للسماح بتحديث تاريخ الأيام والساعات حتى لو اكتمل
+
+      let newValue = value;
+      if (type !== 'interactions' && type !== 'days') {
+        newValue = (ua ? ua.currentValue : 0) + value;
+      }
+
+      const today = new Date().toISOString().split('T')[0];
+
+      if (!ua) {
+        ua = {
+          username,
+          achievementId: ach.id,
+          currentValue: newValue,
+          completed: newValue >= ach.targetValue,
+          completedAt: newValue >= ach.targetValue ? new Date() : null,
+          lastUpdateDate: today
+        };
+        const createdUa = await UserAchievement.create(ua);
+        userAchievements[username][ach.id] = createdUa.get({ plain: true });
+      } else {
+        ua.currentValue = newValue;
+        ua.lastUpdateDate = today;
+        if (newValue >= ach.targetValue && !ua.completed) {
+          ua.completed = true;
+          ua.completedAt = new Date();
+        }
+        
+        // تحديث الكائن في الذاكرة لضمان الاتساق
+        userAchievements[username][ach.id] = ua;
+        
+        await UserAchievement.update({
+          currentValue: ua.currentValue,
+          completed: ua.completed,
+          completedAt: ua.completedAt,
+          lastUpdateDate: ua.lastUpdateDate
+        }, {
+          where: { username, achievementId: ach.id }
+        });
+      }
+      userAchievements[username][ach.id] = ua;
+
+      if (ua.completed) {
+        // تحديث البيانات المتصلة للمستخدم
+        let userSocketId = null;
+        Object.keys(onlineUsers).forEach(socketId => {
+          if (onlineUsers[socketId].name === username) {
+            onlineUsers[socketId].badges = getUserBadges(username);
+            userSocketId = socketId;
+          }
+        });
+
+        // إرسال تحديث للمستخدمين في نفس الغرفة لتحديث الأوسمة لديهم
+        const userSocket = io.sockets.sockets.get(userSocketId);
+        if (userSocket && userSocket.currentRoomId) {
+            const room = rooms.find(r => r.id === userSocket.currentRoomId);
+            if (room) {
+                // تحديث قائمة المستخدمين في الغرفة لإظهار الوسام الجديد
+                io.to(room.id).emit('users update', room.users.map(u => {
+                    const socketId = Object.keys(onlineUsers).find(id => onlineUsers[id].name === u.name);
+                    return socketId ? onlineUsers[socketId] : u;
+                }));
+            }
+        }
+
+        // إشعار المستخدم بالحصول على الوسام
+        if (userSocketId) {
+          io.to(userSocketId).emit('achievement_unlocked', {
+            achievement: ach,
+            allBadges: getUserBadges(username)
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error updating achievement progress:', err);
+  }
+}
+
 async function loadData() {
   try {
     await sequelize.authenticate();
@@ -612,6 +748,22 @@ async function loadData() {
       }
     }
 
+    // التحقق من وجود عمود nameCardBorder في جدول Users
+    const hasNameCardBorderColumn = await columnExists('Users', 'nameCardBorder');
+    if (!hasNameCardBorderColumn) {
+      try {
+        await sequelize.getQueryInterface().addColumn('Users', 'nameCardBorder', {
+          type: DataTypes.STRING,
+          allowNull: true
+        });
+        console.log('✅ تم إضافة عمود nameCardBorder إلى جدول Users بنجاح');
+      } catch (err) {
+        console.error('❌ فشل إضافة عمود nameCardBorder:', err);
+      }
+    } else {
+        console.log('ℹ️ عمود nameCardBorder موجود بالفعل في قاعدة البيانات.');
+    }
+
     // تحميل جميع البيانات بالتوازي لتقليل وقت بدء التشغيل
     const [
       usersData, ranksData, storedRankDefinitions,
@@ -621,7 +773,8 @@ async function loadData() {
       roomBgData, roomSettingsData, dbRooms,
       inventoriesData, requestsData, privateMessagesData,
       chatImagesData, privateImagesData, postsData,
-      likesData, commentsData, systemSettingsData
+      likesData, commentsData, systemSettingsData,
+      achievementsData, userAchievementsData
     ] = await Promise.all([
       User.findAll(), UserRank.findAll(), RankDefinition.findAll(),
       UserManagement.findAll({ where: { type: 'mute' } }), UserManagement.findAll({ where: { type: 'room_ban' } }), UserManagement.findAll({ where: { type: 'site_ban' } }),
@@ -632,7 +785,7 @@ async function loadData() {
       ChatImage.findAll({ where: { roomId: { [Sequelize.Op.ne]: null } }, order: [['timestamp', 'DESC']], limit: 300 }), 
       ChatImage.findAll({ where: { conversationId: { [Sequelize.Op.ne]: null } }, order: [['timestamp', 'DESC']], limit: 300 }),
       Post.findAll({ order: [['timestamp', 'DESC']], limit: 100 }), PostLike.findAll(), PostComment.findAll({ order: [['timestamp', 'ASC']] }),
-      SystemSettings.findAll()
+      SystemSettings.findAll(), Achievement.findAll(), UserAchievement.findAll()
     ]);
 
     systemSettingsData.forEach(setting => {
@@ -640,14 +793,24 @@ async function loadData() {
     });
 
     // معالجة البيانات المحملة
-    usersData.forEach(user => {
+    let usersWithBorders = 0;
+    usersData.forEach(userInstance => {
+      const user = userInstance.get ? userInstance.get({ plain: true }) : userInstance;
       users[user.username] = {
-        password: user.password, gender: user.gender, bio: user.bio,
-        nameColor: user.nameColor, nameBackground: user.nameBackground,
-        avatarFrame: user.avatarFrame, userCardBackground: user.userCardBackground,
-        profileBackground: user.profileBackground, profileCover: user.profileCover
+        password: user.password,
+        gender: user.gender,
+        bio: user.bio || null,
+        nameColor: user.nameColor || null,
+        nameBackground: user.nameBackground || null,
+        avatarFrame: user.avatarFrame || null,
+        userCardBackground: user.userCardBackground || null,
+        profileBackground: user.profileBackground || null,
+        profileCover: user.profileCover || null,
+        nameCardBorder: user.nameCardBorder || null
       };
+      if (user.nameCardBorder) usersWithBorders++;
     });
+    console.log(`تم تحميل ${usersData.length} مستخدمين، منهم ${usersWithBorders} لديهم أطر ملونة.`);
     
     ranksData.forEach(rank => {
       userRanks[rank.username] = rank.rank;
@@ -706,6 +869,52 @@ async function loadData() {
       }
     });
     console.log(`تم تحميل ${roomSettingsData.length} إعدادات غرف:`, Object.keys(roomSettings));
+
+    // معالجة الإنجازات
+    const defaultAchievements = [
+      { id: 'active_100', name: 'نشيط', description: 'إرسال 100 رسالة', icon: '🟢', targetValue: 100, type: 'messages', cardColor: '#3b82f6' },
+      { id: 'room_legend', name: 'أسطورة الغرفة', description: 'نشاط متواصل لمدة 30 يوم', icon: '🔥', targetValue: 30, type: 'days', cardColor: '#ef4444' },
+      { id: 'social_20', name: 'اجتماعي', description: 'التفاعل مع 20 شخص مختلف', icon: '💬', targetValue: 20, type: 'interactions', cardColor: '#10b981' },
+      { id: 'generous', name: 'كريم', description: 'إرسال 50,000 نقطة للآخرين', icon: '🎁', targetValue: 50000, type: 'gifts', cardColor: '#f59e0b' },
+      { id: 'online_50h', name: 'متواجد', description: 'التواجد لمدة 50 ساعة في الغرف', icon: '⏰', targetValue: 50, type: 'hours', cardColor: '#8b5cf6' }
+    ];
+
+    // تحديث الإنجازات الافتراضية والتأكد من تصفير إنجاز كريم لمرة واحدة إذا كان الهدف قديماً
+    for (const def of defaultAchievements) {
+      const [achievement, created] = await Achievement.findOrCreate({
+        where: { id: def.id },
+        defaults: def
+      });
+      
+      // تحديث الهدف واللون إذا اختلفا
+      if (!created && (achievement.targetValue !== def.targetValue || achievement.cardColor !== def.cardColor)) {
+        await achievement.update({ targetValue: def.targetValue, cardColor: def.cardColor });
+        
+        // إذا كان إنجاز كريم، قم بتصفير التقدم للجميع لضمان البدء بالنظام الجديد
+        if (def.id === 'generous') {
+          console.log('جاري إعادة تعيين إنجاز كريم للجميع وفق النظام الجديد (50,000 نقطة)...');
+          // تصفير قاعدة البيانات
+          await UserAchievement.destroy({ where: { achievementId: 'generous' } });
+          // تصفير الذاكرة بالكامل لهذا الإنجاز
+          Object.keys(userAchievements).forEach(uname => {
+            if (userAchievements[uname]) {
+              delete userAchievements[uname]['generous'];
+            }
+          });
+        }
+      }
+      
+      achievements[achievement.id] = achievement.get({ plain: true });
+    }
+
+    achievementsData.forEach(ach => {
+      achievements[ach.id] = ach.get({ plain: true });
+    });
+
+    userAchievementsData.forEach(ua => {
+      if (!userAchievements[ua.username]) userAchievements[ua.username] = {};
+      userAchievements[ua.username][ua.achievementId] = ua.get({ plain: true });
+    });
 
     if (dbRooms.length > 0) {
       rooms = dbRooms
@@ -828,7 +1037,8 @@ async function loadData() {
         password: ownerUser.password, gender: ownerUser.gender, bio: ownerUser.bio,
         nameColor: ownerUser.nameColor, nameBackground: ownerUser.nameBackground,
         avatarFrame: ownerUser.avatarFrame, userCardBackground: ownerUser.userCardBackground,
-        profileBackground: ownerUser.profileBackground, profileCover: ownerUser.profileCover
+        profileBackground: ownerUser.profileBackground, profileCover: ownerUser.profileCover,
+        nameCardBorder: ownerUser.nameCardBorder
       };
     } catch (e) {
       console.error('Error ensuring site owner:', e);
@@ -882,13 +1092,24 @@ async function loadData() {
 // دوال الحفظ في قاعدة البيانات
 async function saveUser(username, userData) {
   try {
+    if (!userData) {
+        console.error(`محاولة حفظ مستخدم ${username} ببيانات فارغة!`);
+        return;
+    }
     await User.upsert({
       username,
       password: userData.password,
       gender: userData.gender,
       bio: userData.bio || null,
-      nameColor: userData.nameColor || null
+      nameColor: userData.nameColor || null,
+      nameBackground: userData.nameBackground || null,
+      avatarFrame: userData.avatarFrame || null,
+      userCardBackground: userData.userCardBackground || null,
+      profileBackground: userData.profileBackground || null,
+      profileCover: userData.profileCover || null,
+      nameCardBorder: userData.nameCardBorder || null
     });
+    console.log(`تم حفظ بيانات المستخدم ${username} بنجاح (الإطار: ${userData.nameCardBorder || 'لا يوجد'})`);
   } catch (error) {
     console.error('خطأ في حفظ المستخدم:', error);
   }
@@ -1335,7 +1556,31 @@ setInterval(async () => {
             broadcastRoomsUpdate();
         }
     }
-}, 60000); // فحص كل دقيقة
+}, 60000);
+
+// --- فحص دوري لتحديث ساعات التواجد للإنجازات ---
+setInterval(async () => {
+    const now = Date.now();
+    const processedUsers = new Set();
+    
+    Object.values(onlineUsers).forEach(async (u) => {
+        if (!u || !u.name || processedUsers.has(u.name)) return;
+        processedUsers.add(u.name);
+        
+        const startTime = userConnectionTimes[u.name];
+        if (startTime) {
+            const elapsedMs = now - startTime;
+            if (elapsedMs >= 3600000) { // ساعة واحدة
+                const hoursPassed = Math.floor(elapsedMs / 3600000);
+                if (hoursPassed > 0) {
+                    await updateAchievementProgress(u.name, 'hours', hoursPassed);
+                    // تحديث وقت البداية ليكون الباقي من الساعة
+                    userConnectionTimes[u.name] = now - (elapsedMs % 3600000);
+                }
+            }
+        }
+    });
+}, 60000); // فحص كل دقيقة عن المستخدمين الذين أكملوا ساعة
 
 // الغرف سيتم تحميلها من قاعدة البيانات
 let rooms = [];
@@ -1343,6 +1588,7 @@ let rooms = [];
 let globalAnnouncement = ''; // متغير لتخزين الإعلان الهام
 let messages = {};
 let onlineUsers = {};
+const userConnectionTimes = {}; // لتتبع وقت دخول المستخدمين لإنجاز الساعات
 
 // دالة مساعدة لتنسيق أيقونة الرتبة (صورة أو نص)
 function getRankIconHtml(icon) {
@@ -1745,7 +1991,11 @@ socket.on('send image message', async (data) => {
     timestamp: timestamp,
     gender: user.gender,
     rank: user.rank,
-    avatar: userAvatars[user.name] || DEFAULT_AVATAR_URL
+    avatar: userAvatars[user.name] || DEFAULT_AVATAR_URL,
+    nameBackground: users[user.name]?.nameBackground,
+    avatarFrame: users[user.name]?.avatarFrame,
+    nameCardBorder: users[user.name]?.nameCardBorder,
+    badges: getUserBadges(user.name)
   };
   
   if (!messages[roomId]) messages[roomId] = [];
@@ -1835,7 +2085,8 @@ socket.on('send private image', async (data) => {
             avatarFrame: userInMemory.avatarFrame,
             userCardBackground: userInMemory.userCardBackground,
             profileBackground: userInMemory.profileBackground,
-            profileCover: userInMemory.profileCover
+            profileCover: userInMemory.profileCover,
+            nameCardBorder: userInMemory.nameCardBorder
           });
           socket.join(userData.username); // الانضمام لغرفة المستخدم لتلقي الرسائل الخاصة
           socket.emit('ranks update', ranks); // إرسال الرتب الحالية عند تسجيل الدخول
@@ -1877,7 +2128,13 @@ socket.on('send private image', async (data) => {
     gender: userData.gender,
     socketId: socket.id,
     sessionId: sessionId,
-    nameColor: null
+    nameColor: null,
+    nameBackground: null,
+    avatarFrame: null,
+    userCardBackground: null,
+    profileBackground: null,
+    profileCover: null,
+    nameCardBorder: null
   });
   socket.join(userData.username);
   socket.emit('ranks update', ranks);
@@ -1951,19 +2208,27 @@ socket.on('join room', (data) => {
         return;
     }
     
-    // تخزين بيانات المستخدم
+    // تخزين بيانات المستخدم (تحديث البيانات من الذاكرة لضمان الدقة)
+    const userFromDB = users[user.name] || {};
     onlineUsers[socket.id] = {
       id: socket.id,
       name: user.name,
       roomId: roomId,
-      rank: user.rank,
-      gender: user.gender,
+      rank: userRanks[user.name] || user.rank,
+      gender: userFromDB.gender || user.gender,
       avatar: userAvatars[user.name] || DEFAULT_AVATAR_URL,
-      nameColor: users[user.name]?.nameColor,
-      nameBackground: users[user.name]?.nameBackground,
-      avatarFrame: users[user.name]?.avatarFrame,
-      userCardBackground: users[user.name]?.userCardBackground
+      nameColor: userFromDB.nameColor,
+      nameBackground: userFromDB.nameBackground,
+      avatarFrame: userFromDB.avatarFrame,
+      userCardBackground: userFromDB.userCardBackground,
+      nameCardBorder: userFromDB.nameCardBorder,
+      badges: getUserBadges(user.name)
     };
+
+    // تسجيل وقت الدخول لتتبع الساعات
+    if (!userConnectionTimes[user.name]) {
+        userConnectionTimes[user.name] = Date.now();
+    }
     
     // الانضمام لغرفة باسم المستخدم لاستقبال الرسائل الخاصة بكفاءة
     socket.join(user.name);
@@ -1982,13 +2247,14 @@ socket.on('join room', (data) => {
     room.users.push({
       id: socket.id,
       name: user.name,
-      rank: user.rank,
-      gender: user.gender,
-      avatar: userAvatars[user.name] || DEFAULT_AVATAR_URL,
-      nameColor: users[user.name]?.nameColor,
-      nameBackground: users[user.name]?.nameBackground,
-      avatarFrame: users[user.name]?.avatarFrame,
-      userCardBackground: users[user.name]?.userCardBackground
+      rank: onlineUsers[socket.id].rank,
+      gender: onlineUsers[socket.id].gender,
+      avatar: onlineUsers[socket.id].avatar,
+      nameColor: onlineUsers[socket.id].nameColor,
+      nameBackground: onlineUsers[socket.id].nameBackground,
+      avatarFrame: onlineUsers[socket.id].avatarFrame,
+      userCardBackground: onlineUsers[socket.id].userCardBackground,
+      nameCardBorder: onlineUsers[socket.id].nameCardBorder
     });
     
     socket.currentRoomId = roomId;
@@ -2044,7 +2310,9 @@ socket.on('join room', (data) => {
           rank: userRanks[msg.user] || null,
           avatar: userAvatars[msg.user] || DEFAULT_AVATAR_URL,
           nameBackground: msg.nameBackground,
-          avatarFrame: msg.avatarFrame
+          avatarFrame: msg.avatarFrame,
+          nameCardBorder: msg.nameCardBorder,
+          badges: msg.badges
         };
       } else {
         return msg;
@@ -2083,7 +2351,9 @@ socket.on('join room', (data) => {
           rank: userRanks[msg.user] || null,
           avatar: userAvatars[msg.user] || DEFAULT_AVATAR_URL,
           nameBackground: msg.nameBackground,
-          avatarFrame: msg.avatarFrame
+          avatarFrame: msg.avatarFrame,
+          nameCardBorder: msg.nameCardBorder,
+          badges: msg.badges
         };
       } else {
         return msg;
@@ -2190,6 +2460,41 @@ socket.on('join room', (data) => {
       }
     }
     
+    // تحديث الإنجازات
+    await updateAchievementProgress(user.name, 'messages');
+    
+    // تحديث إنجاز "أسطورة الغرفة" (الأيام المتواصلة)
+    const today = new Date().toISOString().split('T')[0];
+    const userDaysAch = userAchievements[user.name]?.['room_legend'];
+    if (!userDaysAch || (userDaysAch.lastUpdateDate !== today)) {
+        let currentDays = userDaysAch ? userDaysAch.currentValue : 0;
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        
+        if (userDaysAch && userDaysAch.lastUpdateDate === yesterdayStr) {
+            currentDays += 1;
+        } else if (!userDaysAch || userDaysAch.lastUpdateDate !== today) {
+            currentDays = 1;
+        }
+        
+        await updateAchievementProgress(user.name, 'days', currentDays);
+        // تخزين تاريخ آخر تحديث في الإنجاز نفسه ليس سهلاً بدون تعديل الجدول، 
+        // لذا سنستخدم currentValue لتتبع الأيام ونتحقق من الوقت.
+        // للتسهيل، سنفترض أن updateAchievementProgress يتعامل مع القيمة المرسلة كقيمة نهائية لـ 'days'
+    }
+
+    // تحديث إنجاز "اجتماعي" (التفاعل مع مستخدم آخر)
+    // سنجلب مستخدماً عشوائياً من الغرفة للتفاعل معه (لتبسيط الأمر بدلاً من الجميع)
+    const roomUsers = rooms.find(r => r.id === roomId)?.users || [];
+    if (roomUsers.length > 1) {
+        const otherUsers = roomUsers.filter(u => u !== user.name);
+        if (otherUsers.length > 0) {
+            const randomUser = otherUsers[Math.floor(Math.random() * otherUsers.length)];
+            await updateAchievementProgress(user.name, 'interactions', 1, randomUser);
+        }
+    }
+
     const timestamp = Date.now();
     const messageId = 'msg_' + timestamp + '_' + Math.random().toString(36).substr(2, 9);
     const newMessage = {
@@ -2204,7 +2509,9 @@ socket.on('join room', (data) => {
       rank: user.rank,
       avatar: userAvatars[user.name] || DEFAULT_AVATAR_URL,
       nameBackground: users[user.name]?.nameBackground,
-      avatarFrame: users[user.name]?.avatarFrame
+      avatarFrame: users[user.name]?.avatarFrame,
+      nameCardBorder: users[user.name]?.nameCardBorder,
+      badges: getUserBadges(user.name)
     };
     
     if (!messages[roomId]) messages[roomId] = [];
@@ -3159,6 +3466,21 @@ socket.on('leave room', async (data) => {
         isOnline: Object.values(onlineUsers).some(u => u.name === fName)
     }));
 
+    // جلب الإنجازات
+    const userAchs = userAchievements[username] || {};
+    const achievementsList = Object.values(achievements).map(ach => ({
+        id: ach.id,
+        name: ach.name,
+        description: ach.description,
+        icon: ach.icon,
+        targetValue: ach.targetValue,
+        type: ach.type,
+        cardColor: ach.cardColor,
+        currentValue: userAchs[ach.id] ? userAchs[ach.id].currentValue : 0,
+        completed: userAchs[ach.id] ? userAchs[ach.id].completed : false,
+        completedAt: userAchs[ach.id] ? userAchs[ach.id].completedAt : null
+    }));
+
     socket.emit('user profile data', {
         username,
         isOnline,
@@ -3175,8 +3497,10 @@ socket.on('leave room', async (data) => {
         userCardBackground: userData ? userData.userCardBackground : null,
         profileBackground: userData ? userData.profileBackground : null,
         profileCover: userData ? userData.profileCover : null,
+        nameCardBorder: userData ? userData.nameCardBorder : null,
         rankExpiry: userRankExpiry[username] || null, // إرسال تاريخ انتهاء الرتبة
-        friends: friendsDetails
+        friends: friendsDetails,
+        achievements: achievementsList
     });
     
   });
@@ -3260,11 +3584,64 @@ socket.on('leave room', async (data) => {
         } else if (feature === 'profileBackground') {
             await User.update({ profileBackground: value }, { where: { username } });
             users[username].profileBackground = value;
+        } else if (feature === 'nameCardBorder') {
+            // التحقق من أن المستخدم يملك الإنجاز الذي يعطي هذا اللون
+            // تحميل الإنجازات مباشرة من قاعدة البيانات إذا لم تكن في الذاكرة
+            let userAchs = userAchievements[username];
+            if (!userAchs || Object.keys(userAchs).length === 0) {
+                const dbUserAchs = await UserAchievement.findAll({ where: { username } });
+                userAchs = {};
+                dbUserAchs.forEach(ua => {
+                    userAchs[ua.achievementId] = ua.get({ plain: true });
+                });
+                userAchievements[username] = userAchs;
+            }
+
+            const unlockedColors = Object.values(achievements)
+                .filter(ach => {
+                    const userAch = userAchs[ach.id];
+                    return userAch && (userAch.completed === true || userAch.completed === 1 || userAch.completed === '1');
+                })
+                .map(ach => ach.cardColor ? ach.cardColor.toLowerCase() : null)
+                .filter(c => c !== null);
+
+            // استخراج اللون من الصيغة border-color:#xxxxxx
+            let colorToCheck = value;
+            if (value && value.startsWith('border-color:')) {
+                colorToCheck = value.split(':')[1];
+            }
+            
+            if (colorToCheck) colorToCheck = colorToCheck.toLowerCase();
+
+            if (colorToCheck && colorToCheck !== null && colorToCheck !== '' && !unlockedColors.includes(colorToCheck)) {
+                socket.emit('feature error', 'عذراً، يجب عليك تحقيق الإنجاز الخاص بهذا اللون أولاً.');
+                return;
+            }
+
+            console.log(`جاري تحديث nameCardBorder للمستخدم ${username} إلى: ${value}`);
+            await User.update({ nameCardBorder: value }, { where: { username } });
+            users[username].nameCardBorder = value;
         }
 
         // تحديث المستخدمين المتصلين والغرف ليعكس التغيير فوراً
         Object.keys(onlineUsers).forEach(id => {
             if (onlineUsers[id].name === username) onlineUsers[id][feature] = value;
+        });
+
+        // تحديث بيانات المستخدم في جميع الغرف المتواجد فيها
+        rooms.forEach(r => {
+            if (r.users) {
+                let userFoundInRoom = false;
+                r.users.forEach(u => {
+                    if (u.name === username) {
+                        u[feature] = value;
+                        userFoundInRoom = true;
+                    }
+                });
+                if (userFoundInRoom) {
+                    io.to(r.id).emit('users update', r.users);
+                }
+            }
         });
         
         socket.emit('feature success', 'تم تحديث الميزة بنجاح');
@@ -4348,11 +4725,17 @@ socket.on('disconnect', async (reason) => {
 
   // حدث إرسال النقاط
   socket.on('send points', async (data) => {
-    const { fromUser, toUser, amount } = data;
+    let { fromUser, toUser, amount } = data;
+    amount = parseInt(amount);
 
     // التحقق من المدخلات
-    if (!fromUser || !toUser || !amount || amount <= 0) {
+    if (!fromUser || !toUser || isNaN(amount) || amount <= 0) {
       socket.emit('points sent error', 'بيانات غير صالحة.');
+      return;
+    }
+
+    if (amount > 10000) {
+      socket.emit('points sent error', 'الحد الأقصى لإرسال النقاط في المرة الواحدة هو 10,000 نقطة.');
       return;
     }
 
@@ -4417,6 +4800,9 @@ socket.on('disconnect', async (reason) => {
             messages[roomId].push(notificationMessage);
         }
       });
+
+      // تحديث إنجاز "كريم"
+      await updateAchievementProgress(fromUser, 'gifts', amount);
 
       // إرسال إشعار نجاح للمرسل مع نقاطه المحدثة
       socket.emit('points sent success', {
@@ -5253,7 +5639,8 @@ app.get('/check-auth', async (req, res) => {
                     avatarFrame: user.avatarFrame,
                     userCardBackground: user.userCardBackground,
                     profileBackground: user.profileBackground,
-                    profileCover: user.profileCover
+                    profileCover: user.profileCover,
+                    nameCardBorder: user.nameCardBorder
                 }
             });
         }
