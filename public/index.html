@@ -623,13 +623,17 @@
     animation: slideInUser 0.4s ease-out forwards;
 }
 
-/* أنماط شريط الإعلان المتحرك */
-@keyframes marquee-rtl {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+/* أنماط شريط الإعلان المنبثق */
+#announcementModalText {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(239, 68, 68, 0.3) transparent;
 }
-.animate-marquee {
-    animation: marquee-rtl 20s linear infinite;
+#announcementModalText::-webkit-scrollbar {
+    width: 6px;
+}
+#announcementModalText::-webkit-scrollbar-thumb {
+    background-color: rgba(239, 68, 68, 0.3);
+    border-radius: 10px;
 }
 
 /* الأنماط الجديدة لأقسام الملف الشخصي */
@@ -876,6 +880,207 @@
 .color-option { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; }
 .color-option:hover { transform: scale(1.2); }
 .color-option.selected { border-color: white; transform: scale(1.1); }
+
+/* أنماط عجلة الحظ */
+.wheel-container {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    margin: 0 auto;
+}
+.wheel {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 8px solid #fbbf24;
+    box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+    position: relative;
+    transition: transform 4s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+    background: conic-gradient(
+        #ef4444 0deg 51.4deg, 
+        #3b82f6 51.4deg 102.8deg, 
+        #10b981 102.8deg 154.2deg, 
+        #f59e0b 154.2deg 205.6deg, 
+        #8b5cf6 205.6deg 257deg, 
+        #ec4899 257deg 308.4deg, 
+        #6b7280 308.4deg 360deg
+    );
+}
+.wheel-pointer {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 15px solid transparent;
+    border-right: 15px solid transparent;
+    border-top: 30px solid #fff;
+    z-index: 10;
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
+}
+
+/* تأثيرات نصية جديدة خرافية */
+.text-cosmic-galaxy {
+    background: linear-gradient(to right, #ff00cc, #333399, #66ffff, #ff00cc);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: cosmic-anim 3s linear infinite;
+    font-weight: bold;
+    filter: drop-shadow(0 0 2px rgba(255, 0, 204, 0.5));
+}
+@keyframes cosmic-anim { to { background-position: 200% center; } }
+
+.text-liquid-gold {
+    background: linear-gradient(to right, #cfc09f, #ffecb3, #a67c00, #ffecb3, #cfc09f);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gold-flow 2.5s linear infinite;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+@keyframes gold-flow { to { background-position: 200% center; } }
+
+.text-cyber-glitch {
+    color: #0ff;
+    text-shadow: 2px 0 #f0f, -2px 0 #0ff;
+    animation: glitch-text 0.3s infinite;
+    font-weight: bold;
+}
+@keyframes glitch-text {
+    0% { text-shadow: 2px 0 #f0f, -2px 0 #0ff; transform: translate(0); }
+    25% { text-shadow: -2px 0 #f0f, 2px 0 #0ff; transform: translate(1px, 1px); }
+    50% { text-shadow: 2px 0 #0ff, -2px 0 #f0f; transform: translate(-1px, -1px); }
+    75% { text-shadow: -2px 0 #0ff, 2px 0 #f0f; transform: translate(0); }
+    100% { text-shadow: 2px 0 #f0f, -2px 0 #0ff; transform: translate(0); }
+}
+
+.text-inferno-blaze {
+    background: linear-gradient(0deg, #ff0000, #ff7f00, #ffff00);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: blaze-anim 0.8s ease-in-out infinite alternate;
+    font-weight: bold;
+    filter: drop-shadow(0 0 3px #ff4500);
+}
+@keyframes blaze-anim {
+    from { filter: drop-shadow(0 0 2px #ff0000); }
+    to { filter: drop-shadow(0 0 8px #ffff00); }
+}
+
+.text-electric-storm {
+    color: #e0f7fa;
+    text-shadow: 0 0 5px #00bcd4, 0 0 10px #00bcd4, 0 0 20px #00bcd4;
+    animation: electric-pulse 0.1s infinite alternate;
+    font-weight: bold;
+}
+@keyframes electric-pulse {
+    from { opacity: 0.8; text-shadow: 0 0 5px #00bcd4; }
+    to { opacity: 1; text-shadow: 0 0 15px #00bcd4, 0 0 25px #fff; }
+}
+
+.text-diamond-prism {
+    background: linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+    background-size: 400% 400%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: prism-move 4s ease infinite;
+    font-weight: bold;
+    filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));
+}
+@keyframes prism-move {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* تأثيرات أسماء جديدة خرافية */
+.text-aurora {
+    background: linear-gradient(90deg, #00ff99, #00ccff, #9933ff, #00ff99);
+    background-size: 300% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: aurora-flow 4s linear infinite;
+    font-weight: bold;
+    filter: drop-shadow(0 0 2px rgba(0, 255, 153, 0.5));
+}
+@keyframes aurora-flow {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+}
+
+.text-golden-glitch {
+    color: #ffd700;
+    text-shadow: 2px 0 #b8860b, -2px 0 #fffacd;
+    animation: golden-glitch-anim 0.5s infinite;
+    font-weight: bold;
+}
+@keyframes golden-glitch-anim {
+    0% { text-shadow: 2px 0 #b8860b, -2px 0 #fffacd; transform: translate(0); }
+    25% { text-shadow: -2px 0 #b8860b, 2px 0 #fffacd; transform: translate(1px, 1px); }
+    50% { text-shadow: 2px 0 #fffacd, -2px 0 #b8860b; transform: translate(-1px, -1px); }
+    75% { text-shadow: -2px 0 #fffacd, 2px 0 #b8860b; transform: translate(0); }
+    100% { text-shadow: 2px 0 #b8860b, -2px 0 #fffacd; transform: translate(0); }
+}
+
+.text-plasma {
+    background: linear-gradient(to right, #ff00cc, #ff3300, #ff00cc);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: plasma-move 2s linear infinite;
+    font-weight: bold;
+    filter: drop-shadow(0 0 3px #ff00cc);
+}
+@keyframes plasma-move {
+    to { background-position: 200% center; }
+}
+
+.text-crystal {
+    background: linear-gradient(135deg, #e0f7fa 0%, #00bcd4 50%, #e0f7fa 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: crystal-shine 3s ease infinite;
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(224, 247, 250, 0.5);
+}
+@keyframes crystal-shine {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.text-radioactive {
+    color: #ccff00;
+    text-shadow: 0 0 5px #ccff00, 0 0 10px #33ff00;
+    animation: radioactive-pulse 1s ease-in-out infinite alternate;
+    font-weight: bold;
+}
+@keyframes radioactive-pulse {
+    from { text-shadow: 0 0 5px #ccff00, 0 0 10px #33ff00; }
+    to { text-shadow: 0 0 10px #ccff00, 0 0 20px #33ff00, 0 0 30px #00ff00; }
+}
+
+/* نظام الإشعارات بالنقطة الحمراء */
+.notification-dot {
+    position: absolute;
+    top: 6px;
+    left: 6px; /* مناسب للـ RTL */
+    width: 10px;
+    height: 10px;
+    background-color: #ef4444; /* red-500 */
+    border-radius: 50%;
+    border: 2px solid #1e293b; /* slate-800 */
+    animation: pulse-dot 1.5s infinite;
+}
+@keyframes pulse-dot {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.25); opacity: 0.8; }
+}
+
         #changeBotAvatarBtn:hover { filter: brightness(1.2); cursor: pointer; }
         #changeBotAvatarBtn:hover::after { content: '\270E'; position: absolute; bottom: 0; right: 0; background: rgba(0,0,0,0.5); color: white; border-radius: 50%; width: 16px; height: 16px; font-size: 10px; display: flex; align-items: center; justify-content: center; }
     </style>
@@ -886,18 +1091,27 @@
     <div id="loadingSpinner" class="loading-overlay hidden">
         <div class="text-center">
             <div class="spinner mx-auto mb-4"></div>
-            <p class="text-white text-lg">جاري التحميل...</p>
+            <p class="text-white text-lg font-bold mb-2">جاري التحميل...</p>
+            <p id="loadingStatus" class="text-blue-300 text-sm animate-pulse">يرجى الانتظار</p>
         </div>
     </div>
 
-    <!-- شريط الإعلان الهام -->
-    <div id="announcementBar" class="hidden fixed top-0 left-0 w-full bg-gradient-to-r from-red-600 to-red-800 text-white z-50 shadow-lg overflow-hidden h-10 flex items-center border-b border-red-400">
-        <div class="w-full overflow-hidden relative h-full flex items-center">
-            <div id="announcementText" class="whitespace-nowrap font-bold text-lg animate-marquee absolute w-full text-center"></div>
+    <!-- نافذة الإعلان الهام المنبثقة -->
+    <div id="announcementModal" class="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-900 border border-red-500/30 rounded-3xl shadow-[0_0_50px_rgba(239,68,68,0.2)] max-w-lg w-full transform scale-95 transition-transform duration-300 overflow-hidden">
+            <div class="bg-gradient-to-r from-red-600 to-red-800 px-6 py-4 flex items-center gap-3">
+                <span class="text-2xl">📢</span>
+                <h2 id="announcementModalTitle" class="text-xl font-bold text-white">إعلان</h2>
+            </div>
+            <div class="p-8">
+                <div id="announcementModalText" class="text-lg text-slate-200 leading-relaxed text-center whitespace-pre-wrap break-words"></div>
+                <div class="mt-8 flex justify-center">
+                    <button id="announcementModalClose" onclick="closeAnnouncementModal()" class="bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white font-bold py-3 px-12 rounded-2xl transition-all duration-300 transform active:scale-95 shadow-lg shadow-red-500/25">
+                        حسناً
+                    </button>
+                </div>
+            </div>
         </div>
-        <button onclick="hideAnnouncementLocal()" class="absolute left-4 bg-black/20 hover:bg-black/40 rounded-full p-1 transition-colors z-10">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
     </div>
 
     <!-- صفحة تسجيل الدخول -->
@@ -1121,9 +1335,77 @@
 
     <!-- صفحة المحادثة -->
     <div id="chatPage" class="hidden h-screen flex flex-col overflow-hidden">
+        <!-- القائمة الجانبية اليسرى -->
+        <div id="leftSidebar" class="fixed top-0 left-0 h-full w-72 bg-gray-900/95 backdrop-blur-xl border-r border-gray-700 transform -translate-x-full transition-transform duration-300 z-[60] flex flex-col shadow-2xl">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                    <span>☰</span> القائمة
+                </h3>
+                <button onclick="toggleLeftSidebar()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-3 space-y-2 overflow-y-auto custom-scrollbar flex-1">
+                <!-- أزرار القائمة المنقولة -->
+                <button id="adminControlRoomBtn" onclick="openControlPanel(); toggleLeftSidebar();" class="hidden w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-blue-600/20 hover:text-blue-400 transition-all group">
+                    <div class="bg-gray-800 p-2 rounded-lg text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg></div>
+                    <span class="font-bold">غرفة التحكم</span>
+                </button>
+                
+                <button onclick="openDailyCenter(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-yellow-600/20 hover:text-yellow-400 transition-all group">
+                    <div class="bg-gray-800 p-2 rounded-lg text-yellow-500 group-hover:bg-yellow-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                    <span class="font-bold">المركز اليومي</span>
+                </button>
+
+                <button id="shopButton" onclick="openShopModal(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-purple-600/20 hover:text-purple-400 transition-all group relative">
+                    <div class="bg-gray-800 p-2 rounded-lg text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
+                    <span class="font-bold">المتجر</span>
+                </button>
+
+                <button onclick="openDrawingBoard(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-pink-600/20 hover:text-pink-400 transition-all group relative">
+                    <div class="bg-gray-800 p-2 rounded-lg text-pink-500 group-hover:bg-pink-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg></div>
+                    <span class="font-bold">لوحة الرسم</span>
+                    <span id="drawingNotificationDot" class="notification-dot hidden"></span>
+                </button>
+
+                <button id="chatPostsButton" onclick="openPostsSidebar(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-indigo-600/20 hover:text-indigo-400 transition-all group relative">
+                    <div class="bg-gray-800 p-2 rounded-lg text-indigo-500 group-hover:bg-indigo-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div>
+                    <span class="font-bold">المنشورات</span>
+                    <span id="postsNotificationDot" class="notification-dot hidden"></span>
+                </button>
+
+                <button id="topUsersButton" onclick="openTopUsersModal(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-orange-600/20 hover:text-orange-400 transition-all group relative">
+                    <div class="bg-gray-800 p-2 rounded-lg text-orange-500 group-hover:bg-orange-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"></path></svg></div>
+                    <span class="font-bold">المتفاعلين</span>
+                </button>
+
+                <button onclick="openXPLeaderboard(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-cyan-600/20 hover:text-cyan-400 transition-all group relative">
+                    <div class="bg-gray-800 p-2 rounded-lg text-cyan-500 group-hover:bg-cyan-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg></div>
+                    <span class="font-bold">لوحة الشرف</span>
+                </button>
+
+                <button id="chatFriendsButton" onclick="openFriendsSidebar(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-green-600/20 hover:text-green-400 transition-all group relative">
+                    <div class="bg-gray-800 p-2 rounded-lg text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
+                    <span class="font-bold">الأصدقاء</span>
+                    <span id="friendsNotificationDot" class="notification-dot hidden"></span>
+                </button>
+
+                <button id="roomInfoButton" onclick="openRoomInfo(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-teal-600/20 hover:text-teal-400 transition-all group relative">
+                    <div class="bg-gray-800 p-2 rounded-lg text-teal-500 group-hover:bg-teal-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                    <span class="font-bold">معلومات الغرفة</span>
+                </button>
+
+                <a href="https://xo-game-6m3e.onrender.com/" target="_blank" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-red-600/20 hover:text-red-400 transition-all group">
+                    <div class="bg-gray-800 p-2 rounded-lg text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
+                    <span class="font-bold">لعبة XO</span>
+                </a>
+            </div>
+        </div>
+        <div id="leftSidebarOverlay" class="fixed inset-0 bg-black/50 z-[55] hidden backdrop-blur-sm" onclick="toggleLeftSidebar()"></div>
+
         <!-- رأس المحادثة -->
         <div class="bg-gray-900/90 backdrop-blur-lg border-b border-gray-700 py-2 px-4 relative z-30 md:z-40 chat-header-mobile">
-            <div class="container mx-auto flex items-center justify-between flex-wrap md:flex-nowrap">
+            <div class="w-full flex items-center justify-between flex-wrap md:flex-nowrap">
                 <div class="flex items-center space-x-4 space-x-reverse">
                     <button onclick="goBack()" class="text-slate-300 hover:text-blue-500 transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1139,70 +1421,11 @@
                     </div>
                 </div>
                 <div class="flex items-center space-x-2 space-x-reverse mt-2 md:mt-0 chat-header-buttons">
-                    <!-- زر غرفة التحكم للمالك -->
-                    <button id="adminControlRoomBtn" onclick="openControlPanel()" class="hidden text-white p-2 rounded-lg bg-blue-600 hover:bg-blue-700 transition-colors" title="غرفة التحكم">
+                    <button id="toggleUsersButton" class="md:hidden text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                         </svg>
                     </button>
-                    <!-- زر لعبة XO -->
-                    <a href="https://xo-game-6m3e.onrender.com/" target="_blank" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors" title="لعبة XO">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    </a>
-                    <!-- زر المتجر -->
-                    <button id="shopButton" onclick="openShopModal()" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors" title="المتجر">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                        </svg>
-                    </button>
-                    <button onclick="openDrawingBoard()" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors" title="لوحة الرسم">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
-                        </svg>
-                    </button>
-                    <!-- زر المنشورات في واجهة المحادثة -->
-<button id="chatPostsButton" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors relative">
-    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-    </svg>
-    <span id="chatPostsBadge" class="notification-badge hidden">0</span>
-</button>
-                    <!-- زر قائمة المتفاعلين -->
-                    <button id="topUsersButton" onclick="openTopUsersModal()" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors" title="قائمة المتفاعلين">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14v6m-3-3h6M6 10h2a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2zm10 0h2a2 2 0 002-2V6a2 2 0 00-2-2h-2a2 2 0 00-2 2v2a2 2 0 002 2zM6 20h2a2 2 0 002-2v-2a2 2 0 00-2-2H6a2 2 0 00-2 2v2a2 2 0 002 2z"></path>
-                        </svg>
-                    </button>
-                    <!-- زر الأصدقاء في واجهة المحادثة -->
-    <button id="chatFriendsButton" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-        </svg>
-    </button>
-                    <!-- زر معلومات الغرفة -->
-                    <button id="roomInfoButton" onclick="openRoomInfo()" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors" title="معلومات الغرفة">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </button>
-                    <!-- زر الرسائل الخاصة (البريد) -->
-    <div class="relative" id="chatMessagesButtonContainer">
-        <button id="chatMessagesButton" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors relative">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-            </svg>
-            <span id="chatMessagesBadge" class="notification-badge hidden"></span>
-        </button>
-        <div id="privateConversationsDropdown" class="hidden absolute top-full left-0 mt-2 w-72 bg-slate-800 rounded-lg shadow-lg border border-slate-700 z-50">
-            <div class="p-3 border-b border-slate-700">
-                <h3 class="text-white font-semibold">المحادثات الخاصة</h3>
-            </div>
-            <div id="privateConversationsList" class="p-2 max-h-80 overflow-y-auto custom-scrollbar">
-                <!-- المحادثات الخاصة ستظهر هنا -->
-            </div>
-        </div>
-    </div>
                     <!-- زر الإشعارات (الجرس) -->
     <div class="relative" id="chatNotificationsButtonContainer">
         <button id="chatNotificationsButton" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors relative">
@@ -1220,13 +1443,29 @@
             </div>
         </div>
     </div>
-                    <button id="toggleUsersButton" class="md:hidden text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-        </svg>
-    </button>
-    <span class="w-3 h-3 bg-green-500 rounded-full"></span>
-    <span class="text-white text-sm">نشط</span>
+                    <!-- زر الرسائل الخاصة (البريد) -->
+    <div class="relative" id="chatMessagesButtonContainer">
+        <button id="chatMessagesButton" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors relative">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+            <span id="messagesNotificationDot" class="notification-dot hidden" style="top: -2px; right: -2px;"></span>
+            <span id="chatMessagesBadge" class="notification-badge hidden"></span>
+        </button>
+        <div id="privateConversationsDropdown" class="hidden absolute top-full left-0 mt-2 w-72 bg-slate-800 rounded-lg shadow-lg border border-slate-700 z-50">
+            <div class="p-3 border-b border-slate-700">
+                <h3 class="text-white font-semibold">المحادثات الخاصة</h3>
+            </div>
+            <div id="privateConversationsList" class="p-2 max-h-80 overflow-y-auto custom-scrollbar">
+                <!-- المحادثات الخاصة ستظهر هنا -->
+            </div>
+        </div>
+    </div>
+                    <!-- زر القائمة الجانبية (جديد) -->
+                    <button onclick="toggleLeftSidebar()" class="text-slate-300 p-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors relative" title="القائمة">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                        <span id="masterNotificationDot" class="notification-dot hidden"></span>
+                    </button>
 </div>
             </div>
         </div>
@@ -1526,7 +1765,7 @@
                     </div>
 
                     <!-- النقاط والمستوى -->
-                    <div class="grid grid-cols-2 gap-4 text-center">
+                    <div class="grid grid-cols-3 gap-3 text-center">
                         <div class="bg-gray-800/80 rounded-xl p-4 border border-gray-700/50 hover:border-yellow-500/30 transition-colors group">
                             <div class="text-yellow-400 text-3xl mb-1 group-hover:scale-110 transition-transform duration-200">⭐</div>
                             <div class="text-white font-bold text-lg" id="profilePoints">0</div>
@@ -1536,6 +1775,11 @@
                             <div class="text-green-400 text-3xl mb-1 group-hover:scale-110 transition-transform duration-200">📈</div>
                             <div class="text-white font-bold text-lg" id="profileLevel">1</div>
                             <div class="text-slate-400 text-xs font-medium">المستوى</div>
+                        </div>
+                        <div class="bg-gray-800/80 rounded-xl p-4 border border-gray-700/50 hover:border-cyan-500/30 transition-colors group">
+                            <div class="text-cyan-400 text-3xl mb-1 group-hover:scale-110 transition-transform duration-200">⚡</div>
+                            <div class="text-white font-bold text-lg" id="profileXP">0</div>
+                            <div class="text-slate-400 text-xs font-medium">الخبرة (XP)</div>
                         </div>
                     </div>
 
@@ -1553,6 +1797,28 @@
                             <span>إرسال نقاط</span>
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1m0-1V4m0 2v1m0 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                         </button>
+                    </div>
+
+                    <!-- إحصائيات التفاعل ونظام الدعوة -->
+                    <div id="referralSection" class="mt-6 p-4 bg-gray-800/40 border border-gray-700/50 rounded-2xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xl">🔥</span>
+                                <span class="text-sm font-bold text-slate-200">درجة التفاعل</span>
+                            </div>
+                            <div id="interactionScore" class="bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg shadow-orange-500/20">0</div>
+                        </div>
+                        
+                        <div id="referralLinkContainer" class="hidden">
+                            <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 px-1">رابط الدعوة الخاص بك</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="referralLinkInput" readonly class="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-2 text-xs text-blue-400 focus:outline-none focus:border-blue-500/50">
+                                <button onclick="copyReferralLink()" class="bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 p-2 rounded-xl border border-blue-500/20 transition-colors">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                                </button>
+                            </div>
+                            <p class="text-[10px] text-slate-500 mt-2 px-1 text-center italic">شارك رابطك لرفع درجة تفاعلك عند تسجيل أعضاء جدد</p>
+                        </div>
                     </div>
 
                     <div class="text-center pt-6" id="bioSection">
@@ -1629,6 +1895,17 @@
                                 <button onclick="selectFeature('nameColor', 'text-sparkle-pink')" class="py-1 px-2 rounded text-sparkle-pink text-[10px] font-bold bg-black/40">بريق وردي ✨</button>
                                 <button onclick="selectFeature('nameColor', 'text-neon-pulse')" class="py-1 px-2 rounded text-neon-pulse text-[10px] font-bold bg-black/40">نيون نابض 🔋</button>
                                 <button onclick="selectFeature('nameColor', 'text-fire-wave')" class="py-1 px-2 rounded text-fire-wave text-[10px] font-bold bg-black/40">موجة نارية 🔥</button>
+                                <button onclick="selectFeature('nameColor', 'text-cosmic-galaxy')" class="py-1 px-2 rounded text-cosmic-galaxy text-[10px] font-bold bg-black/40">مجرة كونية 🌌</button>
+                                <button onclick="selectFeature('nameColor', 'text-liquid-gold')" class="py-1 px-2 rounded text-liquid-gold text-[10px] font-bold bg-black/40">ذهب سائل 🔱</button>
+                                <button onclick="selectFeature('nameColor', 'text-cyber-glitch')" class="py-1 px-2 rounded text-cyber-glitch text-[10px] font-bold bg-black/40">خلل سايبر 👾</button>
+                                <button onclick="selectFeature('nameColor', 'text-inferno-blaze')" class="py-1 px-2 rounded text-inferno-blaze text-[10px] font-bold bg-black/40">جحيم مستعر 🌋</button>
+                                <button onclick="selectFeature('nameColor', 'text-electric-storm')" class="py-1 px-2 rounded text-electric-storm text-[10px] font-bold bg-black/40">عاصفة كهربائية ⚡</button>
+                                <button onclick="selectFeature('nameColor', 'text-diamond-prism')" class="py-1 px-2 rounded text-diamond-prism text-[10px] font-bold bg-black/40">منشور ماسي 💎</button>
+                                <button onclick="selectFeature('nameColor', 'text-aurora')" class="py-1 px-2 rounded text-aurora text-[10px] font-bold bg-black/40">شفق قطبي 🌌</button>
+                                <button onclick="selectFeature('nameColor', 'text-golden-glitch')" class="py-1 px-2 rounded text-golden-glitch text-[10px] font-bold bg-black/40">خلل ذهبي 🔱</button>
+                                <button onclick="selectFeature('nameColor', 'text-plasma')" class="py-1 px-2 rounded text-plasma text-[10px] font-bold bg-black/40">بلازما ⚛️</button>
+                                <button onclick="selectFeature('nameColor', 'text-crystal')" class="py-1 px-2 rounded text-crystal text-[10px] font-bold bg-black/40">كريستال ❄️</button>
+                                <button onclick="selectFeature('nameColor', 'text-radioactive')" class="py-1 px-2 rounded text-radioactive text-[10px] font-bold bg-black/40">مشع ☢️</button>
                             </div>
                             <div class="mt-3 flex items-center justify-between bg-gray-800/50 p-2 rounded-lg">
                                 <span class="text-[10px] text-slate-300">لون مخصص (مزج):</span>
@@ -1875,7 +2152,7 @@
                 <h3 class="text-white font-semibold mb-3">إنشاء منشور جديد</h3>
                 <textarea 
                     id="newPostContent" 
-                    placeholder="بماذا تفكر يا ${currentUser?.name || ''}؟" 
+                    placeholder="بماذا تفكر...؟" 
                     class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mb-3"
                     rows="3"
                 ></textarea>
@@ -1919,6 +2196,26 @@
 </div>
 
 <div id="topUsersOverlay" class="friends-overlay" onclick="closeTopUsersModal()"></div>
+
+<!-- نافذة لوحة الشرف (XP Leaderboard) -->
+<div id="xpLeaderboardModal" class="profile-modal">
+    <div class="profile-content custom-scrollbar">
+        <div class="relative bg-gray-800 p-6 text-center">
+             <button onclick="closeXPLeaderboard()" class="absolute top-4 right-4 text-slate-300 hover:text-blue-500 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-2xl font-bold text-white">⚡ لوحة الشرف</h2>
+            <p class="text-slate-400 text-sm">أكثر المستخدمين خبرة (XP)</p>
+        </div>
+        <div id="xpLeaderboardList" class="flex-1 p-4 space-y-3 overflow-y-auto custom-scrollbar">
+            <div class="text-center text-slate-400 p-8">
+                <div class="spinner mx-auto"></div>
+                <p class="mt-2">جاري تحميل القائمة...</p>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="xpLeaderboardOverlay" class="friends-overlay" onclick="closeXPLeaderboard()"></div>
 
 <!-- نافذة المتجر -->
 <div id="shopModal" class="profile-modal">
@@ -2009,6 +2306,68 @@
         z-index: 9999;
     }
 </style>
+
+<!-- نافذة المركز اليومي (Daily Center) -->
+<div id="dailyCenterModal" class="profile-modal">
+    <div class="profile-content custom-scrollbar" style="max-width: 500px;">
+        <div class="relative bg-gray-800 p-6 text-center border-b border-gray-700">
+             <button onclick="closeDailyCenter()" class="absolute top-4 right-4 text-slate-300 hover:text-blue-500 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-2xl font-bold text-white">🎁 المركز اليومي</h2>
+            <p class="text-slate-400 text-sm">جوائز ومكافآت يومية بانتظارك!</p>
+        </div>
+
+        <div class="flex border-b border-gray-700">
+            <button onclick="switchDailyTab('reward')" class="flex-1 py-3 text-sm font-bold text-white border-b-2 border-blue-500 bg-gray-700/50" id="tab-reward">المكافأة اليومية</button>
+            <button onclick="switchDailyTab('wheel')" class="flex-1 py-3 text-sm font-bold text-slate-400 hover:text-white" id="tab-wheel">🎡 عجلة الحظ</button>
+        </div>
+
+        <div class="p-6 bg-gray-900/50 min-h-[300px]">
+            <!-- قسم المكافأة اليومية -->
+            <div id="daily-reward-content" class="text-center space-y-6">
+                <div class="text-6xl animate-bounce">📅</div>
+                <h3 class="text-xl font-bold text-white">سجل دخولك يومياً واربح!</h3>
+                <p class="text-slate-300 text-sm">احصل على نقاط مجانية كل 24 ساعة. كلما زادت سلسلة دخولك، زادت الجائزة!</p>
+                
+                <div class="bg-gray-800 p-4 rounded-xl border border-gray-700 inline-block w-full">
+                    <div class="text-sm text-slate-400 mb-1">الجائزة الحالية</div>
+                    <div class="text-3xl font-bold text-yellow-400">100 - 450 نقطة</div>
+                </div>
+
+                <button onclick="claimDailyReward()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg transform transition hover:scale-105">
+                    استلام المكافأة الآن 🎁
+                </button>
+            </div>
+
+            <!-- قسم عجلة الحظ -->
+            <div id="daily-wheel-content" class="hidden text-center space-y-4">
+                <div class="wheel-container">
+                    <div class="wheel-pointer"></div>
+                    <div class="wheel" id="luckyWheel"></div>
+                </div>
+                
+                <div class="mt-4">
+                    <p class="text-slate-300 text-sm mb-2">جرب حظك واربح جوائز قيمة!</p>
+                    <p class="text-xs text-slate-500 mb-4">تكلفة التدوير: <span class="text-yellow-400 font-bold">500 نقطة</span></p>
+                    <button id="spinButton" onclick="spinWheel()" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold py-2 px-8 rounded-full shadow-lg transform transition hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
+                        دوّر العجلة 🎡
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-2 text-[10px] text-slate-400 mt-4">
+                    <div class="bg-gray-800 p-1 rounded">🔴 100 نقطة</div>
+                    <div class="bg-gray-800 p-1 rounded">🔵 300 نقطة</div>
+                    <div class="bg-gray-800 p-1 rounded">🟢 500 نقطة</div>
+                    <div class="bg-gray-800 p-1 rounded">🟡 1000 نقطة</div>
+                    <div class="bg-gray-800 p-1 rounded">🟣 2000 نقطة</div>
+                    <div class="bg-gray-800 p-1 rounded">🌸 5000 نقطة</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="dailyCenterOverlay" class="friends-overlay" onclick="closeDailyCenter()"></div>
 
 <!-- قبل نهاية body -->
 <!-- نافذة معلومات الغرفة -->
@@ -2110,12 +2469,23 @@
             <!-- قسم الإعلان الهام -->
             <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
                 <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                    <span>📢</span> إعلان هام (شريط متحرك)
+                    <span>📢</span> إدارة الإعلانات والتنبيهات
                 </h3>
-                <div class="flex gap-2">
-                    <input type="text" id="announcementInput" placeholder="اكتب الإعلان هنا..." class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
-                    <button onclick="setAnnouncement()" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">نشر</button>
-                    <button onclick="removeAnnouncement()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-semibold transition-colors">إزالة</button>
+                <div class="flex flex-col gap-3">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <select id="announcementType" onchange="toggleCustomTitle()" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                            <option value="إعلان هام">إعلان هام</option>
+                            <option value="تنبيه">تنبيه</option>
+                            <option value="تحديث">تحديث</option>
+                            <option value="custom">عنوان مخصص...</option>
+                        </select>
+                        <input type="text" id="announcementCustomTitle" placeholder="اكتب العنوان المخصص هنا..." class="hidden bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                    </div>
+                    <textarea id="announcementInput" placeholder="اكتب محتوى الرسالة هنا... (يدعم السطور المتعددة)" rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"></textarea>
+                    <div class="flex gap-2 justify-end">
+                        <button onclick="setAnnouncement()" class="bg-red-600 hover:bg-red-700 text-white px-8 py-2 rounded-lg font-semibold transition-colors">نشر الآن</button>
+                        <button onclick="removeAnnouncement()" class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">إزالة</button>
+                    </div>
                 </div>
             </div>
 
@@ -3174,7 +3544,8 @@ function updateUnreadBadges() {
         const friendsButton = document.getElementById('friendsButton');
 
         // تحويل بين نماذج التسجيل والدخول والزائر
-        loginTab.addEventListener('click', () => {
+        loginTab.addEventListener('click', (e) => {
+            e.preventDefault();
             loginForm.classList.remove('hidden');
             registerForm.classList.add('hidden');
             guestForm.classList.add('hidden');
@@ -3183,7 +3554,8 @@ function updateUnreadBadges() {
             guestTab.className = 'tab-button flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all duration-300 text-slate-400 hover:text-white';
         });
 
-        registerTab.addEventListener('click', () => {
+        registerTab.addEventListener('click', (e) => {
+            e.preventDefault();
             registerForm.classList.remove('hidden');
             loginForm.classList.add('hidden');
             guestForm.classList.add('hidden');
@@ -3192,7 +3564,8 @@ function updateUnreadBadges() {
             guestTab.className = 'tab-button flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all duration-300 text-slate-400 hover:text-white';
         });
 
-        guestTab.addEventListener('click', () => {
+        guestTab.addEventListener('click', (e) => {
+            e.preventDefault();
             guestForm.classList.remove('hidden');
             loginForm.classList.add('hidden');
             registerForm.classList.add('hidden');
@@ -3234,8 +3607,14 @@ function updateUnreadBadges() {
         });
 
         // إظهار وإخفاء سبينر التحميل
-        function showLoading() {
+        function showLoading(statusText = 'يرجى الانتظار...') {
             loadingSpinner.classList.remove('hidden');
+            updateLoadingStatus(statusText);
+        }
+
+        function updateLoadingStatus(text) {
+            const statusEl = document.getElementById('loadingStatus');
+            if (statusEl) statusEl.textContent = text;
         }
 
         function hideLoading() {
@@ -3271,7 +3650,7 @@ function updateUnreadBadges() {
         // التحقق من الجلسة المحفوظة عند تحميل الصفحة
         window.addEventListener('DOMContentLoaded', async () => {
             applyBackground(); // تطبيق الخلفية السوداء الافتراضية فوراً
-            showLoading();
+            showLoading('جاري التحقق من الجلسة...');
             try {
                 const response = await fetch('/check-auth');
                 const data = await response.json();
@@ -3295,6 +3674,7 @@ function updateUnreadBadges() {
             if (userData.nameCardBorder) currentUser.nameCardBorder = userData.nameCardBorder;
             
             updateHeaderUserInfo();
+            updateLoadingStatus('تم التحقق بنجاح! جاري الدخول...');
             showNotification(`مرحباً بعودتك ${userData.name}! 😊`, 'success');
             
             // التحقق من صلاحيات المستخدم
@@ -3307,6 +3687,7 @@ function updateUnreadBadges() {
                     if (roomData && roomData.id) {
                         // إذا كانت الغرف محملة، ادخل فوراً، وإلا انتظر أول تحديث للغرف
                         if (rooms.length > 0) {
+                            updateLoadingStatus('جاري استعادة الغرفة...');
                             rooms.forEach(r => {
                                 if (r.background) roomsWithBackgrounds[r.id] = r.background;
                                 if (r.settings) roomsWithSettings[r.id] = r.settings;
@@ -3315,6 +3696,7 @@ function updateUnreadBadges() {
                         } else {
                             // سنقوم بالدخول للغرفة بمجرد استقبال 'rooms update' الأول
                             const entryHandler = (updatedRooms) => {
+                                updateLoadingStatus('جاري تحميل بيانات الغرف...');
                                 // تحديث البيانات أولاً
                                 updatedRooms.forEach(room => {
                                     if (room.settings) roomsWithSettings[room.id] = room.settings;
@@ -3419,7 +3801,7 @@ function updateUnreadBadges() {
         // معالجة تسجيل الدخول
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            showLoading();
+            showLoading('جاري تسجيل الدخول...');
             const username = document.getElementById('loginUsername').value;
             const password = document.getElementById('loginPassword').value;
             const rememberMe = document.getElementById('rememberMe').checked;
@@ -3427,10 +3809,14 @@ function updateUnreadBadges() {
             socket.emit('user login', { username, password, rememberMe });
         });
 
+        // استخراج كود الدعوة من الرابط إن وجد
+        const urlParams = new URLSearchParams(window.location.search);
+        const referralCode = urlParams.get('ref');
+
         // معالجة إنشاء حساب
         registerForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            showLoading();
+            showLoading('جاري إنشاء الحساب...');
             const username = document.getElementById('registerUsername').value;
             const password = document.getElementById('registerPassword').value;
             const gender = document.querySelector('input[name="gender"]:checked')?.value;
@@ -3441,13 +3827,18 @@ function updateUnreadBadges() {
                 return;
             }
             
-            socket.emit('user register', { username, password, gender });
+            socket.emit('user register', { 
+                username, 
+                password, 
+                gender,
+                referredBy: referralCode // إرسال كود الدعوة للسيرفر
+            });
         });
 
         // معالجة دخول زائر
         guestForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            showLoading();
+            showLoading('جاري الدخول كزائر...');
             const username = document.getElementById('guestUsername').value;
             const gender = document.querySelector('input[name="guestGender"]:checked')?.value;
             
@@ -3471,6 +3862,7 @@ function updateUnreadBadges() {
         // استقبال نتائج دخول الزائر
         socket.on('guest success', (userData) => {
             currentUser = userData;
+            updateLoadingStatus('تم الدخول بنجاح!');
             handleSessionValid(userData);
         });
 
@@ -3493,6 +3885,7 @@ function updateUnreadBadges() {
             currentUser.nameCardBorder = userData.nameCardBorder;
 
             document.cookie = `sessionId=${userData.sessionId}; path=/; max-age=31536000; SameSite=Lax`; // صلاحية لمدة سنة
+            updateLoadingStatus('تم تسجيل الدخول! جاري تحضير الواجهة...');
             handleSessionValid(userData);
             // بعد تسجيل الدخول الناجح، تحقق من صلاحيات المستخدم
             if (currentUser) {
@@ -3515,6 +3908,7 @@ function updateUnreadBadges() {
             currentUser.nameCardBorder = null;
 
             document.cookie = `sessionId=${userData.sessionId}; path=/; max-age=31536000; SameSite=Lax`; // صلاحية لمدة سنة
+            updateLoadingStatus('تم إنشاء الحساب! مرحباً بك...');
             handleSessionValid(userData);
             
             // بعد إنشاء الحساب، تحقق من صلاحيات المستخدم
@@ -3569,6 +3963,7 @@ function updateUnreadBadges() {
 
         // استقبال تاريخ المحادثة (محدث لدعم الصور)
 socket.on('chat history', (messages) => {
+    updateLoadingStatus('جاري تحميل الرسائل...');
     const container = document.getElementById('messagesContainer');
     container.innerHTML = '';
 
@@ -3606,6 +4001,7 @@ socket.on('chat history', (messages) => {
     setTimeout(() => {
         container.scrollTop = container.scrollHeight;
     }, 100);
+    updateLoadingStatus('اكتمل التحميل!');
     hideLoading();
     loadBackgroundData(); // تحميل باقي البيانات الآن بعد عرض الرسائل
 });
@@ -3785,7 +4181,10 @@ socket.on('chat history', (messages) => {
         // تحديث الإشعارات
         updateUnreadBadges();
         
+        showDot('messages', true);
         showNotification(`رسالة خاصة جديدة من ${message.from}`, 'info');
+        // طلب تحديث العداد من السيرفر لضمان الدقة (عدد المحادثات وليس الرسائل)
+        socket.emit('get unread counts', currentUser.name);
     }
 });
 
@@ -3831,6 +4230,7 @@ socket.on('private messages history', (messages) => {
             }
             updateFriendRequests();
             updateMessagesBadge();
+            showDot('friends', true);
         });
 
         socket.on('friend request sent', (message) => {
@@ -3963,19 +4363,15 @@ socket.on('private messages history', (messages) => {
             usersOverlay.classList.toggle('show');
         }
 
-        // فتح وإغلاق قائمة الأصدقاء
         function openFriendsSidebar() {
             document.getElementById('friendsSidebar').classList.add('show');
             document.getElementById('friendsOverlay').classList.add('show');
+            showDot('friends', false);
         }
 
         function closeFriendsSidebar() {
             document.getElementById('friendsSidebar').classList.remove('show');
             document.getElementById('friendsOverlay').classList.remove('show');
-            // إصلاح مشكلة التداخل في الشاشات الصغيرة
-            setTimeout(() => {
-                document.body.style.overflow = 'auto';
-            }, 300);
         }
 
         // تحديث طلبات الصداقة
@@ -4060,47 +4456,37 @@ socket.on('private messages history', (messages) => {
         });
     }
 
-        // تحديث شارة الرسائل
-        function updateMessagesBadge() {
-    const badge = document.getElementById('messagesBadge');
-    const chatBadge = document.getElementById('chatMessagesBadge');
-    
-    // حساب إجمالي الرسائل غير المقروءة من جميع الأصدقاء
-    let totalUnread = 0;
-    for (const username in unreadPrivateMessages) {
-        totalUnread += unreadPrivateMessages[username];
-    }
-    
-    // إضافة طلبات الصداقة إلى العدد الإجمالي
-    totalUnread += friendRequests.length;
-    
-    // تحديث الزر في الصفحة الرئيسية
-    if (badge) {
-        if (totalUnread > 0) {
-            badge.textContent = totalUnread;
-            badge.classList.remove('hidden');
-        } else {
-            badge.classList.add('hidden');
+    // متغير لتخزين عدد المحادثات غير المقروءة من السيرفر
+    let globalUnreadConversations = 0;
+
+    // تحديث شارة الرسائل (موحدة)
+    function updateMessagesBadge(count) {
+        const chatBadge = document.getElementById('chatMessagesBadge');
+        
+        if (typeof count === 'number') {
+            globalUnreadConversations = count;
+        }
+        
+        // العدد الإجمالي = عدد المحادثات غير المقروءة فقط
+        const totalUnread = globalUnreadConversations;
+
+        if (chatBadge) {
+            if (totalUnread > 0) {
+                chatBadge.textContent = totalUnread;
+                chatBadge.classList.remove('hidden');
+            } else {
+                chatBadge.classList.add('hidden');
+            }
         }
     }
-    
-    // تحديث الزر في واجهة المحادثة
-    if (chatBadge) {
-        if (totalUnread > 0) {
-            chatBadge.textContent = totalUnread;
-            chatBadge.classList.remove('hidden');
-        } else {
-            chatBadge.classList.add('hidden');
-        }
-    }
-}
 
         // البحث عن مستخدمين
-        function searchUsers() {
+        function searchUsers(event) {
+            if (event) event.preventDefault();
             const query = document.getElementById('userSearchInput').value.trim();
             
             if (query.length < 2) {
-                showNotification('يرجى إدخال至少 حرفين للبحث', 'error');
+                showNotification('يرجى إدخال حرفين على الأقل للبحث', 'error');
                 return;
             }
             
@@ -4320,6 +4706,9 @@ socket.on('private messages history', (messages) => {
             if (roomBackground) {
                 currentRoomBackground = roomBackground;
                 applyBackground(roomBackground, true);
+            } else {
+                // تطبيق الخلفية الافتراضية إذا لم تكن هناك خلفية مخصصة
+                applyBackground({ type: 'color', value: '#000000' }, true);
             }
             
             // حفظ الغرفة الحالية
@@ -4333,6 +4722,7 @@ socket.on('private messages history', (messages) => {
             
             // تهيئة الحاوية لتكون جاهزة (فارغة مؤقتاً)
             const container = document.getElementById('messagesContainer');
+            updateLoadingStatus('جاري الاتصال بالغرفة...');
             container.innerHTML = '<div class="flex items-center justify-center h-full"><div class="text-gray-400">جاري تحميل المحادثة...</div></div>';
 
             // إظهار الأزرار في رأس المحادثة
@@ -4956,12 +5346,12 @@ function updateOnlineUsersList(users) {
     
     if (!onlineUsersList || !onlineUsersCount) return;
     
-    onlineUsersCount.textContent = users.length;
+    // عد المستخدمين المتصلين فعلياً فقط
+    const realOnlineCount = users.filter(u => u.isOnline !== false).length;
+    onlineUsersCount.textContent = realOnlineCount;
     
-    // استخدام DocumentFragment لتقليل وميض الصفحة وتحسين الأداء
     const fragment = document.createDocumentFragment();
     
-    // تعريف الأجنحة (Wings Configuration)
     const wings = [
         {
             id: 'owners',
@@ -4984,21 +5374,33 @@ function updateOnlineUsersList(users) {
         {
             id: 'members',
             title: '👥 متصلون',
-            ranks: [], // البقية
+            ranks: [], 
             classes: 'bg-gray-800/80 text-gray-300 border-y border-gray-700'
+        },
+        {
+            id: 'offline',
+            title: '💤 غير متصل',
+            ranks: [],
+            classes: 'bg-gray-900/90 text-gray-500 border-y border-gray-800'
         }
     ];
 
-    // تجميع المستخدمين في الأجنحة
     let shouldPlaySound = false;
-    const groupedUsers = { owners: [], kings: [], distinguished: [], members: [] };
+    const groupedUsers = { owners: [], kings: [], distinguished: [], members: [], offline: [] };
     
-    // تحديث خريطة البيانات للوصول السريع
     window.onlineUsersData = {};
 
     users.forEach(user => {
         if (user.name === currentUser.name) {
             currentUser.nameColor = user.nameColor;
+        }
+
+        // تخزين البيانات للوصول السريع
+        window.onlineUsersData[user.name] = user;
+
+        if (user.isOnline === false) {
+            groupedUsers.offline.push(user);
+            return;
         }
 
         const rank = user.rank;
@@ -5011,12 +5413,8 @@ function updateOnlineUsersList(users) {
         } else {
             groupedUsers.members.push(user);
         }
-        
-        // تخزين البيانات للوصول السريع
-        window.onlineUsersData[user.name] = user;
     });
 
-    // دالة ترتيب المستخدمين داخل الجناح
     const sortUsers = (userList) => {
         return userList.sort((a, b) => {
             const rankA = a.rank ? ranks[a.rank]?.level || 0 : 0; 
@@ -5029,24 +5427,23 @@ function updateOnlineUsersList(users) {
 
     const currentOnlineUsernames = new Set();
 
-    // عرض الأجنحة
     wings.forEach(wing => {
         const wingUsers = sortUsers(groupedUsers[wing.id]);
         
         if (wingUsers.length > 0) {
-            // عنوان الجناح
             const wingHeader = document.createElement('div');
             wingHeader.className = `py-2 px-3 mb-2 mt-2 font-bold text-sm text-center uppercase tracking-wider rounded-lg backdrop-blur-md ${wing.classes}`;
             wingHeader.innerHTML = wing.title;
             fragment.appendChild(wingHeader);
 
-            // قائمة مستخدمي الجناح
             wingUsers.forEach(user => {
-                currentOnlineUsernames.add(user.name);
+                if (user.isOnline !== false) {
+                    currentOnlineUsernames.add(user.name);
+                }
+                
                 const userDiv = document.createElement('div');
                 
-                // إضافة تأثير الحركة إذا كان المستخدم جديداً
-                if (!previousOnlineUsernames.has(user.name)) {
+                if (user.isOnline !== false && !previousOnlineUsernames.has(user.name)) {
                     userDiv.classList.add('user-entry-animation');
                     shouldPlaySound = true;
                 }
@@ -5057,7 +5454,6 @@ function updateOnlineUsersList(users) {
                 userDiv.setAttribute('data-name-background', user.nameBackground || 'null');
                 userDiv.setAttribute('data-avatar-frame', user.avatarFrame || 'null');
 
-                // شارة الرتبة (مصغرة)
                 let rankBadge = '';
                 if (user.rank) {
                     const rankInfo = ranks[user.rank] || { icon: '' };
@@ -5065,7 +5461,6 @@ function updateOnlineUsersList(users) {
                     rankBadge = `<span class="text-[10px] opacity-80 mr-2 flex items-center gap-1">${iconHtml} ${user.rank}</span>`;
                 }
 
-                // الصورة الرمزية
                 let frameStyle = '';
                 let frameClass = '';
                 if (user.avatarFrame && user.avatarFrame.startsWith('border-color:')) {
@@ -5074,11 +5469,13 @@ function updateOnlineUsersList(users) {
                     frameClass = user.avatarFrame || '';
                 }
 
-                const avatarHtml = user.avatar 
-                    ? `<div class="w-9 h-9 rounded-full relative group-hover:border-blue-400 transition-colors ${frameClass}" style="${frameStyle}"><img src="${user.avatar}" class="w-full h-full rounded-full object-cover" alt="${user.name}" loading="lazy"></div>`
-                    : `<div class="w-9 h-9 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold text-xs group-hover:border-blue-400 transition-colors ${frameClass}" style="${frameStyle}">${user.name.charAt(0).toUpperCase()}</div>`;
+                const opacityClass = user.isOnline === false ? 'opacity-50 grayscale-[0.5]' : '';
+                const statusColor = user.isOnline === false ? 'bg-gray-500' : 'bg-green-500';
 
-                // تطبيق خلفية البطاقة المخصصة
+                const avatarHtml = user.avatar 
+                    ? `<div class="w-9 h-9 rounded-full relative group-hover:border-blue-400 transition-colors ${frameClass} ${opacityClass}" style="${frameStyle}"><img src="${user.avatar}" class="w-full h-full rounded-full object-cover" alt="${user.name}" loading="lazy"></div>`
+                    : `<div class="w-9 h-9 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold text-xs group-hover:border-blue-400 transition-colors ${frameClass} ${opacityClass}" style="${frameStyle}">${user.name.charAt(0).toUpperCase()}</div>`;
+
                 const cardBgValue = user.userCardBackground || 'hover:bg-white/5';
                 if (cardBgValue.startsWith('background-color:')) {
                     userDiv.className = `group flex items-center space-x-3 space-x-reverse p-2 rounded-lg transition-all duration-200 ease-in-out cursor-pointer mb-1 border border-transparent hover:border-white/10`;
@@ -5088,25 +5485,20 @@ function updateOnlineUsersList(users) {
                     userDiv.style.backgroundColor = '';
                 }
                 
-                // تطبيق لون إطار البطاقة
                 if (user.nameCardBorder && user.nameCardBorder.startsWith('border-color:')) {
                     const borderColor = user.nameCardBorder.split(':')[1];
                     userDiv.style.borderColor = borderColor;
                     userDiv.style.borderWidth = '2px';
-                } else {
-                    userDiv.style.borderColor = 'transparent';
-                    userDiv.style.borderWidth = '1px';
                 }
 
-                // تطبيق لون الاسم
                 const nameStyle = getUserNameStyle(user.nameColor);
 
                 userDiv.innerHTML = `
                     <div class="relative flex-shrink-0">
                         ${avatarHtml}
-                        <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-gray-800"></span>
+                        <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ${statusColor} border-2 border-gray-800"></span>
                     </div>
-                    <div class="flex-1 min-w-0 flex flex-col justify-center">
+                    <div class="flex-1 min-w-0 flex flex-col justify-center ${user.isOnline === false ? 'opacity-60' : ''}">
                         <div class="flex items-center justify-between">
                             <div class="font-semibold truncate ${nameStyle.class} text-sm" style="${nameStyle.style}">${user.name}</div>
                         </div>
@@ -5118,7 +5510,6 @@ function updateOnlineUsersList(users) {
         }
     });
 
-    // استبدال القائمة القديمة بالجديدة دفعة واحدة
     onlineUsersList.innerHTML = '';
     onlineUsersList.appendChild(fragment);
 
@@ -5129,9 +5520,13 @@ function updateOnlineUsersList(users) {
     if (!isFirstUserLoad && currentUser) {
         for (const username of previousOnlineUsernames) {
             if (!currentOnlineUsernames.has(username) && username !== currentUser.name) {
-                leaveSound.currentTime = 0;
-                leaveSound.play().catch(e => console.log("Audio play blocked:", e));
-                break;
+                // نتحقق إذا كان المستخدم أصبح "غير متصل" أو خرج تماماً
+                const stillInRoomOffline = groupedUsers.offline.some(u => u.name === username);
+                if (!stillInRoomOffline) {
+                    leaveSound.currentTime = 0;
+                    leaveSound.play().catch(e => console.log("Audio play blocked:", e));
+                    break;
+                }
             }
         }
     }
@@ -5636,6 +6031,22 @@ function updateOnlineUsersList(users) {
                 const existingExpiry = document.getElementById('profileRankExpiry');
                 if (existingExpiry) existingExpiry.remove();
             }
+
+            // عرض ترتيب XP إذا كان موجوداً
+            const existingXpRank = document.getElementById('profileXpRank');
+            if (existingXpRank) existingXpRank.remove();
+
+            if (profileData.xpRank) {
+                const xpRankDiv = document.createElement('div');
+                xpRankDiv.id = 'profileXpRank';
+                xpRankDiv.className = 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-cyan-900/60 text-cyan-300 border border-cyan-500/30 shadow-[0_0_10px_rgba(34,211,238,0.2)] animate-pulse ml-2';
+                xpRankDiv.innerHTML = `<span class="ml-1">⚡</span><span>مركز #${profileData.xpRank}</span>`;
+                // إضافته بجانب الرتبة والحالة
+                const statusContainer = document.querySelector('#profileHeader .flex.items-center.gap-2.mt-1');
+                if (statusContainer) {
+                    statusContainer.appendChild(xpRankDiv);
+                }
+            }
             
             if (profileData.isOnline) {
                 statusDot.className = 'w-2.5 h-2.5 rounded-full bg-green-500';
@@ -5649,6 +6060,25 @@ function updateOnlineUsersList(users) {
             // عرض المعلومات الشخصية (Bio)
             profileBio.textContent = profileData.bio || 'لا توجد معلومات لعرضها.';
             profileBioInput.value = profileData.bio || '';
+
+            // عرض درجة التفاعل ونظام الدعوة
+            const interactionScoreElem = document.getElementById('interactionScore');
+            const referralLinkContainer = document.getElementById('referralLinkContainer');
+            const referralLinkInput = document.getElementById('referralLinkInput');
+
+            if (interactionScoreElem) {
+                interactionScoreElem.textContent = profileData.interactionScore || 0;
+            }
+
+            if (referralLinkContainer && referralLinkInput) {
+                if (isOwner) {
+                    referralLinkContainer.classList.remove('hidden');
+                    const refLink = `${window.location.origin}/?ref=${profileData.username}`;
+                    referralLinkInput.value = refLink;
+                } else {
+                    referralLinkContainer.classList.add('hidden');
+                }
+            }
 
             // تعبئة قائمة الأصدقاء (مع التأكد من عدم التكرار)
             const friendsContainer = document.getElementById('profileFriendsList');
@@ -6284,27 +6714,6 @@ socket.on('level up', (data) => {
   showNotification(`🎉 لقد ارتقت إلى المستوى ${data.level}! استمر في المحادثة لترتقي أكثر!`, 'success');
 });
 
-function updateChatMessagesBadge() {
-    const badge = document.getElementById('chatMessagesBadge');
-    
-    if (badge) {
-        // حساب إجمالي الرسائل غير المقروءة من جميع الأصدقاء
-        let totalUnread = 0;
-        for (const username in unreadPrivateMessages) {
-            totalUnread += unreadPrivateMessages[username];
-        }
-        
-        // إضافة طلبات الصداقة إلى العدد الإجمالي
-        totalUnread += friendRequests.length;
-        
-        if (totalUnread > 0) {
-            badge.textContent = totalUnread;
-            badge.classList.remove('hidden');
-        } else {
-            badge.classList.add('hidden');
-        }
-    }
-}
 // حدث النقر على زر الإشعارات في واجهة المحادثة
 document.getElementById('chatMessagesButton')?.addEventListener('click', toggleNotificationsDropdown);
 
@@ -6315,6 +6724,7 @@ document.getElementById('chatFriendsButton')?.addEventListener('click', () => {
 function openPostsSidebar() {
     document.getElementById('postsModal').classList.add('show');
     loadPosts();
+    showDot('posts', false);
 }
 
 function closePostsSidebar() {
@@ -6357,57 +6767,73 @@ function displayPosts(posts, prepend = false) {
         const isLiked = post.likes && post.likes.includes(currentUser.name);
 
         return `
-            <div class="bg-gray-800 rounded-xl p-4 border border-gray-700" id="post-card-${post.id}">
+            <div class="bg-gray-800/80 backdrop-blur-sm rounded-2xl p-5 border border-gray-700/50 shadow-lg hover:shadow-blue-900/10 transition-all duration-300 mb-4 group" id="post-card-${post.id}">
                 <!-- Post Header -->
-                <div class="flex items-center space-x-3 space-x-reverse mb-4">
-                    <img src="${post.avatar || defaultAvatars.guest}" class="w-11 h-11 rounded-full object-cover cursor-pointer border-2 border-slate-600" onclick="showUserProfileModal('${post.username}')" alt="${post.username}">
-                    <div class="flex-1">
-                        <p class="font-semibold text-white cursor-pointer" onclick="showUserProfileModal('${post.username}')">${post.username}</p>
-                        <p class="text-xs text-slate-400">${timeAgo}</p>
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="relative cursor-pointer group/avatar" onclick="showUserProfileModal('${post.username}')">
+                            <div class="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full opacity-75 group-hover/avatar:opacity-100 transition duration-300 blur-[2px]"></div>
+                            <img src="${post.avatar || defaultAvatars.guest}" class="relative w-12 h-12 rounded-full object-cover border-2 border-gray-900" alt="${post.username}">
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white text-base hover:text-blue-400 transition-colors cursor-pointer" onclick="showUserProfileModal('${post.username}')">${post.username}</h4>
+                            <span class="text-[10px] text-slate-400 flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                ${timeAgo}
+                            </span>
+                        </div>
                     </div>
                     ${post.username === currentUser.name ? `
-                        <button onclick="deletePost(${post.id})" class="text-slate-400 hover:text-red-500 transition-colors" title="حذف المنشور">
+                        <button onclick="deletePost(${post.id})" class="text-slate-500 hover:text-red-500 p-2 rounded-full hover:bg-red-500/10 transition-all opacity-0 group-hover:opacity-100" title="حذف المنشور">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
                     ` : ''}
                 </div>
 
                 <!-- Post Content -->
-                <p class="text-slate-200 text-sm mb-4 whitespace-pre-wrap">${post.content}</p>
+                <div class="pl-2 border-r-2 border-gray-700/50 mr-1">
+                    <p class="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap break-words font-medium">${post.content}</p>
+                </div>
 
                 <!-- Post Actions -->
-                <div class="flex items-center justify-between text-slate-400 border-t border-gray-700 pt-2">
-                    <button id="like-btn-${post.id}" onclick="likePost(${post.id})" class="flex items-center space-x-2 space-x-reverse hover:text-pink-500 transition-colors ${isLiked ? 'text-pink-500' : ''}">
-                        <svg class="w-5 h-5" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex items-center gap-4 mt-4 pt-3 border-t border-gray-700/50">
+                    <button id="like-btn-${post.id}" onclick="likePost(${post.id})" class="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${isLiked ? 'bg-pink-500/10 text-pink-500' : 'hover:bg-gray-700 text-slate-400 hover:text-pink-400'}">
+                        <svg class="w-5 h-5 transform transition-transform active:scale-125" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.5l1.318-1.182a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"></path>
                         </svg>
-                        <span id="like-count-${post.id}">${post.likes ? post.likes.length : 0}</span>
+                        <span class="text-xs font-bold" id="like-count-${post.id}">${post.likes ? post.likes.length : 0}</span>
                     </button>
-                    <button onclick="toggleComments(${post.id})" class="flex items-center space-x-2 space-x-reverse hover:text-blue-400 transition-colors">
+                    
+                    <button onclick="toggleComments(${post.id})" class="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-gray-700 text-slate-400 hover:text-blue-400 transition-all">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                         </svg>
-                        <span id="comment-count-${post.id}">${post.comments ? post.comments.length : 0}</span>
+                        <span class="text-xs font-bold" id="comment-count-${post.id}">${post.comments ? post.comments.length : 0}</span>
                     </button>
                 </div>
 
                 <!-- Comments Section -->
-                <div id="comments-section-${post.id}" class="hidden mt-4 pt-3 border-t border-gray-700">
-                    <div id="comments-list-${post.id}" class="space-y-3 mb-3 max-h-60 overflow-y-auto custom-scrollbar">
+                <div id="comments-section-${post.id}" class="hidden mt-4 space-y-3 bg-black/20 rounded-xl p-3">
+                    <div id="comments-list-${post.id}" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
                         ${post.comments ? post.comments.map(comment => `
-                            <div class="bg-gray-700/50 rounded-lg p-3 text-sm">
-                                <div class="flex items-center space-x-2 space-x-reverse mb-1">
-                                    <p class="font-semibold text-blue-300">${comment.username}</p>
-                                    <p class="text-xs text-slate-400">${new Date(comment.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
+                            <div class="flex gap-2 group/comment">
+                                <div class="w-8 h-8 rounded-full bg-gray-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-gray-300 border border-gray-600 overflow-hidden">
+                                    <img src="${userAvatars[comment.username] || defaultAvatars.guest}" class="w-full h-full object-cover" alt="${comment.username}">
                                 </div>
-                                <p class="text-slate-300">${comment.content}</p>
+                                <div class="flex-1 bg-gray-700/50 rounded-2xl rounded-tr-none p-3 border border-gray-600/30">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-xs font-bold text-blue-300 cursor-pointer hover:underline" onclick="showUserProfileModal('${comment.username}')">${comment.username}</span>
+                                        <span class="text-[10px] text-slate-500">${new Date(comment.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
+                                    </div>
+                                    <p class="text-xs text-slate-200 leading-relaxed">${comment.content}</p>
+                                </div>
                             </div>
                         `).join('') : ''}
                     </div>
-                    <div class="flex space-x-2 space-x-reverse mt-2">
-                        <input type="text" id="comment-input-${post.id}" placeholder="اكتب تعليقك..." class="flex-1 bg-gray-700 border border-gray-600 rounded-full px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm" onkeypress="if(event.key === 'Enter') addComment(${post.id})">
-                        <button onclick="addComment(${post.id})" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-full transition-colors text-sm">
-                            إرسال
+                    <div class="relative">
+                        <input type="text" id="comment-input-${post.id}" placeholder="اكتب تعليقاً..." class="w-full bg-gray-700/50 border border-gray-600 rounded-full pl-4 pr-12 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-gray-700 transition-all" onkeypress="if(event.key === 'Enter') addComment(${post.id})">
+                        <button onclick="addComment(${post.id})" class="absolute left-1.5 top-1.5 bg-blue-600 hover:bg-blue-500 text-white p-1.5 rounded-full transition-colors shadow-lg">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                         </button>
                     </div>
                 </div>
@@ -6503,19 +6929,24 @@ socket.on('post liked', ({ postId, likes }) => {
     }
 });
 
-socket.on('comment added', ({ postId, username, content, timestamp }) => {
+socket.on('comment added', ({ postId, username, content, timestamp, avatar }) => {
     const commentsList = document.getElementById(`comments-list-${postId}`);
     const commentCountElem = document.getElementById(`comment-count-${postId}`);
 
     if (commentsList && commentCountElem) {
         const newComment = document.createElement('div');
-        newComment.className = 'bg-gray-700/50 rounded-lg p-3 text-sm';
+        newComment.className = 'flex gap-2 group/comment';
         newComment.innerHTML = `
-            <div class="flex items-center space-x-2 space-x-reverse mb-1">
-                <p class="font-semibold text-blue-300">${username}</p>
-                <p class="text-xs text-slate-400">${new Date(timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
+            <div class="w-8 h-8 rounded-full bg-gray-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-gray-300 border border-gray-600 overflow-hidden">
+                 <img src="${avatar || defaultAvatars.guest}" class="w-full h-full object-cover" alt="${username}">
             </div>
-            <p class="text-slate-300">${content}</p>
+            <div class="flex-1 bg-gray-700/50 rounded-2xl rounded-tr-none p-3 border border-gray-600/30">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-bold text-blue-300 cursor-pointer hover:underline" onclick="showUserProfileModal('${username}')">${username}</span>
+                    <span class="text-[10px] text-slate-500">${new Date(timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <p class="text-xs text-slate-200 leading-relaxed">${content}</p>
+            </div>
         `;
         commentsList.appendChild(newComment);
         commentsList.scrollTop = commentsList.scrollHeight; // تمرير لأسفل
@@ -6539,26 +6970,21 @@ document.getElementById('postsButton').addEventListener('click', openPostsSideba
 
 document.getElementById('chatPostsButton')?.addEventListener('click', openPostsSidebar);
 document.getElementById('chatFriendsButton')?.addEventListener('click', openFriendsSidebar);
-document.getElementById('chatMessagesButton')?.addEventListener('click', togglePrivateConversationsDropdown);
-document.getElementById('chatNotificationsButton')?.addEventListener('click', toggleNotificationsDropdown);
-
-// --- نظام الإشعارات الجديد ---
-
-function togglePrivateConversationsDropdown(event) {
+document.getElementById('chatMessagesButton')?.addEventListener('click', function(event) {
     event.stopPropagation();
     const dropdown = document.getElementById('privateConversationsDropdown');
     const otherDropdown = document.getElementById('chatNotificationsDropdown');
-    const isHidden = dropdown.classList.contains('hidden');
+    const isOpening = dropdown.classList.contains('hidden');
  
-    // تبديل حالة الظهور
     dropdown.classList.toggle('hidden');
  
-    // إذا تم فتح القائمة الآن
-    if (isHidden) {
-        otherDropdown.classList.add('hidden'); // تأكد من إغلاق القائمة الأخرى
-        socket.emit('get private conversations', currentUser.name); // اطلب المحادثات من السيرفر
+    if (isOpening) {
+        otherDropdown.classList.add('hidden');
+        socket.emit('get private conversations', currentUser.name);
+        showDot('messages', false);
     }
-}
+});
+document.getElementById('chatNotificationsButton')?.addEventListener('click', toggleNotificationsDropdown);
 
 // إغلاق القائمة عند النقر خارجها
 document.addEventListener('click', function (e) {
@@ -6582,21 +7008,12 @@ function updateNotificationsBadge(hasUnread) {
     }
 }
 
-function updateMessagesBadge(count) {
-    const chatBadge = document.getElementById('chatMessagesBadge');
-    if (chatBadge) {
-        if (count > 0) {
-            chatBadge.textContent = count;
-            chatBadge.classList.remove('hidden');
-        } else {
-            chatBadge.classList.add('hidden');
-        }
-    }
-}
 
 socket.on('new notification', (notification) => {
-    showNotification(`🔔 لديك إشعار جديد!`, 'info');
-    socket.emit('get unread counts', currentUser.name);
+    if (!document.getElementById('chatNotificationsDropdown').classList.contains('hidden')) {
+        showNotification(`🔔 لديك إشعار جديد!`, 'info');
+        socket.emit('get unread counts', currentUser.name);
+    }
 });
 
 socket.on('notifications list', (notifications) => {
@@ -6791,11 +7208,18 @@ socket.on('top users list', (users) => {
 });
 
 document.getElementById('chatPostsButton').addEventListener('click', openPostsSidebar);
-        
+
+const originalOpenPostsSidebar = openPostsSidebar;
+openPostsSidebar = function() {
+    originalOpenPostsSidebar();
+    showDot('posts', false);
+}
+
         // إضافة هذه الدوال في قسم JavaScript
 
 function applyBackground(backgroundData, isRoomBackground = false) {
     const body = document.body;
+    console.log('Applying background:', { isRoomBackground, backgroundData });
     
     // إزالة الطبقة الشفافة السابقة إذا كانت موجودة
     const existingOverlay = document.getElementById('background-overlay');
@@ -6807,13 +7231,24 @@ function applyBackground(backgroundData, isRoomBackground = false) {
     if (!isRoomBackground) {
         body.style.backgroundColor = '#000000';
         body.style.backgroundImage = 'none';
-        body.className = body.className.split(' ').filter(c => !c.startsWith('from-') && !c.startsWith('via-') && !c.startsWith('to-') && c !== 'bg-gradient-to-br' && c !== 'bg-gradient-to-t').join(' ');
+        body.className = body.className.split(' ').filter(c => 
+            !c.startsWith('from-') && !c.startsWith('via-') && !c.startsWith('to-') && 
+            c !== 'bg-gradient-to-br' && c !== 'bg-gradient-to-t' && c !== 'bg-slate-900'
+        ).join(' ');
+        if (!body.classList.contains('bg-black')) body.classList.add('bg-black');
         return;
     }
 
     // تطبيق خلفية الغرفة
     if (backgroundData) {
+        // تنظيف كلاسات التدرج والسواد السابقة دائماً لضمان عدم التداخل
+        body.className = body.className.split(' ').filter(c => 
+            !c.startsWith('from-') && !c.startsWith('via-') && !c.startsWith('to-') && 
+            c !== 'bg-gradient-to-br' && c !== 'bg-gradient-to-t' && c !== 'bg-black' && c !== 'bg-slate-900'
+        ).join(' ');
+        
         if (backgroundData.type === 'image') {
+            body.style.backgroundColor = 'transparent';
             body.style.backgroundImage = `url('${backgroundData.value}')`;
             body.style.backgroundSize = 'cover';
             body.style.backgroundRepeat = 'no-repeat';
@@ -6837,11 +7272,15 @@ function applyBackground(backgroundData, isRoomBackground = false) {
             body.style.backgroundColor = backgroundData.value;
             body.style.backgroundImage = 'none';
         } else {
-            body.style.backgroundImage = 'none';
-            body.classList.add('bg-gradient-to-br'); 
+            body.style.backgroundColor = '';
+            body.style.backgroundImage = ''; // إزالة الخلفية اليدوية للسماح لكلاسات التدرج بالعمل
+            // التأكد من إضافة كلاس التدرج
+            if (!body.classList.contains('bg-gradient-to-br')) {
+                body.classList.add('bg-gradient-to-br');
+            }
             const gradientClasses = backgroundData.value.split(' ');
             gradientClasses.forEach(className => {
-                body.classList.add(className);
+                if (className.trim()) body.classList.add(className.trim());
             });
         }
     }
@@ -7697,11 +8136,16 @@ function updateRoomsListTable() {
             <td class="px-4 py-3 text-center">${usersCount}</td>
             <td class="px-4 py-3 text-center text-xs">${status}</td>
             <td class="px-4 py-3 text-center">
-                ${!room.protected ? `
-                    <button onclick="deleteRoom(${room.id})" class="text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-500/20 transition-colors text-sm">
-                        🗑️ حذف
+                <div class="flex items-center justify-center gap-2">
+                    ${!room.protected ? `
+                        <button onclick="deleteRoom(${room.id})" class="text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-500/20 transition-colors text-sm" title="حذف الغرفة">
+                            🗑️
+                        </button>
+                    ` : '<span class="text-gray-500 text-xs">ثابتة</span>'}
+                    <button onclick="clearRoomHistory(${room.id})" class="text-yellow-400 hover:text-yellow-600 px-2 py-1 rounded hover:bg-yellow-500/20 transition-colors text-sm" title="مسح سجل المحادثة">
+                        🧹
                     </button>
-                ` : '<span class="text-gray-500 text-xs">ثابتة</span>'}
+                </div>
             </td>
         `;
         tbody.appendChild(row);
@@ -7709,10 +8153,32 @@ function updateRoomsListTable() {
 }
 
 // دوال الإعلان الهام
+function toggleCustomTitle() {
+    const type = document.getElementById('announcementType').value;
+    const customInput = document.getElementById('announcementCustomTitle');
+    if (type === 'custom') {
+        customInput.classList.remove('hidden');
+    } else {
+        customInput.classList.add('hidden');
+    }
+}
+
 function setAnnouncement() {
+    const type = document.getElementById('announcementType').value;
+    const customTitle = document.getElementById('announcementCustomTitle').value.trim();
     const message = document.getElementById('announcementInput').value.trim();
-    if (!message) return;
-    socket.emit('set announcement', { message, currentUser });
+    
+    let title = type;
+    if (type === 'custom') {
+        title = customTitle || 'إعلان';
+    }
+
+    if (!message) {
+        alert('يرجى كتابة محتوى الإعلان');
+        return;
+    }
+    
+    socket.emit('set announcement', { title, message, currentUser });
 }
 
 function updateRanksTable() {
@@ -7810,6 +8276,12 @@ function deleteRankDefinition(rankName) {
     }
 }
 
+function clearRoomHistory(roomId) {
+    if (confirm('هل أنت متأكد من مسح جميع الرسائل والصور في هذه الغرفة؟ لا يمكن التراجع عن هذا الإجراء.')) {
+        socket.emit('clear room history', { roomId, currentUser });
+    }
+}
+
 function resetRankForm() {
     document.getElementById('customRankName').value = '';
     clearRankIconImage();
@@ -7823,28 +8295,113 @@ function resetRankForm() {
 
 function removeAnnouncement() {
     if (confirm('هل أنت متأكد من إزالة الإعلان؟')) {
-        socket.emit('set announcement', { message: '', currentUser });
+        socket.emit('set announcement', { title: '', message: '', currentUser });
         document.getElementById('announcementInput').value = '';
     }
 }
 
-function hideAnnouncementLocal() {
-    document.getElementById('announcementBar').classList.add('hidden');
+// متغير عالمي لتتبع معرف الإعلان الحالي
+let currentAnnouncementId = null;
+
+function getAnnouncementHash(title, message) {
+    const str = (title || '') + (message || '');
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return 'announcement_seen_' + Math.abs(hash);
 }
 
-socket.on('announcement update', (message) => {
-    const bar = document.getElementById('announcementBar');
-    const text = document.getElementById('announcementText');
+function closeAnnouncementModal() {
+    const modal = document.getElementById('announcementModal');
     
-    if (message && message.trim() !== '') {
-        text.textContent = message;
-        bar.classList.remove('hidden');
-        // إضافة مسافة علوية للصفحة لكي لا يغطي الشريط المحتوى
-        document.body.style.paddingTop = '40px';
-    } else {
-        bar.classList.add('hidden');
-        document.body.style.paddingTop = '0';
+    // حفظ أن المستخدم رأى هذا الإعلان في localStorage
+    if (currentAnnouncementId) {
+        localStorage.setItem(currentAnnouncementId, 'true');
     }
+
+    modal.classList.add('opacity-0');
+    modal.firstElementChild.classList.add('scale-95');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+}
+
+socket.on('announcement update', (data) => {
+    const modal = document.getElementById('announcementModal');
+    const titleEl = document.getElementById('announcementModalTitle');
+    const textEl = document.getElementById('announcementModalText');
+    
+    const title = (typeof data === 'object') ? data.title : 'إعلان هام';
+    const message = (typeof data === 'object') ? data.message : data;
+
+    if (message && message.trim() !== '') {
+        const announcementHash = getAnnouncementHash(title, message);
+        currentAnnouncementId = announcementHash;
+
+        // التحقق مما إذا كان المستخدم قد رأى هذا الإعلان بالفعل
+        const hasSeen = localStorage.getItem(announcementHash);
+
+        if (!hasSeen) {
+            titleEl.textContent = title || 'إعلان';
+            textEl.textContent = message;
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.firstElementChild.classList.remove('scale-95');
+            }, 10);
+        }
+    } else {
+        // إذا تم إزالة الإعلان من السيرفر، نخفي المودال ونصفر المعرف
+        currentAnnouncementId = null;
+        modal.classList.add('opacity-0');
+        modal.firstElementChild.classList.add('scale-95');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+});
+
+// دوال نظام الدعوة والتفاعل
+function copyReferralLink() {
+    const input = document.getElementById('referralLinkInput');
+    if (!input) return;
+    
+    input.select();
+    input.setSelectionRange(0, 99999); // للهواتف
+    
+    try {
+        navigator.clipboard.writeText(input.value).then(() => {
+            showNotification('تم نسخ رابط الدعوة بنجاح!', 'success');
+        });
+    } catch (err) {
+        // بديل في حالة عدم دعم navigator.clipboard
+        document.execCommand('copy');
+        showNotification('تم نسخ رابط الدعوة بنجاح!', 'success');
+    }
+}
+
+socket.on('interaction update', (data) => {
+    // تحديث درجة التفاعل في البروفايل إذا كان مفتوحاً للمستخدم الحالي
+    const interactionScoreElem = document.getElementById('interactionScore');
+    const profileUsernameElem = document.getElementById('profileUsername');
+    
+    if (interactionScoreElem && profileUsernameElem && profileUsernameElem.textContent === currentUser.name) {
+        interactionScoreElem.textContent = data.score;
+        
+        // تأثير بصري بسيط عند الزيادة
+        interactionScoreElem.classList.add('scale-125', 'bg-green-500');
+        interactionScoreElem.classList.remove('bg-orange-500');
+        
+        setTimeout(() => {
+            interactionScoreElem.classList.remove('scale-125', 'bg-green-500');
+            interactionScoreElem.classList.add('bg-orange-500');
+        }, 1000);
+    }
+    
+    showNotification(`🔥 مبروك! زادت درجة تفاعلك، لديك الآن ${data.score} دعوة ناجحة`, 'success');
 });
 
 // استقبال بيانات الإحصائيات
@@ -8037,7 +8594,7 @@ socket.on('rooms update', (updatedRooms) => {
         }
         
         const newBackground = roomsWithBackgrounds[currentRoom.id];
-        if (newBackground && JSON.stringify(newBackground) !== JSON.stringify(currentRoomBackground)) {
+        if (newBackground) {
             currentRoomBackground = newBackground;
             applyBackground(newBackground, true);
         }
@@ -8080,8 +8637,8 @@ socket.on('join error', (error) => {
         function openDrawingBoard() {
             document.getElementById('drawingModal').classList.add('show');
             socket.emit('get board state');
-        }
-
+            showDot('drawing', false);
+        };
         function closeDrawingBoard() {
             document.getElementById('drawingModal').classList.remove('show');
         }
@@ -8163,6 +8720,12 @@ socket.on('join error', (error) => {
         // Socket listeners for drawing
         socket.on('draw', (data) => {
             drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.width, false);
+        });
+
+        socket.on('new drawing activity', () => {
+            if (!document.getElementById('drawingModal').classList.contains('show')) {
+                showDot('drawing', true);
+            }
         });
 
         socket.on('board state', (history) => {
@@ -8494,6 +9057,185 @@ socket.on('join error', (error) => {
 
         socket.on('quiz questions list', (questions) => {
             renderQuizQuestions(questions);
+        });
+
+        // --- دوال القائمة الجانبية ---
+        function toggleLeftSidebar() {
+            const sidebar = document.getElementById('leftSidebar');
+            const overlay = document.getElementById('leftSidebarOverlay');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // --- دوال المركز اليومي ---
+        function openDailyCenter() {
+            document.getElementById('dailyCenterModal').classList.add('show');
+            document.getElementById('dailyCenterOverlay').classList.add('show');
+        }
+
+        function closeDailyCenter() {
+            document.getElementById('dailyCenterModal').classList.remove('show');
+            document.getElementById('dailyCenterOverlay').classList.remove('show');
+        }
+
+        function switchDailyTab(tab) {
+            const rewardContent = document.getElementById('daily-reward-content');
+            const wheelContent = document.getElementById('daily-wheel-content');
+            const rewardTab = document.getElementById('tab-reward');
+            const wheelTab = document.getElementById('tab-wheel');
+
+            if (tab === 'reward') {
+                rewardContent.classList.remove('hidden');
+                wheelContent.classList.add('hidden');
+                rewardTab.className = 'flex-1 py-3 text-sm font-bold text-white border-b-2 border-blue-500 bg-gray-700/50';
+                wheelTab.className = 'flex-1 py-3 text-sm font-bold text-slate-400 hover:text-white';
+            } else {
+                rewardContent.classList.add('hidden');
+                wheelContent.classList.remove('hidden');
+                wheelTab.className = 'flex-1 py-3 text-sm font-bold text-white border-b-2 border-purple-500 bg-gray-700/50';
+                rewardTab.className = 'flex-1 py-3 text-sm font-bold text-slate-400 hover:text-white';
+            }
+        }
+
+        function claimDailyReward() {
+            socket.emit('claim daily reward', { currentUser });
+        }
+
+        socket.on('daily reward success', (data) => {
+            showNotification(`🎉 تم استلام المكافأة! حصلت على ${data.points} نقطة. (سلسلة: ${data.streak} أيام)`, 'success');
+            if (currentUser) currentUser.points = data.totalPoints;
+            // تشغيل صوت نجاح
+            if (window.successSound) successSound.play().catch(e => {});
+        });
+
+        socket.on('daily reward error', (msg) => {
+            showNotification(msg, 'warning');
+        });
+
+        // منطق عجلة الحظ
+        let isSpinning = false;
+        
+        function spinWheel() {
+            if (isSpinning) return;
+            if (confirm('هل أنت متأكد؟ سيتم خصم 500 نقطة لتدوير العجلة.')) {
+                socket.emit('spin wheel', { currentUser });
+            }
+        }
+
+        socket.on('spin wheel result', (data) => {
+            const wheel = document.getElementById('luckyWheel');
+            const spinBtn = document.getElementById('spinButton');
+            
+            isSpinning = true;
+            spinBtn.disabled = true;
+            
+            // حساب الزاوية: 7 أقسام، كل قسم ~51.4 درجة
+            // الأقسام مرتبة في CSS: أحمر(0)، أزرق(1)، أخضر(2)، أصفر(3)، بنفسجي(4)، وردي(5)، رمادي(6)
+            // المؤشر في الأعلى، لذا نحتاج لتدوير العجلة بحيث يأتي القسم المطلوب تحت المؤشر
+            const segmentAngle = 360 / 7;
+            // إضافة دورات عشوائية (5 دورات كاملة على الأقل)
+            const spins = 5 * 360; 
+            // حساب الزاوية النهائية للوصول للقسم المحدد (مع تعديل بسيط للمؤشر)
+            // القسم 0 يبدأ من 0، القسم 1 من 51.4...
+            // لكي يأتي القسم 0 تحت المؤشر (أعلى)، الزاوية 0 تكفي (أو 360).
+            // لكي يأتي القسم 1، نحتاج تدوير العكس بمقدار 51.4...
+            // الصيغة: spins + (360 - (index * segmentAngle) - (segmentAngle / 2))
+            const stopAngle = spins + (360 - (data.prizeIndex * segmentAngle) - (segmentAngle / 2));
+            
+            wheel.style.transform = `rotate(${stopAngle}deg)`;
+            
+            setTimeout(() => {
+                isSpinning = false;
+                spinBtn.disabled = false;
+                wheel.style.transition = 'none';
+                wheel.style.transform = `rotate(${stopAngle % 360}deg)`;
+                setTimeout(() => wheel.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.83, 0.67)', 50);
+                
+                const msg = data.prizeValue > 0 ? `🎉 مبروك! ربحت ${data.prizeValue} نقطة!` : 'حظ أوفر في المرة القادمة!';
+                showNotification(msg, data.prizeValue > 0 ? 'success' : 'info');
+                if (currentUser) currentUser.points = data.remainingPoints;
+            }, 4000); // مدة الدوران
+        });
+        
+        socket.on('spin wheel error', (msg) => {
+            showNotification(msg, 'error');
+        });
+
+        // --- دوال لوحة الشرف (XP) ---
+        function openXPLeaderboard() {
+            document.getElementById('xpLeaderboardModal').classList.add('show');
+            document.getElementById('xpLeaderboardOverlay').classList.add('show');
+            socket.emit('get xp leaderboard');
+        }
+
+        function closeXPLeaderboard() {
+            document.getElementById('xpLeaderboardModal').classList.remove('show');
+            document.getElementById('xpLeaderboardOverlay').classList.remove('show');
+        }
+
+        socket.on('xp leaderboard list', (users) => {
+            const container = document.getElementById('xpLeaderboardList');
+            container.innerHTML = '';
+            if (users.length === 0) {
+                container.innerHTML = '<p class="text-slate-400 text-center p-8">لا توجد بيانات.</p>';
+                return;
+            }
+            users.forEach((user, index) => {
+                const userDiv = document.createElement('div');
+                userDiv.className = 'flex items-center bg-gray-800 p-3 rounded-lg hover:bg-gray-700 transition-colors cursor-pointer';
+                userDiv.onclick = () => showUserProfileModal(user.username);
+                userDiv.innerHTML = `
+                    <div class="flex-shrink-0 w-10 text-center text-xl font-bold ${index < 3 ? 'text-cyan-400' : 'text-slate-400'}">${index + 1}</div>
+                    <img src="${user.avatar}" class="w-10 h-10 rounded-full object-cover mx-2" alt="${user.username}">
+                    <div class="flex-1 min-w-0">
+                        <div class="text-white font-semibold truncate">${user.username}</div>
+                        <div class="text-xs text-slate-400">المستوى ${user.level}</div>
+                    </div>
+                    <div class="text-cyan-400 font-bold text-sm">⚡ ${user.xp} XP</div>
+                `;
+                container.appendChild(userDiv);
+            });
+        });
+
+        // تحديث دالة عرض الملف الشخصي لتشمل XP
+        const originalShowUserProfile = showUserProfile;
+        showUserProfile = function(profileData) {
+            originalShowUserProfile(profileData);
+            const xpElem = document.getElementById('profileXP');
+            if (xpElem) xpElem.textContent = profileData.xp || 0;
+        };
+    </script>
+    <script>
+        // --- نظام الإشعارات بالنقطة الحمراء ---
+        function showDot(type, show) {
+            const dot = document.getElementById(`${type}NotificationDot`);
+            if (dot) {
+                dot.classList.toggle('hidden', !show);
+            }
+            updateMasterDot();
+        }
+
+        function updateMasterDot() {
+            const masterDot = document.getElementById('masterNotificationDot');
+            if (!masterDot) return;
+
+            const drawingDot = !document.getElementById('drawingNotificationDot')?.classList.contains('hidden');
+            const postsDot = !document.getElementById('postsNotificationDot')?.classList.contains('hidden');
+            const friendsDot = !document.getElementById('friendsNotificationDot')?.classList.contains('hidden');
+            // تم إزالة messagesDot من الشرط كما طلبت
+            
+            const anyDotVisible = drawingDot || postsDot || friendsDot;
+            masterDot.classList.toggle('hidden', !anyDotVisible);
+        }
+
+        // عند تحميل الصفحة، تحقق من الإشعارات المحفوظة
+        document.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('hasNewPosts') === 'true') showDot('posts', true);
         });
     </script>
 </body>

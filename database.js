@@ -3,16 +3,22 @@ require('dotenv').config(); // تحميل متغيرات البيئة من مل�
 const { Sequelize } = require('sequelize');
 
 // إنشاء اتصال بقاعدة البيانات
+console.log('Connecting to database with URL:', process.env.DATABASE_URL ? process.env.DATABASE_URL.substring(0, 20) + '...' : 'UNDEFINED');
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
-  protocol: 'postgres',
   dialectOptions: {
     ssl: {
-      require: true,
       rejectUnauthorized: false
-    }
+    },
+    keepAlive: true
   },
-  logging: false // إخفاء رسائل SQL في الكونسول
+  pool: {
+    max: 1,
+    min: 0,
+    acquire: 60000,
+    idle: 10000
+  },
+  logging: false
 });
 
 // اختبار الاتصال
