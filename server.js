@@ -12,21 +12,17 @@ const https = require('https');
 
 // متغيرات عامة
 let BOT_AVATAR_URL = '/icon.png';
+
+// إنشاء اتصال بقاعدة البيانات
 const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: 'postgres',
+  protocol: 'postgres',
   dialectOptions: {
     ssl: {
+      require: true,
       rejectUnauthorized: false
     },
-    keepAlive: true,
-    connectTimeout: 60000 // زيادة مهلة الاتصال إلى 60 ثانية
-  },
-  pool: {
-    max: 5,
-    min: 0, // السماح ببدء المسبح فارغاً
-    idle: 20000,
-    acquire: 60000, // زيادة وقت انتظار الحصول على اتصال
-    evict: 1000
+    keepAlive: true
   },
   logging: false
 });
@@ -307,6 +303,13 @@ const PostLike = sequelize.define('PostLike', {
     timestamp: { type: DataTypes.BIGINT, allowNull: false }
 });
 
+const PostLaugh = sequelize.define('PostLaugh', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    postId: { type: DataTypes.INTEGER, allowNull: false },
+    username: { type: DataTypes.STRING, allowNull: false },
+    timestamp: { type: DataTypes.BIGINT, allowNull: false }
+});
+
 const PostComment = sequelize.define('PostComment', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     postId: { type: DataTypes.INTEGER, allowNull: false },
@@ -341,8 +344,10 @@ let roomBackgrounds = {}; // لتخزين خلفيات الغرف { roomId: { ty
 let roomSettings = {}; // لتخزين إعدادات الغرف { roomId: { description, textColor, messageBackground } }
 let posts = {};
 let postLikes = {};
+let postLaughs = {};
 let postComments = {};
 let chatImages = {};
+let pendingGiftOffers = {}; // تخزين عروض الهدايا المعلقة { recipient: { sender, itemId, rank, price } }
 let drawingHistory = []; // تخزين تاريخ الرسم
 
 // --- إعدادات QuizBot ---
@@ -734,9 +739,9 @@ async function loadData() {
       }
     }
     
-    // await sequelize.sync();
-    // console.log('تم مزامنة قاعدة البيانات بنجاح');
-    // await delay(100);
+    await sequelize.sync();
+    console.log('تم مزامنة قاعدة البيانات بنجاح');
+    await delay(100);
 
     /*
     // التحقق من وجود عمود الفئة في جدول الأسئلة
@@ -789,7 +794,7 @@ async function loadData() {
     // تحميل البيانات بشكل تسلسلي لتجنب مشاكل SSL مع البيانات الكبيرة
     // ملاحظة: تم استبعاد الحقول الكبيرة (بيو وصورة الغلاف) من التحميل الأولي لتجنب أخطاء SSL
     const usersData = await User.findAll({ 
-      attributes: ['username', 'password', 'gender', 'nameColor', 'nameBackground', 'avatarFrame', 'userCardBackground', 'profileBackground', 'nameCardBorder', 'referredBy'] 
+      attributes: ['username', 'password', 'gender', 'nameColor', 'nameBackground', 'avatarFrame', 'userCardBackground', 'profileBackground', 'nameCardBorder', 'referredBy', 'createdAt'] 
     });
     await delay(10);
     
@@ -806,7 +811,9 @@ async function loadData() {
     await delay(10);
 
     // تحميل الصور الرمزية - تحميل الصور ذات الحجم المعقول فقط لتجنب أخطاء SSL
-    const avatarsData = await sequelize.query('SELECT username, "avatarUrl" FROM "UserAvatars" WHERE length("avatarUrl") < 100000', { type: Sequelize.QueryTypes.SELECT });
+    const avatarsData = await UserAvatar.findAll({
+        where: sequelize.where(sequelize.fn('length', sequelize.col('avatarUrl')), '<', 100000)
+    });
     await delay(10);
 
     // تحميل الجلسات
@@ -870,7 +877,8 @@ async function loadData() {
         userCardBackground: user.userCardBackground || null,
         profileBackground: user.profileBackground || null,
         nameCardBorder: user.nameCardBorder || null,
-        referredBy: user.referredBy || null
+        referredBy: user.referredBy || null,
+        createdAt: user.createdAt
       };
       // bio and profileCover are purposefully omitted here to be loaded on-demand
       // as they can be large and cause SSL issues during mass loading.
@@ -898,7 +906,15 @@ async function loadData() {
              ranks[name].wingId = wingId;
         }
     }
-    if (ranks['صاحب الموقع']) ranks['صاحب الموقع'].level = 100;
+
+    // ضمان وجود تعريف رتبة صاحب الموقع
+    if (!ranks['صاحب الموقع']) {
+        const ownerRankDef = { color: 'from-red-600 to-orange-400', icon: '🏆', level: 100, wingId: 'owners' };
+        ranks['صاحب الموقع'] = ownerRankDef;
+        await RankDefinition.findOrCreate({ where: { name: 'صاحب الموقع' }, defaults: ownerRankDef });
+    } else {
+        ranks['صاحب الموقع'].level = 100;
+    }
     
     mutedUsers.forEach(mute => { userManagement.mutedUsers[mute.username] = { mutedBy: mute.mutedBy, expiresAt: mute.expiresAt }; });
     roomBans.forEach(ban => {
@@ -1057,8 +1073,9 @@ async function loadData() {
       friendRequests[request.toUser].push(request.fromUser);
     });
 
-    postsData.forEach(post => { posts[post.id] = { username: post.username, content: post.content, timestamp: parseInt(post.timestamp, 10), likes: [], comments: [] }; });
+    postsData.forEach(post => { posts[post.id] = { username: post.username, content: post.content, timestamp: parseInt(post.timestamp, 10), likes: [], laughs: [], comments: [] }; });
     likesData.forEach(like => { if (posts[like.postId]) posts[like.postId].likes.push(like.username); });
+    laughsData.forEach(laugh => { if (posts[laugh.postId]) posts[laugh.postId].laughs.push(laugh.username); });
     commentsData.forEach(comment => { if (posts[comment.postId]) posts[comment.postId].comments.push({ username: comment.username, content: comment.content, timestamp: parseInt(comment.timestamp, 10) }); });
 
     // تنظيف صور الغرف العامة عند التشغيل
@@ -1472,6 +1489,26 @@ async function removePostLike(postId, username) {
     }
 }
 
+async function savePostLaugh(postId, username, timestamp) {
+    try {
+        await PostLaugh.create({
+            postId,
+            username,
+            timestamp
+        });
+    } catch (error) {
+        console.error('خطأ في حفظ ضحكة المنشور:', error);
+    }
+}
+
+async function removePostLaugh(postId, username) {
+    try {
+        await PostLaugh.destroy({ where: { postId, username } });
+    } catch (error) {
+        console.error('خطأ في إزالة ضحكة المنشور:', error);
+    }
+}
+
 async function savePostComment(postId, username, content, timestamp) {
     try {
         await PostComment.create({
@@ -1491,6 +1528,7 @@ async function deletePost(postId, username) {
         if (post) {
             await post.destroy();
             await PostLike.destroy({ where: { postId } });
+            await PostLaugh.destroy({ where: { postId } });
             await PostComment.destroy({ where: { postId } });
             await Notification.destroy({ where: { postId } });
             return true;
@@ -1719,23 +1757,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 app.use(cookieParser());
 
-// إعداد مجلد الرفع
-const uploadsDir = path.join(__dirname, 'public', 'uploads', 'room-backgrounds');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
 // إعداد multer للصور
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadsDir);
-  },
-  filename: (req, file, cb) => {
-    const timestamp = Date.now();
-    const random = Math.round(Math.random() * 1E9);
-    cb(null, `room-bg-${timestamp}-${random}${path.extname(file.originalname)}`);
-  }
-});
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -1755,7 +1778,9 @@ app.post('/api/upload-room-background', upload.single('image'), (req, res) => {
     return res.status(400).json({ error: 'لم يتم اختيار ملف' });
   }
   
-  const fileUrl = `/uploads/room-backgrounds/${req.file.filename}`;
+  // تحويل الصورة إلى Base64 وتخزينها في قاعدة البيانات مباشرة
+  const b64 = req.file.buffer.toString('base64');
+  const fileUrl = `data:${req.file.mimetype};base64,${b64}`;
   res.json({ success: true, fileUrl });
 });
 
@@ -1819,6 +1844,10 @@ socket.on('get user avatars', () => {
         if (drawingHistory.length > 10000) {
             drawingHistory.shift();
         }
+        // إضافة اسم المستخدم للبيانات المرسلة
+        if (onlineUsers[socket.id]) {
+            data.username = onlineUsers[socket.id].name;
+        }
         socket.broadcast.emit('draw', data);
         socket.broadcast.emit('new drawing activity'); // إشعار بوجود نشاط رسم جديد
     });
@@ -1850,6 +1879,7 @@ socket.on('create post', async (data) => {
             content,
             timestamp,
             likes: [],
+            laughs: [],
             comments: []
         };
         
@@ -1861,6 +1891,7 @@ socket.on('create post', async (data) => {
             avatar: userAvatars[username] || DEFAULT_AVATAR_URL,
             timestamp,
             likes: [],
+            laughs: [],
             comments: []
         });
 
@@ -1947,6 +1978,53 @@ socket.on('like post', async (data) => {
         io.emit('post liked', { 
             postId, 
             likes: posts[postId].likes
+        });
+    }
+});
+
+socket.on('laugh post', async (data) => {
+    const { postId, username } = data;
+    
+    // منع التكرار السريع (Debounce)
+    const now = Date.now();
+    if (userLastAction[username] && userLastAction[username].type === 'laugh_post' && 
+        userLastAction[username].postId === postId && (now - userLastAction[username].timestamp) < 1000) {
+        return;
+    }
+    userLastAction[username] = { type: 'laugh_post', postId, timestamp: now };
+    
+    if (posts[postId]) {
+        if (!posts[postId].laughs) posts[postId].laughs = [];
+
+        const alreadyLaughed = posts[postId].laughs.includes(username);
+        if (alreadyLaughed) {
+            await removePostLaugh(postId, username);
+            posts[postId].laughs = posts[postId].laughs.filter(u => u !== username);
+        } else {
+            await savePostLaugh(postId, username, Date.now());
+            posts[postId].laughs.push(username);
+
+            // إرسال إشعار لصاحب المنشور
+            const postAuthor = posts[postId].username;
+            if (postAuthor !== username) {
+                await saveNotification(postAuthor, username, 'laugh', postId);
+
+                // إرسال إشعار فوري إذا كان صاحب المنشور متصلاً
+                const recipientSocketId = Object.keys(onlineUsers).find(
+                    socketId => onlineUsers[socketId].name === postAuthor
+                ); 
+                if (recipientSocketId) {
+                    io.to(recipientSocketId).emit('new notification', {
+                        senderUsername: username,
+                        type: 'laugh',
+                        postId: postId
+                    });
+                }
+            }
+        }
+        io.emit('post laughed', { 
+            postId, 
+            laughs: posts[postId].laughs
         });
     }
 });
@@ -2199,7 +2277,8 @@ socket.on('send private image', async (data) => {
   users[userData.username] = {
     password: hashedPassword, // حفظ كلمة السر المشفرة
     gender: userData.gender,
-    referredBy: userData.referredBy || null // تخزين من قام بدعوته
+    referredBy: userData.referredBy || null, // تخزين من قام بدعوته
+    createdAt: new Date() // تعيين تاريخ الإنشاء في الذاكرة
   };
   
   await saveUser(userData.username, users[userData.username]);
@@ -2400,6 +2479,7 @@ socket.on('join room', async (data) => {
     const welcomeMessage = {
       type: 'system',
       subType: 'join',
+      messageId: 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9), // إضافة معرف للرسالة لتمكين حذفها
       user: user.name,
       avatar: userAvatars[user.name] || DEFAULT_AVATAR_URL,
       rank: user.rank,
@@ -2452,44 +2532,87 @@ socket.on('join room', async (data) => {
 });
   
   // حدث تحميل المزيد من الرسائل
-  socket.on('load more messages', (data) => {
+  socket.on('load more messages', async (data) => {
     const { roomId, firstMessageId } = data;
-    if (!messages[roomId]) return;
     
-    const roomMsgs = messages[roomId];
-    const msgIndex = roomMsgs.findIndex(m => m.messageId === firstMessageId);
+    let targetTimestamp = 0;
     
-    if (msgIndex === -1) return; // الرسالة غير موجودة
+    // محاولة العثور على الرسالة في الذاكرة للحصول على توقيتها
+    if (messages[roomId]) {
+        const refMsg = messages[roomId].find(m => m.messageId === firstMessageId);
+        if (refMsg) {
+            targetTimestamp = refMsg.timestamp;
+        }
+    }
     
-    // جلب 25 رسالة قبل الرسالة المحددة
-    const startIndex = Math.max(0, msgIndex - 25);
-    const olderMessages = roomMsgs.slice(startIndex, msgIndex);
+    // إذا لم نجدها في الذاكرة، نحاول استخراج الوقت من المعرف
+    if (!targetTimestamp && firstMessageId) {
+        const parts = firstMessageId.split('_');
+        if (parts.length >= 2) {
+            const ts = parseInt(parts[1]);
+            if (!isNaN(ts)) {
+                targetTimestamp = ts;
+            }
+        }
+    }
     
-    const formattedMessages = olderMessages.map((msg, idx) => {
-      if (!msg.messageId) {
-        msg.messageId = 'msg_' + (msg.timestamp || Date.now()) + '_old_' + idx;
-      }
-      if (msg.type === 'image') {
-        return {
-          type: 'image',
-          messageId: msg.messageId,
-          user: msg.user,
-          imageData: msg.imageData,
-          time: msg.time,
-          timestamp: msg.timestamp,
-          rank: userRanks[msg.user] || null,
-          avatar: userAvatars[msg.user] || DEFAULT_AVATAR_URL,
-          nameBackground: msg.nameBackground,
-          avatarFrame: msg.avatarFrame,
-          nameCardBorder: msg.nameCardBorder,
-          badges: msg.badges
-        };
-      } else {
-        return msg;
-      }
-    });
+    if (!targetTimestamp) return;
     
-    socket.emit('more chat history', formattedMessages);
+    try {
+        const limit = 25;
+        
+        // جلب الرسائل من قاعدة البيانات مباشرة
+        const [textMessages, imageMessages] = await Promise.all([
+            PrivateMessage.findAll({
+                where: {
+                    conversationId: roomId.toString(),
+                    timestamp: { [Sequelize.Op.lt]: targetTimestamp }
+                },
+                order: [['timestamp', 'DESC']],
+                limit: limit
+            }),
+            ChatImage.findAll({
+                where: {
+                    roomId: roomId,
+                    timestamp: { [Sequelize.Op.lt]: targetTimestamp }
+                },
+                order: [['timestamp', 'DESC']],
+                limit: limit
+            })
+        ]);
+
+        const formatMsg = (msg, type) => ({
+            type: type,
+            messageId: type === 'image' ? msg.messageId : ('msg_' + msg.timestamp + '_' + msg.id),
+            user: type === 'image' ? msg.fromUser : msg.fromUser,
+            content: type === 'user' ? msg.content : undefined,
+            imageData: type === 'image' ? msg.imageData : undefined,
+            time: type === 'image' ? new Date(Number(msg.timestamp)).toLocaleTimeString('en-GB') : msg.time,
+            timestamp: Number(msg.timestamp),
+            rank: userRanks[msg.fromUser] || null,
+            avatar: userAvatars[msg.fromUser] || DEFAULT_AVATAR_URL,
+            badges: getUserBadges(msg.fromUser),
+            nameBackground: users[msg.fromUser]?.nameBackground,
+            avatarFrame: users[msg.fromUser]?.avatarFrame,
+            nameCardBorder: users[msg.fromUser]?.nameCardBorder
+        });
+
+        const formattedTextMsgs = textMessages.map(m => formatMsg(m, 'user'));
+        const formattedImageMsgs = imageMessages.map(m => formatMsg(m, 'image'));
+        
+        let allOlderMessages = [...formattedTextMsgs, ...formattedImageMsgs];
+        
+        // ترتيب تنازلي لأخذ أحدث 25 رسالة من القديمة
+        allOlderMessages.sort((a, b) => b.timestamp - a.timestamp);
+        allOlderMessages = allOlderMessages.slice(0, limit);
+        
+        // إعادة الترتيب تصاعدياً للعرض
+        allOlderMessages.sort((a, b) => a.timestamp - b.timestamp);
+
+        socket.emit('more chat history', allOlderMessages);
+    } catch (error) {
+        console.error('Error loading more messages:', error);
+    }
   });
 
   socket.on('send message', async (data) => {
@@ -2883,13 +3006,9 @@ socket.on('leave room', async (data) => {
       time: new Date().toLocaleTimeString('en-GB')
     };
     
-    // إرسال الإشعار لجميع الغرف
-    io.emit('new message', notificationMessage);
-    
-    // حفظ الإشعار في جميع الغرف
-    Object.keys(messages).forEach(roomId => {
-      messages[roomId].push(notificationMessage);
-    });
+    // إرسال الإشعار للغرفة الحالية فقط
+    io.to(room.id).emit('new message', notificationMessage);
+    if (messages[room.id]) messages[room.id].push(notificationMessage);
     
     socket.emit('rank success', `تم منح الرتبة ${rank} للمستخدم ${username} بنجاح`);
 
@@ -2945,11 +3064,9 @@ socket.on('leave room', async (data) => {
         time: new Date().toLocaleTimeString('en-GB')
       };
       
-      io.emit('new message', notificationMessage);
-
-      Object.keys(messages).forEach(roomId => {
-        messages[roomId].push(notificationMessage);
-      });
+      // إرسال الإشعار للغرفة الحالية فقط
+      io.to(room.id).emit('new message', notificationMessage);
+      if (messages[room.id]) messages[room.id].push(notificationMessage);
       
       socket.emit('rank success', `تم إزالة الرتبة من المستخدم ${username} بنجاح`);
 
@@ -3003,6 +3120,7 @@ socket.on('leave room', async (data) => {
   // أحداث إدارة المستخدمين
   socket.on('mute user', async (data) => {
     const { username, duration, currentUser } = data;
+    const userRoomId = onlineUsers[socket.id]?.roomId;
     
     // التحقق من الصلاحيات باستخدام الدالة الجديدة
     // ملاحظة: canManageTargetUser تتحقق من أن مستوى المدير > مستوى الهدف
@@ -3037,16 +3155,17 @@ socket.on('leave room', async (data) => {
       time: new Date().toLocaleTimeString('en-GB')
     };
     
-    io.emit('new message', notificationMessage);
-    Object.keys(messages).forEach(roomId => {
-      messages[roomId].push(notificationMessage);
-    });
+    if (userRoomId) {
+        io.to(userRoomId).emit('new message', notificationMessage);
+        if (messages[userRoomId]) messages[userRoomId].push(notificationMessage);
+    }
     
     socket.emit('management success', `تم كتم المستخدم ${username} في جميع الغرف بنجاح`);
   });
 
   socket.on('unmute user', async (data) => {
     const { username, currentUser } = data;
+    const userRoomId = onlineUsers[socket.id]?.roomId;
     
     // التحقق من الصلاحية أولاً
     if (!canManageTargetUser(currentUser, username)) {
@@ -3068,10 +3187,10 @@ socket.on('leave room', async (data) => {
         time: new Date().toLocaleTimeString('en-GB')
       };
       
-      io.emit('new message', notificationMessage);
-      Object.keys(messages).forEach(roomId => {
-        messages[roomId].push(notificationMessage);
-      });
+      if (userRoomId) {
+          io.to(userRoomId).emit('new message', notificationMessage);
+          if (messages[userRoomId]) messages[userRoomId].push(notificationMessage);
+      }
       
       socket.emit('management success', `تم إلغاء كتم المستخدم ${username} في جميع الغرف بنجاح`);
     } else {
@@ -3180,6 +3299,7 @@ socket.on('leave room', async (data) => {
 
   socket.on('ban from site', async (data) => {
     const { username, reason, currentUser } = data;
+    const userRoomId = onlineUsers[socket.id]?.roomId;
     
     // الحظر من الموقع حصري لصاحب الموقع فقط
     if (currentUser.name !== SITE_OWNER.username) {
@@ -3221,16 +3341,17 @@ socket.on('leave room', async (data) => {
       time: new Date().toLocaleTimeString('en-GB')
     };
     
-    io.emit('new message', notificationMessage);
-    Object.keys(messages).forEach(roomId => {
-      messages[roomId].push(notificationMessage);
-    });
+    if (userRoomId) {
+        io.to(userRoomId).emit('new message', notificationMessage);
+        if (messages[userRoomId]) messages[userRoomId].push(notificationMessage);
+    }
     
     socket.emit('management success', `تم حظر المستخدم ${username} من الموقع بنجاح`);
   });
 
   socket.on('unban from site', async (data) => {
     const { username, currentUser } = data;
+    const userRoomId = onlineUsers[socket.id]?.roomId;
     
     // إلغاء الحظر من الموقع حصري لصاحب الموقع فقط
     if (currentUser.name !== SITE_OWNER.username) {
@@ -3251,10 +3372,10 @@ socket.on('leave room', async (data) => {
         time: new Date().toLocaleTimeString('en-GB')
       };
       
-      io.emit('new message', notificationMessage);
-      Object.keys(messages).forEach(roomId => {
-        messages[roomId].push(notificationMessage);
-      });
+      if (userRoomId) {
+          io.to(userRoomId).emit('new message', notificationMessage);
+          if (messages[userRoomId]) messages[userRoomId].push(notificationMessage);
+      }
       
       socket.emit('management success', `تم إلغاء حظر المستخدم ${username} من الموقع بنجاح`);
     } else {
@@ -3374,10 +3495,10 @@ socket.on('leave room', async (data) => {
         time: new Date().toLocaleTimeString('en-GB')
       };
       
-      io.emit('new message', notificationMessage);
-      Object.keys(messages).forEach(roomId => {
-        messages[roomId].push(notificationMessage);
-      });
+      if (userRoomId) {
+          io.to(userRoomId).emit('new message', notificationMessage);
+          if (messages[userRoomId]) messages[userRoomId].push(notificationMessage);
+      }
       
       socket.emit('management success', `تم حذف المستخدم ${username} بنجاح`);
     } else {
@@ -3628,6 +3749,34 @@ socket.on('leave room', async (data) => {
       console.error('Error calculating XP rank:', err);
     }
 
+    // حساب ترتيب الأقدمية (Oldest Rank)
+    let oldestRank = null;
+    try {
+        const userCreatedAt = users[username]?.createdAt;
+        if (userCreatedAt) {
+            const count = await User.count({
+                where: {
+                    createdAt: { [Sequelize.Op.lt]: userCreatedAt }
+                }
+            });
+            oldestRank = count + 1;
+        }
+    } catch (err) {
+        console.error('Error calculating Oldest rank:', err);
+    }
+
+    // حساب ترتيب التفاعل (Interaction Rank)
+    let interactionRank = null;
+    try {
+        const score = pointsData.interactionScore || 0;
+        const count = await UserPoints.count({
+            where: { interactionScore: { [Sequelize.Op.gt]: score } }
+        });
+        interactionRank = count + 1;
+    } catch (err) {
+        console.error('Error calculating Interaction rank:', err);
+    }
+
     // جلب قائمة الأصدقاء مع تفاصيلهم
     const friendsList = userFriends[username] || [];
     const friendsDetails = friendsList.map(fName => ({
@@ -3672,6 +3821,9 @@ socket.on('leave room', async (data) => {
         interactionScore: pointsData.interactionScore || 0, // درجة التفاعل
         xp: pointsData.xp || 0, // نقاط الخبرة
         xpRank: xpRank, // ترتيب XP
+        oldestRank: oldestRank, // ترتيب الأقدمية
+        interactionRank: interactionRank, // ترتيب التفاعل
+        createdAt: userData ? userData.createdAt : null, // تاريخ الانضمام
         friends: friendsDetails,
         achievements: achievementsList
     });
@@ -4405,7 +4557,12 @@ socket.on('get private messages', async (data) => {
       
       socket.emit('initial data', {
         friendRequests: friendRequests[username] || [],
-        friendsList: userFriends[username] || [],
+        friendsList: (userFriends[username] || []).map(friendName => ({
+            username: friendName,
+            avatar: userAvatars[friendName] || null,
+            isOnline: Object.values(onlineUsers).some(u => u.name === friendName),
+            lastSeen: userLastSeen[friendName] || null
+        })),
         unreadCounts: { privateMessages: unreadMessagesCount, notifications: unreadNotificationsCount },
         userAvatars: userAvatars
       });
@@ -4413,7 +4570,12 @@ socket.on('get private messages', async (data) => {
       console.error('خطأ في جلب البيانات الأولية:', error);
       socket.emit('initial data', {
         friendRequests: friendRequests[username] || [],
-        friendsList: userFriends[username] || [],
+        friendsList: (userFriends[username] || []).map(friendName => ({
+            username: friendName,
+            avatar: userAvatars[friendName] || null,
+            isOnline: Object.values(onlineUsers).some(u => u.name === friendName),
+            lastSeen: userLastSeen[friendName] || null
+        })),
         unreadCounts: { privateMessages: 0, notifications: 0 },
         userAvatars: userAvatars
       });
@@ -5102,6 +5264,185 @@ socket.on('disconnect', async (reason) => {
     }
   });
 
+  // حدث إهداء عنصر (رتبة)
+  socket.on('gift item', async (data) => {
+      const { itemId, targetUsername, currentUser } = data;
+      const senderName = currentUser.name;
+
+      if (senderName === targetUsername) {
+          socket.emit('gift item error', 'لا يمكنك إهداء نفسك. استخدم زر الشراء.');
+          return;
+      }
+      
+      if (pendingGiftOffers[targetUsername]) {
+          socket.emit('gift item error', 'المستخدم لديه طلب إهداء معلق بالفعل. يرجى الانتظار حتى يقوم بالرد.');
+          return;
+      }
+
+      const item = shopItems.find(i => i.id === itemId);
+      if (!item) {
+          socket.emit('gift item error', 'هذا العنصر غير متوفر.');
+          return;
+      }
+
+      if (item.itemType !== 'rank') {
+           socket.emit('gift item error', 'يمكن إهداء الرتب فقط حالياً.');
+           return;
+      }
+
+      const targetUser = users[targetUsername];
+      if (!targetUser) {
+          socket.emit('gift item error', 'المستخدم المستهدف غير موجود.');
+          return;
+      }
+
+      // التحقق من أن المستخدم متصل
+      const targetSocketId = Object.keys(onlineUsers).find(id => onlineUsers[id].name === targetUsername);
+      if (!targetSocketId) {
+          socket.emit('gift item error', 'المستخدم غير متصل حالياً. يجب أن يكون المستخدم متصلاً لاستلام الهدية.');
+          return;
+      }
+
+      // التحقق من النقاط
+      if (!SPECIAL_USERS_CONFIG[senderName]) {
+          const userPointsData = userPoints[senderName] || { points: 0, isInfinite: false };
+          if (!userPointsData.isInfinite && userPointsData.points < item.price) {
+              socket.emit('gift item error', 'ليس لديك نقاط كافية لإهداء هذه الرتبة.');
+              return;
+          }
+      }
+
+      // تخزين العرض المعلق
+      pendingGiftOffers[targetUsername] = {
+          sender: senderName,
+          itemId: item.id,
+          rank: item.itemValue,
+          price: item.price,
+          itemName: item.name
+      };
+
+      // إرسال العرض للمستلم
+      // استخدام اسم المستخدم كغرفة لضمان الوصول
+      io.to(targetUsername).emit('gift rank offer', {
+          sender: senderName,
+          rankName: item.name,
+          rank: item.itemValue
+      });
+
+      socket.emit('gift item success', {
+          message: `تم إرسال عرض الهدية للمستخدم ${targetUsername}. في انتظار القبول...`,
+          // لا نرسل نقاط جديدة هنا لأننا لم نخصمها بعد
+      });
+  });
+
+  // حدث الرد على الهدية
+  socket.on('respond to gift', async (data) => {
+      const { accepted, currentUser } = data;
+      const recipientName = currentUser.name;
+      const offer = pendingGiftOffers[recipientName];
+
+      if (!offer) return; // لا يوجد عرض
+
+      delete pendingGiftOffers[recipientName]; // حذف العرض
+
+      const senderName = offer.sender;
+      const senderSocketId = Object.keys(onlineUsers).find(id => onlineUsers[id].name === senderName);
+
+      if (!accepted) {
+          if (senderSocketId) {
+              io.to(senderSocketId).emit('gift item error', `قام ${recipientName} برفض الهدية.`);
+          }
+          return;
+      }
+
+      try {
+          // 1. خصم النقاط من المرسل (التحقق مرة أخرى)
+          if (!SPECIAL_USERS_CONFIG[senderName] && !userPoints[senderName]?.isInfinite) {
+              // إعادة تحميل نقاط المرسل للتأكد
+              const senderPointsData = await UserPoints.findOne({ where: { username: senderName } });
+              if (!senderPointsData || senderPointsData.points < offer.price) {
+                  socket.emit('gift item error', 'فشل قبول الهدية: المرسل لم يعد يملك نقاط كافية.');
+                  if (senderSocketId) io.to(senderSocketId).emit('gift item error', 'فشل إرسال الهدية: رصيدك غير كافٍ.');
+                  return;
+              }
+
+              const newPoints = senderPointsData.points - offer.price;
+              await saveUserPoints(senderName, newPoints, senderPointsData.level);
+              if (userPoints[senderName]) userPoints[senderName].points = newPoints;
+              
+              // تحديث واجهة المرسل
+              if (senderSocketId) {
+                  io.to(senderSocketId).emit('points update', { points: newPoints });
+              }
+          }
+
+          // 2. منح الرتبة للمستلم
+          const newRank = offer.rank;
+          let expiresAt = null;
+          if (newRank !== 'صاحب الموقع') {
+               expiresAt = new Date();
+               expiresAt.setDate(expiresAt.getDate() + 30); // 30 يوم
+          }
+
+          userRanks[recipientName] = newRank;
+          if (expiresAt) userRankExpiry[recipientName] = expiresAt;
+          else delete userRankExpiry[recipientName];
+          await saveUserRank(recipientName, newRank, expiresAt);
+
+          // تحديث المستخدمين المتصلين والغرف
+          Object.keys(onlineUsers).forEach(socketId => {
+              if (onlineUsers[socketId].name === recipientName) onlineUsers[socketId].rank = newRank;
+          });
+          rooms.forEach(r => r.users.forEach(u => {
+              if (u.name === recipientName) u.rank = newRank;
+          }));
+          broadcastRoomsUpdate();
+
+          // 3. إشعارات النجاح
+          if (senderSocketId) {
+              io.to(senderSocketId).emit('gift item success', {
+                  message: `🎉 قام ${recipientName} بقبول الهدية! تم منح رتبة "${offer.itemName}".`
+              });
+          }
+
+          socket.emit('gift item success', {
+              message: `🎉 مبروك! لقد حصلت على رتبة "${offer.itemName}" من ${senderName}.`
+          });
+
+          // إشعار للمستلم في القائمة
+          await saveNotification(recipientName, senderName, 'gift_rank', null);
+          
+          // إرسال إشعار فوري للمستلم
+          io.to(socket.id).emit('new notification', {
+              senderUsername: senderName,
+              type: 'gift_rank',
+              postId: null
+          });
+
+          // تحديث الصفحة للمستلم
+          socket.emit('force reload');
+          
+          // إشعار عام
+          const notificationMessage = {
+            type: 'system',
+            systemStatus: 'positive',
+            user: 'نظام الهدايا',
+            avatar: BOT_AVATAR_URL,
+            content: `🎁 قام <strong class="text-white">${senderName}</strong> بإهداء رتبة <strong class="text-yellow-300">${newRank}</strong> للمستخدم <strong class="text-white">${recipientName}</strong>!`,
+            time: new Date().toLocaleTimeString('ar-SA')
+          };
+          io.emit('new message', notificationMessage);
+          // حفظ في السجل
+          Object.keys(messages).forEach(roomId => {
+             if(messages[roomId]) messages[roomId].push(notificationMessage);
+          });
+
+      } catch (error) {
+          console.error('Error processing gift response:', error);
+          socket.emit('gift item error', 'حدث خطأ أثناء معالجة الهدية.');
+      }
+  });
+
   // --- حدث تغيير الاسم ---
   socket.on('use name change card', async (data) => {
     const { oldUsername, newUsername, inventoryId, currentUser } = data;
@@ -5294,7 +5635,9 @@ socket.on('disconnect', async (reason) => {
   });
   // --- أحداث المتجر ---
   socket.on('get shop items', () => {
-    socket.emit('shop items data', shopItems);
+    // تصفية الرتب الجامدة (frozen_rank) من القائمة المرسلة للمتجر
+    const filteredItems = shopItems.filter(item => item.itemType !== 'frozen_rank');
+    socket.emit('shop items data', filteredItems);
   });
 
   // --- أحداث غرفة التحكم (Control Room) ---
@@ -5950,6 +6293,48 @@ socket.on('disconnect', async (reason) => {
     } catch (error) {
       console.error('Error fetching XP leaderboard:', error);
     }
+  });
+
+  // --- لوحة المستخدمين القدامى ---
+  socket.on('get oldest users leaderboard', async () => {
+      try {
+          const oldestUsers = await User.findAll({
+              order: [['createdAt', 'ASC']],
+              limit: 10,
+              attributes: ['username', 'createdAt']
+          });
+
+          const leaderboard = oldestUsers.map(u => ({
+              username: u.username,
+              createdAt: u.createdAt,
+              avatar: userAvatars[u.username] || DEFAULT_AVATAR_URL
+          }));
+
+          socket.emit('oldest users list', leaderboard);
+      } catch (error) {
+          console.error('Error fetching oldest users leaderboard:', error);
+      }
+  });
+
+  // --- لوحة المشاركين (التفاعل) ---
+  socket.on('get interaction leaderboard', async () => {
+      try {
+          const topInteractionUsers = await UserPoints.findAll({
+              order: [['interactionScore', 'DESC']],
+              limit: 10,
+              attributes: ['username', 'interactionScore']
+          });
+
+          const leaderboard = topInteractionUsers.map(u => ({
+              username: u.username,
+              interactionScore: u.interactionScore || 0,
+              avatar: userAvatars[u.username] || DEFAULT_AVATAR_URL
+          }));
+
+          socket.emit('interaction leaderboard list', leaderboard);
+      } catch (error) {
+          console.error('Error fetching interaction leaderboard:', error);
+      }
   });
 });
 
