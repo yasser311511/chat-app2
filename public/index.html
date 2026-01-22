@@ -17,7 +17,29 @@
     <link rel="canonical" href="https://walidchating.onrender.com">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Almarai:wght@300;400;700;800&family=Amiri:wght@400;700&family=Aref+Ruqaa:wght@400;700&family=Cairo:wght@300;400;600;700&family=Changa:wght@400;700&family=El+Messiri:wght@400;700&family=Harmattan:wght@400;700&family=Katibeh&family=Kufam:wght@400;700&family=Lalezar&family=Lateef&family=Lemonada:wght@400;700&family=Mada:wght@200;300;400;500;600;700;900&family=Mirza:wght@400;500;600;700&family=Rakkas&family=Readex+Pro:wght@200;400;700&family=Reem+Kufi:wght@400;500;600;700&family=Scheherazade+New:wght@400;700&family=Tajawal:wght@400;700&family=Vibes&display=swap');
+        
+        .font-cairo { font-family: 'Cairo', sans-serif; }
+        .font-tajawal { font-family: 'Tajawal', sans-serif; }
+        .font-amiri { font-family: 'Amiri', serif; }
+        .font-aref { font-family: 'Aref Ruqaa', serif; }
+        .font-rakkas { font-family: 'Rakkas', serif; }
+        .font-lemonada { font-family: 'Lemonada', cursive; }
+        .font-changa { font-family: 'Changa', sans-serif; }
+        .font-messiri { font-family: 'El Messiri', sans-serif; }
+        .font-almarai { font-family: 'Almarai', sans-serif; }
+        .font-harmattan { font-family: 'Harmattan', sans-serif; }
+        .font-lalezar { font-family: 'Lalezar', cursive; }
+        .font-mada { font-family: 'Mada', sans-serif; }
+        .font-reem-kufi { font-family: 'Reem Kufi', sans-serif; }
+        .font-scheherazade { font-family: 'Scheherazade New', serif; }
+        .font-lateef { font-family: 'Lateef', cursive; }
+        .font-mirza { font-family: 'Mirza', cursive; }
+        .font-vibes { font-family: 'Vibes', cursive; }
+        .font-katibeh { font-family: 'Katibeh', cursive; }
+        .font-kufam { font-family: 'Kufam', sans-serif; }
+        .font-readex { font-family: 'Readex Pro', sans-serif; }
+
         body { 
             font-family: 'Cairo', sans-serif; 
             background-color: #000000;
@@ -1068,6 +1090,39 @@
     to { text-shadow: 0 0 10px #ccff00, 0 0 20px #33ff00, 0 0 30px #00ff00; }
 }
 
+/* --- ألوان جديدة خرافية (10 ألوان) --- */
+.text-matrix-rain { background: linear-gradient(180deg, #0f0, #003300); background-size: 100% 200%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: matrix-fall 2s linear infinite; font-weight: bold; text-shadow: 0 0 5px #0f0; }
+@keyframes matrix-fall { 0% { background-position: 0% 0%; } 100% { background-position: 0% 200%; } }
+
+.text-matrix-white { background: linear-gradient(180deg, #ffffff, #555555); background-size: 100% 200%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: matrix-fall 2s linear infinite; font-weight: bold; text-shadow: 0 0 5px #ffffff; }
+
+.text-nebula-dream { background: linear-gradient(45deg, #ff00cc, #333399, #00ccff); background-size: 200% 200%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: nebula-swirl 5s ease infinite; font-weight: bold; }
+@keyframes nebula-swirl { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+.text-volcanic-ash { background: linear-gradient(to top, #330000, #ff4500, #555); -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: ash-rise 3s infinite alternate; font-weight: bold; text-shadow: 0 -2px 5px rgba(255, 69, 0, 0.5); }
+@keyframes ash-rise { from { filter: brightness(0.8); } to { filter: brightness(1.2); } }
+
+.text-holographic { background: linear-gradient(135deg, #e6e6e6 0%, #ffffff 25%, #d4d4d4 50%, #e6e6e6 75%, #ffffff 100%); background-size: 200% 200%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: holo-shift 3s linear infinite; font-weight: bold; filter: drop-shadow(0 0 2px rgba(255,255,255,0.5)); }
+@keyframes holo-shift { 0% { background-position: 0% 0%; } 100% { background-position: 100% 100%; } }
+
+.text-quantum-flux { color: #00ffff; text-shadow: 2px 0 #ff00ff; animation: quantum-vibrate 0.1s infinite; font-weight: bold; }
+@keyframes quantum-vibrate { 0% { transform: translate(0,0); } 20% { transform: translate(-1px,1px); } 40% { transform: translate(1px,-1px); } 60% { transform: translate(-1px,-1px); } 80% { transform: translate(1px,1px); } 100% { transform: translate(0,0); } }
+
+.text-starlight-shimmer { background: linear-gradient(90deg, #fff, #a1a1aa, #fff); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: star-twinkle 3s ease-in-out infinite; font-weight: bold; text-shadow: 0 0 5px #fff; }
+@keyframes star-twinkle { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+
+.text-midnight-aurora { background: linear-gradient(to right, #020024, #097969, #00d4ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; animation: aurora-wave 4s infinite alternate; }
+@keyframes aurora-wave { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(30deg); } }
+
+.text-crimson-night { background: linear-gradient(to bottom, #ff0000, #330000); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: bold; text-shadow: 0 0 10px #ff0000; animation: crimson-pulse 2s infinite; }
+@keyframes crimson-pulse { 0%, 100% { text-shadow: 0 0 10px #ff0000; } 50% { text-shadow: 0 0 20px #ff0000; } }
+
+.text-solar-flare { background: linear-gradient(to right, #f59e0b, #ef4444, #f59e0b); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: solar-burst 1.5s linear infinite; font-weight: bold; filter: drop-shadow(0 0 3px #f59e0b); }
+@keyframes solar-burst { to { background-position: 200% center; } }
+
+.text-void-walker { background: linear-gradient(to right, #4c1d95, #000000, #4c1d95); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: void-consume 4s ease infinite; font-weight: bold; text-shadow: 0 0 5px #8b5cf6; }
+@keyframes void-consume { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
 /* نظام الإشعارات بالنقطة الحمراء */
 .notification-dot {
     position: absolute;
@@ -1816,11 +1871,6 @@
                  <button onclick="closeProfileModal()" class="absolute top-4 right-4 text-slate-300 hover:text-blue-500 transition-colors z-20 bg-black/20 rounded-full p-1">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                 </button>
-                
-                <!-- قائمة الخيارات الإدارية -->
-                <div id="profileMenuContainer" class="absolute top-4 left-4 z-20">
-                    <!-- سيتم ملء هذه القائمة ديناميكياً -->
-                </div>
 
                 <!-- حاوية المعلومات السفلية -->
                 <div class="absolute bottom-0 right-0 w-full p-4 flex items-end space-x-4 space-x-reverse z-10">
@@ -1859,6 +1909,11 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            
+            <!-- قائمة الخيارات الإدارية (تم نقلها هنا لتظهر فوق المحتوى) -->
+            <div id="profileMenuContainer" class="absolute top-4 left-4 z-20">
+                <!-- سيتم ملء هذه القائمة ديناميكياً -->
             </div>
 
             <!-- أقسام الملف الشخصي -->
@@ -2052,6 +2107,7 @@
                         <button onclick="switchFeatureSubTab('userCardBackground')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold text-slate-400 hover:bg-gray-700" id="btn-userCardBackground">خلفية البطاقة</button>
                          <button onclick="switchFeatureSubTab('profileBackground')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold text-slate-400 hover:bg-gray-700" id="btn-profileBackground">لون البروفايل</button>
                         <button onclick="switchFeatureSubTab('nameCardBorder')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold text-slate-400 hover:bg-gray-700" id="btn-nameCardBorder">إطار البطاقة</button>
+                        <button onclick="switchFeatureSubTab('nameFont')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold text-slate-400 hover:bg-gray-700" id="btn-nameFont">نوع الخط</button>
                         <button onclick="switchFeatureSubTab('changeName')" class="feature-sub-btn flex-1 py-1 px-2 rounded text-xs font-semibold text-slate-400 hover:bg-gray-700" id="btn-changeName">تغيير الاسم</button>
                     </div>
 
@@ -2085,6 +2141,17 @@
                                 <button onclick="selectFeature('nameColor', 'text-plasma')" class="py-1 px-2 rounded text-plasma text-[10px] font-bold bg-black/40">بلازما ⚛️</button>
                                 <button onclick="selectFeature('nameColor', 'text-crystal')" class="py-1 px-2 rounded text-crystal text-[10px] font-bold bg-black/40">كريستال ❄️</button>
                                 <button onclick="selectFeature('nameColor', 'text-radioactive')" class="py-1 px-2 rounded text-radioactive text-[10px] font-bold bg-black/40">مشع ☢️</button>
+                                <button onclick="selectFeature('nameColor', 'text-matrix-rain')" class="py-1 px-2 rounded text-matrix-rain text-[10px] font-bold bg-black/40">مصفوفة 📟</button>
+                                <button onclick="selectFeature('nameColor', 'text-matrix-white')" class="py-1 px-2 rounded text-matrix-white text-[10px] font-bold bg-black/40">مصفوفة بيضاء 🌪️</button>
+                                <button onclick="selectFeature('nameColor', 'text-nebula-dream')" class="py-1 px-2 rounded text-nebula-dream text-[10px] font-bold bg-black/40">سديم 🌌</button>
+                                <button onclick="selectFeature('nameColor', 'text-volcanic-ash')" class="py-1 px-2 rounded text-volcanic-ash text-[10px] font-bold bg-black/40">رماد بركاني 🌋</button>
+                                <button onclick="selectFeature('nameColor', 'text-holographic')" class="py-1 px-2 rounded text-holographic text-[10px] font-bold bg-black/40">هولوغرافي 💿</button>
+                                <button onclick="selectFeature('nameColor', 'text-quantum-flux')" class="py-1 px-2 rounded text-quantum-flux text-[10px] font-bold bg-black/40">كمي ⚛️</button>
+                                <button onclick="selectFeature('nameColor', 'text-starlight-shimmer')" class="py-1 px-2 rounded text-starlight-shimmer text-[10px] font-bold bg-black/40">نجوم ✨</button>
+                                <button onclick="selectFeature('nameColor', 'text-midnight-aurora')" class="py-1 px-2 rounded text-midnight-aurora text-[10px] font-bold bg-black/40">شفق ليلي 🌃</button>
+                                <button onclick="selectFeature('nameColor', 'text-crimson-night')" class="py-1 px-2 rounded text-crimson-night text-[10px] font-bold bg-black/40">قرمزي 🩸</button>
+                                <button onclick="selectFeature('nameColor', 'text-solar-flare')" class="py-1 px-2 rounded text-solar-flare text-[10px] font-bold bg-black/40">وهج شمسي ☀️</button>
+                                <button onclick="selectFeature('nameColor', 'text-void-walker')" class="py-1 px-2 rounded text-void-walker text-[10px] font-bold bg-black/40">فراغ 🌑</button>
                             </div>
                             <div class="mt-3 flex items-center justify-between bg-gray-800/50 p-2 rounded-lg">
                                 <span class="text-[10px] text-slate-300">لون مخصص (مزج):</span>
@@ -2164,6 +2231,18 @@
                         <div class="mt-4 p-2 rounded-lg border border-gray-700" id="cardBorderPreview">
                             <p class="text-xs text-slate-400 mb-2">معاينة:</p>
                             <div class="flex items-center space-x-3 space-x-reverse p-3 rounded-lg" id="previewCardBorderDiv" style="border: 3px solid #6366f1;"><div class="w-8 h-8 rounded-full bg-gray-500"></div><span class="text-white text-sm">اسم المستخدم</span></div>
+                        </div>
+                    </div>
+
+                    <!-- محتوى نوع الخط (جديد) -->
+                    <div id="feature-nameFont" class="feature-content hidden">
+                        <h4 class="text-sm font-bold text-slate-300 mb-3">اختر نوع الخط لاسمك:</h4>
+                        <div class="grid grid-cols-2 gap-3" id="nameFontGrid">
+                            <!-- سيتم ملؤها بواسطة JS -->
+                        </div>
+                        <div class="mt-4 p-3 bg-gray-800 rounded-lg text-center">
+                            <p class="text-xs text-slate-400 mb-1">معاينة:</p>
+                            <span id="nameFontPreview" class="text-xl px-2 py-1 rounded">اسم المستخدم</span>
                         </div>
                     </div>
 
@@ -3041,23 +3120,52 @@
             const otherPicker = document.getElementById(otherPickerId);
             if (otherPicker) otherPicker.classList.remove('show');
 
-            renderEmojiPicker(pickerId, isPrivate);
+            // التحقق مما إذا كانت القائمة فارغة قبل بنائها لمنع التكرار
+            if (picker.children.length === 0) {
+                renderEmojiPicker(pickerId, isPrivate);
+            }
             picker.classList.add('show');
         }
 
         function renderEmojiPicker(pickerId, isPrivate) {
             const picker = document.getElementById(pickerId);
-            picker.innerHTML = `
-                <div class="emoji-picker-header">
-                    <div class="emoji-tab ${currentEmojiTab === 'animated' ? 'active' : ''}" onclick="switchEmojiTab(event, 'animated', '${pickerId}', ${isPrivate})">ثابتة</div>
-                    <div class="emoji-tab ${currentEmojiTab === 'local' ? 'active' : ''}" onclick="switchEmojiTab(event, 'local', '${pickerId}', ${isPrivate})">متحركة</div>
-                </div>
-                <div class="emoji-grid custom-scrollbar"></div>
-            `;
             
-            const grid = picker.querySelector('.emoji-grid');
-            const emojis = currentEmojiTab === 'animated' ? animatedEmojis : localEmojis;
+            // إنشاء الهيكل مرة واحدة فقط إذا لم يكن موجوداً
+            if (picker.children.length === 0) {
+                picker.innerHTML = `
+                    <div class="emoji-picker-header">
+                        <div class="emoji-tab" id="tab-animated-${pickerId}" onclick="switchEmojiTab(event, 'animated', '${pickerId}', ${isPrivate})">ثابتة</div>
+                        <div class="emoji-tab" id="tab-local-${pickerId}" onclick="switchEmojiTab(event, 'local', '${pickerId}', ${isPrivate})">متحركة</div>
+                    </div>
+                    <div id="grid-animated-${pickerId}" class="emoji-grid custom-scrollbar" style="display: none;"></div>
+                    <div id="grid-local-${pickerId}" class="emoji-grid custom-scrollbar" style="display: none;"></div>
+                `;
+            }
+
+            // تحديث حالة التبويبات
+            const tabAnimated = document.getElementById(`tab-animated-${pickerId}`);
+            const tabLocal = document.getElementById(`tab-local-${pickerId}`);
+            if (tabAnimated && tabLocal) {
+                tabAnimated.className = `emoji-tab ${currentEmojiTab === 'animated' ? 'active' : ''}`;
+                tabLocal.className = `emoji-tab ${currentEmojiTab === 'local' ? 'active' : ''}`;
+            }
+
+            // تبديل ظهور الشبكات
+            const gridAnimated = document.getElementById(`grid-animated-${pickerId}`);
+            const gridLocal = document.getElementById(`grid-local-${pickerId}`);
             
+            if (currentEmojiTab === 'animated') {
+                gridAnimated.style.display = 'grid';
+                gridLocal.style.display = 'none';
+                if (gridAnimated.children.length === 0) populateEmojiGrid(gridAnimated, animatedEmojis, isPrivate);
+            } else {
+                gridAnimated.style.display = 'none';
+                gridLocal.style.display = 'grid';
+                if (gridLocal.children.length === 0) populateEmojiGrid(gridLocal, localEmojis, isPrivate);
+            }
+        }
+
+        function populateEmojiGrid(grid, emojis, isPrivate) {
             emojis.forEach(url => {
                 const img = document.createElement('img');
                 img.src = url;
@@ -3315,6 +3423,19 @@
                 if (value && value.startsWith('border-color:')) {
                     previewDiv.style.borderColor = value.split(':')[1];
                 }
+            } else if (feature === 'nameFont') {
+                document.querySelectorAll('#nameFontGrid > div').forEach(el => el.classList.remove('border-blue-500', 'border-2'));
+                if (event && event.currentTarget) event.currentTarget.classList.add('border-blue-500', 'border-2');
+                
+                const preview = document.getElementById('nameFontPreview');
+                // إزالة كلاسات الخطوط القديمة
+                const fontClasses = [
+                    'font-cairo', 'font-tajawal', 'font-amiri', 'font-aref', 'font-rakkas', 'font-lemonada', 'font-changa', 'font-messiri',
+                    'font-almarai', 'font-harmattan', 'font-lalezar', 'font-mada', 'font-reem-kufi', 'font-scheherazade', 'font-lateef',
+                    'font-mirza', 'font-vibes', 'font-katibeh', 'font-kufam', 'font-readex'
+                ];
+                fontClasses.forEach(cls => preview.classList.remove(cls));
+                if (value) preview.classList.add(value);
             }
         }
 
@@ -3455,6 +3576,39 @@
                 div.className = `cursor-pointer h-10 rounded-lg border border-transparent hover:border-white ${bg}`;
                 div.onclick = (e) => selectFeature('profileBackground', bg);
                 profileBgGrid.appendChild(div);
+            });
+
+            // 6. أنواع الخطوط
+            const fonts = [
+                { id: 'font-cairo', name: 'كايرو (الافتراضي)' },
+                { id: 'font-tajawal', name: 'تجوّل' },
+                { id: 'font-amiri', name: 'أميري' },
+                { id: 'font-aref', name: 'عارف رقعة' },
+                { id: 'font-rakkas', name: 'رقّاص' },
+                { id: 'font-lemonada', name: 'ليمونادة' },
+                { id: 'font-changa', name: 'تشانغا' },
+                { id: 'font-messiri', name: 'المسيري' },
+                { id: 'font-almarai', name: 'المراعي' },
+                { id: 'font-harmattan', name: 'هرمتان' },
+                { id: 'font-lalezar', name: 'لاليزار' },
+                { id: 'font-mada', name: 'مدى' },
+                { id: 'font-reem-kufi', name: 'ريم كوفي' },
+                { id: 'font-scheherazade', name: 'شهرزاد' },
+                { id: 'font-lateef', name: 'لطيف' },
+                { id: 'font-mirza', name: 'ميرزا' },
+                { id: 'font-vibes', name: 'فايبس' },
+                { id: 'font-katibeh', name: 'كتيبة' },
+                { id: 'font-kufam', name: 'كوفم' },
+                { id: 'font-readex', name: 'ريدكس' }
+            ];
+            const fontGrid = document.getElementById('nameFontGrid');
+            fontGrid.innerHTML = '';
+            fonts.forEach(font => {
+                const div = document.createElement('div');
+                div.className = `cursor-pointer p-3 rounded text-center border border-gray-600 hover:border-white text-sm ${font.id}`;
+                div.textContent = font.name;
+                div.onclick = (e) => selectFeature('nameFont', font.id);
+                fontGrid.appendChild(div);
             });
 
             // 6. ألوان إطار البطاقة (بناءً على الإنجازات)
@@ -4142,6 +4296,7 @@ function updateUnreadBadges() {
             currentUser.profileBackground = userData.profileBackground;
             currentUser.profileCover = userData.profileCover;
             currentUser.nameCardBorder = userData.nameCardBorder;
+            currentUser.nameFont = userData.nameFont;
 
             document.cookie = `sessionId=${userData.sessionId}; path=/; max-age=31536000; SameSite=Lax`; // صلاحية لمدة سنة
             updateLoadingStatus('تم تسجيل الدخول! جاري تحضير الواجهة...');
@@ -4165,6 +4320,7 @@ function updateUnreadBadges() {
             currentUser.nameColor = null; // القيمة الافتراضية للحساب الجديد
             currentUser.bio = null; // القيمة الافتراضية للحساب الجديد
             currentUser.nameCardBorder = null;
+            currentUser.nameFont = null;
 
             document.cookie = `sessionId=${userData.sessionId}; path=/; max-age=31536000; SameSite=Lax`; // صلاحية لمدة سنة
             updateLoadingStatus('تم إنشاء الحساب! مرحباً بك...');
@@ -4210,7 +4366,7 @@ function updateUnreadBadges() {
         // استقبال رسائل جديدة
         socket.on('new message', (message) => {
             if (message.type === 'user' || (message.type === 'image' && message.user) || message.replyTo) {
-                addMessageToChat(message.user, message.content, message.time, message.user === currentUser.name, message.rank, message.avatar, message.messageId, message.replyTo, null, message.timestamp, message.badges, message.nameCardBorder);
+                addMessageToChat(message.user, message.content, message.time, message.user === currentUser.name, message.rank, message.avatar, message.messageId, message.replyTo, null, message.timestamp, message.badges, message.nameCardBorder, message.nameFont);
             } else if (message.type === 'system') {
                 addSystemMessage(message, message.time, null, message.timestamp);
             } else {
@@ -4246,9 +4402,9 @@ socket.on('chat history', (messages) => {
             msg.messageId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
         if (msg.type === 'user') {
-            addMessageToChat(msg.user, msg.content, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, msg.replyTo, fragment, msg.timestamp, msg.badges, msg.nameCardBorder);
+            addMessageToChat(msg.user, msg.content, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, msg.replyTo, fragment, msg.timestamp, msg.badges, msg.nameCardBorder, msg.nameFont);
         } else if (msg.type === 'image') {
-            addImageMessageToChat(msg.user, msg.imageData, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, fragment, msg.timestamp, msg.replyTo, msg.badges, msg.nameCardBorder);
+            addImageMessageToChat(msg.user, msg.imageData, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, fragment, msg.timestamp, msg.replyTo, msg.badges, msg.nameCardBorder, msg.nameFont);
         } else {
             addSystemMessage(msg, msg.time, fragment, msg.timestamp);
         }
@@ -4299,9 +4455,9 @@ socket.on('chat history', (messages) => {
 
             messages.forEach(msg => {
                 if (msg.type === 'user') {
-                    addMessageToChat(msg.user, msg.content, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, msg.replyTo, fragment, msg.timestamp, msg.badges, msg.nameCardBorder);
+                    addMessageToChat(msg.user, msg.content, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, msg.replyTo, fragment, msg.timestamp, msg.badges, msg.nameCardBorder, msg.nameFont);
                 } else if (msg.type === 'image') {
-                    addImageMessageToChat(msg.user, msg.imageData, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, fragment, msg.timestamp, msg.replyTo, msg.badges, msg.nameCardBorder);
+                    addImageMessageToChat(msg.user, msg.imageData, msg.time, msg.user === currentUser.name, msg.rank, msg.avatar, msg.messageId, fragment, msg.timestamp, msg.replyTo, msg.badges, msg.nameCardBorder, msg.nameFont);
                 }
             });
 
@@ -4522,8 +4678,13 @@ socket.on('private messages history', (messages) => {
         socket.on('friend request accepted', (data) => {
             showNotification(`قبل ${data.byUser} طلب الصداقة`, 'success');
             // إضافة الصديق محلياً فوراً
-            if (!friendsList.includes(data.byUser)) {
-                friendsList.push(data.byUser);
+            if (!friendsList.some(f => f.username === data.byUser)) {
+                friendsList.push({
+                    username: data.byUser,
+                    avatar: userAvatars[data.byUser] || DEFAULT_AVATAR_URL,
+                    isOnline: window.onlineUsersData && window.onlineUsersData[data.byUser] ? true : false,
+                    lastSeen: null
+                });
             }
             // إزالة من طلبات الصداقة إن وجد
             friendRequests = friendRequests.filter(u => u !== data.byUser);
@@ -4711,7 +4872,7 @@ socket.on('private messages history', (messages) => {
                 if (friend.isOnline) {
                     statusHtml = '<span class="text-green-400 text-xs">متصل الآن</span>';
                 } else if (friend.lastSeen) {
-                    statusHtml = `<span class="text-slate-400 text-xs">آخر ظهور: ${getTimeAgo(new Date(friend.lastSeen))}</span>`;
+                    statusHtml = `<span class="text-slate-400 text-xs">${getTimeAgo(new Date(friend.lastSeen))}</span>`;
                 } else {
                     statusHtml = '<span class="text-slate-500 text-xs">غير معروف</span>';
                 }
@@ -5216,7 +5377,7 @@ window.addEventListener('beforeunload', function (e) {
         }
 
         // إضافة رسالة إلى الدردشة (نسخة مدمجة)
-function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messageId = null, replyTo = null, targetContainer = null, timestamp = null, badges = null, nameCardBorder = null) {
+function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messageId = null, replyTo = null, targetContainer = null, timestamp = null, badges = null, nameCardBorder = null, nameFont = null) {
     let formattedMessage;
     
     if (animatedEmojis.includes(message) || localEmojis.includes(message)) {
@@ -5266,13 +5427,14 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
     const achievementCountBadge = achievementCount > 0 ? `<div class="achievement-count-badge" title="${achievementCount} أوسمة">${achievementCount}</div>` : '';
 
     // --- إصلاح: تحديد لون الاسم والخلفية والإطار بشكل صحيح ---
-    let nameColorClass, nameBgClass, avatarFrameClass, currentNameCardBorder;
+    let nameColorClass, nameBgClass, avatarFrameClass, currentNameCardBorder, nameFontClass;
 
     if (isOwn) {
         nameColorClass = currentUser.nameColor || 'text-blue-100';
         nameBgClass = currentUser.nameBackground || '';
         avatarFrameClass = currentUser.avatarFrame || '';
         currentNameCardBorder = nameCardBorder || currentUser.nameCardBorder || null;
+        nameFontClass = nameFont || currentUser.nameFont || '';
     } else {
         // استخدام البيانات المخزنة في الذاكرة بدلاً من البحث في DOM (أسرع بكثير)
         const onlineUser = window.onlineUsersData ? window.onlineUsersData[user] : null;
@@ -5281,11 +5443,13 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
             nameBgClass = (onlineUser.nameBackground && onlineUser.nameBackground !== 'null') ? onlineUser.nameBackground : '';
             avatarFrameClass = (onlineUser.avatarFrame && onlineUser.avatarFrame !== 'null') ? onlineUser.avatarFrame : '';
             currentNameCardBorder = nameCardBorder || onlineUser.nameCardBorder || null;
+            nameFontClass = nameFont || onlineUser.nameFont || '';
         } else {
             nameColorClass = 'text-blue-200';
             nameBgClass = '';
             avatarFrameClass = '';
             currentNameCardBorder = nameCardBorder || null;
+            nameFontClass = nameFont || '';
         }
     }
 
@@ -5403,7 +5567,7 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
                 <div class="message-bubble relative ${messageBgClass + ' ' + messageTextColorClass} rounded-lg p-2 min-w-[50px]" style="${bubbleStyle}">
                     ${replyHtml}
                     <div class="message-content leading-snug flex items-center flex-wrap gap-1">
-                        <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''}" onclick="mentionUser('${user}')">${user}</span>
+                        <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''} ${nameFontClass}" onclick="mentionUser('${user}')">${user}</span>
                         ${rankBadge}
                         <span class="font-bold">:</span>
                         <span class="break-words">${formattedMessage}</span>
@@ -5754,6 +5918,7 @@ function updateOnlineUsersList(users) {
                 userDiv.setAttribute('data-name-color', user.nameColor || 'null');
                 userDiv.setAttribute('data-name-background', user.nameBackground || 'null');
                 userDiv.setAttribute('data-avatar-frame', user.avatarFrame || 'null');
+                userDiv.setAttribute('data-name-font', user.nameFont || 'null');
 
                 let rankBadge = '';
                 if (user.rank) {
@@ -5793,6 +5958,7 @@ function updateOnlineUsersList(users) {
                 }
 
                 const nameStyle = getUserNameStyle(user.nameColor);
+                const fontClass = user.nameFont || '';
 
                 userDiv.innerHTML = `
                     <div class="relative flex-shrink-0">
@@ -5801,7 +5967,7 @@ function updateOnlineUsersList(users) {
                     </div>
                     <div class="flex-1 min-w-0 flex flex-col justify-center ${user.isOnline === false ? 'opacity-60' : ''}">
                         <div class="flex items-center justify-between">
-                            <div class="font-semibold truncate ${nameStyle.class} text-sm" style="${nameStyle.style}">${user.name}</div>
+                            <div class="font-semibold truncate ${nameStyle.class} text-sm ${fontClass}" style="${nameStyle.style}">${user.name}</div>
                         </div>
                         ${rankBadge ? `<div class="text-gray-400 leading-none">${rankBadge}</div>` : ''}
                     </div>
@@ -6304,6 +6470,11 @@ function updateOnlineUsersList(users) {
             if (isOwner) {
                 // تحديث بيانات المستخدم الحالي لضمان المزامنة
                 currentUser.nameCardBorder = profileData.nameCardBorder;
+                currentUser.nameFont = profileData.nameFont;
+            }
+
+            if (profileData.nameFont) {
+                usernameElem.classList.add(profileData.nameFont);
             }
 
             // تطبيق لون إطار البطاقة في الملف الشخصي
@@ -7935,7 +8106,7 @@ socket.on('private image sent', (message) => {
 
 // إضافة رسالة صورة إلى المحادثة العامة
 // إضافة رسالة صورة إلى الدردشة (نسخة مدمجة)
-function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl, messageId = null, targetContainer = null, timestamp = null, replyTo = null, badges = null, nameCardBorder = null) {
+function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl, messageId = null, targetContainer = null, timestamp = null, replyTo = null, badges = null, nameCardBorder = null, nameFont = null) {
     const container = targetContainer || document.getElementById('messagesContainer');
     const messageDiv = document.createElement('div');
     
@@ -8066,12 +8237,13 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
     }
 
     // تحديد الألوان والإطارات
-    let nameColorClass, nameBgClass, avatarFrameClass, currentNameCardBorder;
+    let nameColorClass, nameBgClass, avatarFrameClass, currentNameCardBorder, nameFontClass;
     if (isOwn) {
         nameColorClass = currentUser.nameColor || 'text-blue-100';
         nameBgClass = currentUser.nameBackground || '';
         avatarFrameClass = currentUser.avatarFrame || '';
         currentNameCardBorder = nameCardBorder || currentUser.nameCardBorder || null;
+        nameFontClass = nameFont || currentUser.nameFont || '';
     } else {
         const onlineUser = window.onlineUsersData ? window.onlineUsersData[user] : null;
         if (onlineUser) {
@@ -8079,11 +8251,13 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
             nameBgClass = (onlineUser.nameBackground && onlineUser.nameBackground !== 'null') ? onlineUser.nameBackground : '';
             avatarFrameClass = (onlineUser.avatarFrame && onlineUser.avatarFrame !== 'null') ? onlineUser.avatarFrame : '';
             currentNameCardBorder = nameCardBorder || onlineUser.nameCardBorder || null;
+            nameFontClass = nameFont || onlineUser.nameFont || '';
         } else {
             nameColorClass = 'text-blue-200';
             nameBgClass = '';
             avatarFrameClass = '';
             currentNameCardBorder = nameCardBorder || null;
+            nameFontClass = nameFont || '';
         }
     }
 
@@ -8107,7 +8281,7 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
                     ${replyHtml}
                     <div class="message-content leading-snug flex flex-col gap-1">
                         <div class="flex items-center flex-wrap gap-1">
-                            <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''}" onclick="mentionUser('${user}')">${user}</span>
+                            <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''} ${nameFontClass}" onclick="mentionUser('${user}')">${user}</span>
                             ${rankBadge}
                             <span class="font-bold">:</span>
                         </div>

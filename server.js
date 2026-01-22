@@ -40,7 +40,8 @@ const User = sequelize.define('User', {
   profileBackground: { type: DataTypes.STRING, allowNull: true },
   profileCover: { type: DataTypes.TEXT, allowNull: true },
   nameCardBorder: { type: DataTypes.STRING, allowNull: true },
-  referredBy: { type: DataTypes.STRING, allowNull: true } // المستخدم الذي قام بدعوته
+  referredBy: { type: DataTypes.STRING, allowNull: true }, // المستخدم الذي قام بدعوته
+  nameFont: { type: DataTypes.STRING, allowNull: true } // نوع الخط
 });
 
 const UserRank = sequelize.define('UserRank', {
@@ -363,6 +364,13 @@ let quizState = {
     isWaitingForAnswer: false,
     questionsQueue: [],
     currentQuestionIndex: 0
+};
+
+// --- إعدادات لعبة تخمين الرقم ---
+let guessGameState = {
+    active: false,
+    target: 0,
+    roomId: null
 };
 
 // --- إعدادات بوت الذكاء الاصطناعي ---
@@ -789,12 +797,23 @@ async function loadData() {
         console.error('فشل إضافة عمود xp:', err);
       }
     }
+
+    // التحقق من عمود nameFont
+    const hasNameFont = await columnExists('Users', 'nameFont');
+    if (!hasNameFont) {
+      try {
+        await sequelize.getQueryInterface().addColumn('Users', 'nameFont', { type: DataTypes.STRING, allowNull: true });
+        console.log('تم إضافة عمود nameFont بنجاح');
+      } catch (err) {
+        console.error('فشل إضافة عمود nameFont:', err);
+      }
+    }
     await delay(10); // تقليل وقت الانتظار لتسريع البدء
     
     // تحميل البيانات بشكل تسلسلي لتجنب مشاكل SSL مع البيانات الكبيرة
     // ملاحظة: تم استبعاد الحقول الكبيرة (بيو وصورة الغلاف) من التحميل الأولي لتجنب أخطاء SSL
     const usersData = await User.findAll({ 
-      attributes: ['username', 'password', 'gender', 'nameColor', 'nameBackground', 'avatarFrame', 'userCardBackground', 'profileBackground', 'nameCardBorder', 'referredBy', 'createdAt'] 
+      attributes: ['username', 'password', 'gender', 'nameColor', 'nameBackground', 'avatarFrame', 'userCardBackground', 'profileBackground', 'nameCardBorder', 'nameFont', 'referredBy', 'createdAt'] 
     });
     await delay(10);
     
@@ -877,6 +896,7 @@ async function loadData() {
         userCardBackground: user.userCardBackground || null,
         profileBackground: user.profileBackground || null,
         nameCardBorder: user.nameCardBorder || null,
+        nameFont: user.nameFont || null,
         referredBy: user.referredBy || null,
         createdAt: user.createdAt
       };
@@ -1177,6 +1197,7 @@ async function saveUser(username, userData) {
       profileBackground: userData.profileBackground || null,
       profileCover: userData.profileCover || null,
       nameCardBorder: userData.nameCardBorder || null,
+      nameFont: userData.nameFont || null,
       referredBy: userData.referredBy || null
     });
     console.log(`تم حفظ بيانات المستخدم ${username} بنجاح (الإطار: ${userData.nameCardBorder || 'لا يوجد'})`);
@@ -2146,6 +2167,7 @@ socket.on('send image message', async (data) => {
     nameBackground: users[user.name]?.nameBackground,
     avatarFrame: users[user.name]?.avatarFrame,
     nameCardBorder: users[user.name]?.nameCardBorder,
+    nameFont: users[user.name]?.nameFont,
     badges: getUserBadges(user.name)
   };
   
@@ -2249,7 +2271,8 @@ socket.on('send private image', async (data) => {
             userCardBackground: userInMemory.userCardBackground,
             profileBackground: userInMemory.profileBackground,
             profileCover: userInMemory.profileCover,
-            nameCardBorder: userInMemory.nameCardBorder
+            nameCardBorder: userInMemory.nameCardBorder,
+            nameFont: userInMemory.nameFont
           });
           socket.join(userData.username); // الانضمام لغرفة المستخدم لتلقي الرسائل الخاصة
           socket.emit('ranks update', ranks); // إرسال الرتب الحالية عند تسجيل الدخول
@@ -2322,7 +2345,8 @@ socket.on('send private image', async (data) => {
     userCardBackground: null,
     profileBackground: null,
     profileCover: null,
-    nameCardBorder: null
+    nameCardBorder: null,
+    nameFont: null
   });
   socket.join(userData.username);
   socket.emit('ranks update', ranks);
@@ -2416,6 +2440,7 @@ socket.on('join room', async (data) => {
       avatarFrame: userFromDB.avatarFrame,
       userCardBackground: userFromDB.userCardBackground,
       nameCardBorder: userFromDB.nameCardBorder,
+      nameFont: userFromDB.nameFont,
       badges: getUserBadges(user.name)
     };
 
@@ -2461,6 +2486,7 @@ socket.on('join room', async (data) => {
             avatarFrame: onlineUsers[socket.id].avatarFrame,
             userCardBackground: onlineUsers[socket.id].userCardBackground,
             nameCardBorder: onlineUsers[socket.id].nameCardBorder,
+            nameFont: onlineUsers[socket.id].nameFont,
             isOnline: true
         });
     }
@@ -2521,6 +2547,7 @@ socket.on('join room', async (data) => {
           nameBackground: msg.nameBackground,
           avatarFrame: msg.avatarFrame,
           nameCardBorder: msg.nameCardBorder,
+          nameFont: msg.nameFont,
           badges: msg.badges
         };
       } else {
@@ -2594,7 +2621,8 @@ socket.on('join room', async (data) => {
             badges: getUserBadges(msg.fromUser),
             nameBackground: users[msg.fromUser]?.nameBackground,
             avatarFrame: users[msg.fromUser]?.avatarFrame,
-            nameCardBorder: users[msg.fromUser]?.nameCardBorder
+            nameCardBorder: users[msg.fromUser]?.nameCardBorder,
+            nameFont: users[msg.fromUser]?.nameFont
         });
 
         const formattedTextMsgs = textMessages.map(m => formatMsg(m, 'user'));
@@ -2763,6 +2791,7 @@ socket.on('join room', async (data) => {
       nameBackground: users[user.name]?.nameBackground,
       avatarFrame: users[user.name]?.avatarFrame,
       nameCardBorder: users[user.name]?.nameCardBorder,
+      nameFont: users[user.name]?.nameFont,
       badges: getUserBadges(user.name)
     };
     
@@ -2829,6 +2858,63 @@ socket.on('join room', async (data) => {
             }
             io.to(roomId).emit('new message', welcomeMsg);
         }, 5000); // مهلة 5 ثواني
+    }
+    
+    // --- لعبة تخمين الرقم ---
+    if (message && message.includes(systemMention) && message.includes("لعبة تخمين الرقم")) {
+        if (!guessGameState.active || guessGameState.roomId !== roomId) {
+            guessGameState.active = true;
+            guessGameState.target = Math.floor(Math.random() * 101); // 0 to 100
+            guessGameState.roomId = roomId;
+            
+            const startMsg = {
+                type: 'system',
+                user: 'رسائل النظام',
+                avatar: BOT_AVATAR_URL,
+                content: `🎮 بدأت لعبة تخمين الرقم! لقد اخترت رقماً عشوائياً بين 0 و 100. حاولوا تخمينه!`,
+                time: new Date().toLocaleTimeString('ar-SA')
+            };
+            io.to(roomId).emit('new message', startMsg);
+            if (messages[roomId]) messages[roomId].push(startMsg);
+        }
+    } else if (guessGameState.active && guessGameState.roomId === roomId) {
+        // التحقق من التخمين (إذا كانت الرسالة رقماً فقط)
+        const guess = parseInt(message.trim());
+        if (!isNaN(guess) && String(guess) === message.trim()) {
+            let replyContent = '';
+            let isWin = false;
+            
+            if (guess === guessGameState.target) {
+                isWin = true;
+                replyContent = `🎉 إجابة صحيحة! الرقم هو ${guessGameState.target}. مبروك <strong class="text-yellow-300">@${user.name}</strong> لقد فزت بـ 300 نقطة!`;
+                
+                // منح النقاط للفائز
+                if (!userPoints[user.name]) userPoints[user.name] = { points: 0, level: 1 };
+                userPoints[user.name].points += 300;
+                await saveUserPoints(user.name, userPoints[user.name].points, userPoints[user.name].level);
+                
+                guessGameState.active = false; // إيقاف اللعبة
+            } else if (guess < guessGameState.target) {
+                replyContent = `📉 الرقم أكبر من ${guess} يا <strong class="text-white">@${user.name}</strong>`;
+            } else {
+                replyContent = `📈 الرقم أصغر من ${guess} يا <strong class="text-white">@${user.name}</strong>`;
+            }
+            
+            const gameMsg = {
+                type: 'system',
+                user: 'رسائل النظام',
+                avatar: BOT_AVATAR_URL,
+                content: replyContent,
+                time: new Date().toLocaleTimeString('ar-SA'),
+                systemStatus: isWin ? 'positive' : 'neutral'
+            };
+            
+            // إرسال الرد بعد تأخير بسيط
+            setTimeout(() => {
+                 io.to(roomId).emit('new message', gameMsg);
+                 if (messages[roomId]) messages[roomId].push(gameMsg);
+            }, 500);
+        }
     }
 
     // التحقق من إجابة المسابقة
@@ -3817,6 +3903,7 @@ socket.on('leave room', async (data) => {
         profileBackground: userData ? userData.profileBackground : null,
         profileCover: userData ? userData.profileCover : null,
         nameCardBorder: userData ? userData.nameCardBorder : null,
+        nameFont: userData ? userData.nameFont : null,
         rankExpiry: userRankExpiry[username] || null, // إرسال تاريخ انتهاء الرتبة
         interactionScore: pointsData.interactionScore || 0, // درجة التفاعل
         xp: pointsData.xp || 0, // نقاط الخبرة
@@ -3909,6 +3996,9 @@ socket.on('leave room', async (data) => {
         } else if (feature === 'profileBackground') {
             await User.update({ profileBackground: value }, { where: { username } });
             users[username].profileBackground = value;
+        } else if (feature === 'nameFont') {
+            await User.update({ nameFont: value }, { where: { username } });
+            users[username].nameFont = value;
         } else if (feature === 'nameCardBorder') {
             // التحقق من أن المستخدم يملك الإنجاز الذي يعطي هذا اللون
             // تحميل الإنجازات مباشرة من قاعدة البيانات إذا لم تكن في الذاكرة
@@ -4541,7 +4631,13 @@ socket.on('get private messages', async (data) => {
 
   socket.on('get friends list', (username) => {
     const friends = userFriends[username] || [];
-    socket.emit('friends list', friends);
+    const friendsData = friends.map(friendName => ({
+        username: friendName,
+        avatar: userAvatars[friendName] || null,
+        isOnline: Object.values(onlineUsers).some(u => u.name === friendName),
+        lastSeen: userLastSeen[friendName] || null
+    }));
+    socket.emit('friends list', friendsData);
   });
 
   socket.on('get initial data', async (username) => {
@@ -5431,11 +5527,12 @@ socket.on('disconnect', async (reason) => {
             content: `🎁 قام <strong class="text-white">${senderName}</strong> بإهداء رتبة <strong class="text-yellow-300">${newRank}</strong> للمستخدم <strong class="text-white">${recipientName}</strong>!`,
             time: new Date().toLocaleTimeString('ar-SA')
           };
-          io.emit('new message', notificationMessage);
-          // حفظ في السجل
-          Object.keys(messages).forEach(roomId => {
-             if(messages[roomId]) messages[roomId].push(notificationMessage);
-          });
+          
+          const recipientSocket = onlineUsers[socket.id];
+          if (recipientSocket && recipientSocket.roomId) {
+              io.to(recipientSocket.roomId).emit('new message', notificationMessage);
+              if (messages[recipientSocket.roomId]) messages[recipientSocket.roomId].push(notificationMessage);
+          }
 
       } catch (error) {
           console.error('Error processing gift response:', error);
@@ -5956,6 +6053,15 @@ socket.on('disconnect', async (reason) => {
               }
           });
 
+          // تحديث الاسم في الغرف (لحل مشكلة بقاء الاسم القديم في قائمة غير المتصلين)
+          rooms.forEach(room => {
+              room.users.forEach(user => {
+                  if (user.name === oldUsername) {
+                      user.name = newUsername;
+                  }
+              });
+          });
+
           io.emit('user name changed', { oldUsername, newUsername });
           socket.emit('control success', `تم تغيير اسم المستخدم من ${oldUsername} إلى ${newUsername}`);
           
@@ -6373,7 +6479,8 @@ app.get('/check-auth', async (req, res) => {
                     userCardBackground: user.userCardBackground,
                     profileBackground: user.profileBackground,
                     profileCover: user.profileCover,
-                    nameCardBorder: user.nameCardBorder
+                    nameCardBorder: user.nameCardBorder,
+                    nameFont: user.nameFont
                 }
             });
         }
@@ -6418,7 +6525,8 @@ async function loadGlobalHistory() {
                     timestamp: Number(msg.timestamp),
                     rank: userRanks[msg.fromUser] || null,
                     avatar: userAvatars[msg.fromUser] || DEFAULT_AVATAR_URL,
-                    badges: getUserBadges(msg.fromUser)
+                    badges: getUserBadges(msg.fromUser),
+                    nameFont: users[msg.fromUser]?.nameFont
                 });
             });
 
@@ -6439,7 +6547,8 @@ async function loadGlobalHistory() {
                     timestamp: Number(img.timestamp),
                     rank: userRanks[img.fromUser] || null,
                     avatar: userAvatars[img.fromUser] || DEFAULT_AVATAR_URL,
-                    badges: getUserBadges(img.fromUser)
+                    badges: getUserBadges(img.fromUser),
+                    nameFont: users[img.fromUser]?.nameFont
                 });
             });
 
