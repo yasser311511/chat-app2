@@ -133,7 +133,9 @@ const UserPoints = sequelize.define('UserPoints', {
   interactionScore: { type: DataTypes.INTEGER, defaultValue: 0 }, // درجة التفاعل (عدد الدعوات)
   lastDailyClaim: { type: DataTypes.STRING, allowNull: true }, // تاريخ آخر مكافأة يومية
   dailyStreak: { type: DataTypes.INTEGER, defaultValue: 0 }, // سلسلة الأيام المتتالية
-  xp: { type: DataTypes.INTEGER, defaultValue: 0 } // نقاط الخبرة
+  xp: { type: DataTypes.INTEGER, defaultValue: 0 }, // نقاط الخبرة
+  snakeHighScore: { type: DataTypes.INTEGER, defaultValue: 0 }, // أعلى نتيجة في الثعبان (فردي)
+  snakeWins: { type: DataTypes.INTEGER, defaultValue: 0 } // عدد مرات الفوز (جماعي)
 });
 const UserLastSeen = sequelize.define('UserLastSeen', {
   username: { type: DataTypes.STRING, primaryKey: true },
@@ -350,6 +352,7 @@ let postComments = {};
 let chatImages = {};
 let pendingGiftOffers = {}; // تخزين عروض الهدايا المعلقة { recipient: { sender, itemId, rank, price } }
 let drawingHistory = []; // تخزين تاريخ الرسم
+let snakeGames = {}; // تخزين ألعاب الثعبان النشطة
 
 // --- إعدادات QuizBot ---
 let quizState = {
@@ -798,6 +801,23 @@ async function loadData() {
       }
     }
 
+    // التحقق من أعمدة لعبة الثعبان
+    const hasSnakeScore = await columnExists('UserPoints', 'snakeHighScore');
+    if (!hasSnakeScore) {
+      try {
+        await sequelize.getQueryInterface().addColumn('UserPoints', 'snakeHighScore', { type: DataTypes.INTEGER, defaultValue: 0 });
+        console.log('تم إضافة عمود snakeHighScore بنجاح');
+      } catch (err) { console.error('فشل إضافة عمود snakeHighScore:', err); }
+    }
+
+    const hasSnakeWins = await columnExists('UserPoints', 'snakeWins');
+    if (!hasSnakeWins) {
+      try {
+        await sequelize.getQueryInterface().addColumn('UserPoints', 'snakeWins', { type: DataTypes.INTEGER, defaultValue: 0 });
+        console.log('تم إضافة عمود snakeWins بنجاح');
+      } catch (err) { console.error('فشل إضافة عمود snakeWins:', err); }
+    }
+
     // التحقق من عمود nameFont
     const hasNameFont = await columnExists('Users', 'nameFont');
     if (!hasNameFont) {
@@ -830,9 +850,14 @@ async function loadData() {
     await delay(10);
 
     // تحميل الصور الرمزية - تحميل الصور ذات الحجم المعقول فقط لتجنب أخطاء SSL
-    const avatarsData = await UserAvatar.findAll({
-        where: sequelize.where(sequelize.fn('length', sequelize.col('avatarUrl')), '<', 100000)
-    });
+    let avatarsData = [];
+    try {
+        avatarsData = await UserAvatar.findAll({
+            where: sequelize.where(sequelize.fn('length', sequelize.col('avatarUrl')), '<', 50000),
+            limit: 100 // تحميل عدد محدود لتجنب أخطاء SSL
+        });
+    } catch (err) { console.error('Warning: Failed to load avatars batch (will load on demand):', err.message); }
+    
     await delay(10);
 
     // تحميل الجلسات
@@ -950,7 +975,18 @@ async function loadData() {
       userFriends[friend.username].push(friend.friendUsername);
     });
 
-    pointsData.forEach(point => { userPoints[point.username] = { points: point.points, level: point.level, isInfinite: point.isInfinite || false, showInTop: point.showInTop !== false, interactionScore: point.interactionScore || 0, xp: point.xp || 0 }; });
+    pointsData.forEach(point => { 
+        userPoints[point.username] = { 
+            points: point.points, 
+            level: point.level, 
+            isInfinite: point.isInfinite || false, 
+            showInTop: point.showInTop !== false, 
+            interactionScore: point.interactionScore || 0, 
+            xp: point.xp || 0,
+            snakeHighScore: point.snakeHighScore || 0,
+            snakeWins: point.snakeWins || 0
+        }; 
+    });
     lastSeenData.forEach(seen => userLastSeen[seen.username] = parseInt(seen.lastSeen, 10));
 
     roomManagersData.forEach(manager => {
@@ -5264,22 +5300,21 @@ socket.on('disconnect', async (reason) => {
         await saveUserPoints(toUser, userPoints[toUser].points, userPoints[toUser].level);
       }
 
-      // إرسال إشعار عام لجميع الغرف
-      const notificationMessage = {
-        type: 'system',
-        systemStatus: 'positive', // إرسال النقاط باللون الأخضر
-        user: 'رسائل النظام',
-        avatar: BOT_AVATAR_URL,
-        content: `🎁 أرسل <strong class="text-white">${fromUser}</strong> عدد <strong class="text-yellow-300">${amount}</strong> نقطة إلى <strong class="text-white">${toUser}</strong>.`,
-        time: new Date().toLocaleTimeString('en-GB')
-      };
-      io.emit('new message', notificationMessage);
-      Object.keys(messages).forEach(roomId => {
-        if (messages[roomId]) {
-            messages[roomId].push(notificationMessage);
-        }
-      });
-
+       // إرسال إشعار للغرفة الحالية فقط
+      const userRoomId = onlineUsers[socket.id]?.roomId;
+      if (userRoomId) {
+          const notificationMessage = {
+            type: 'system',
+            user: 'رسائل النظام',
+            avatar: BOT_AVATAR_URL,
+            content: `🎁 أرسل <strong class="text-white">${fromUser}</strong> عدد <strong class="text-yellow-300">${amount}</strong> نقطة إلى <strong class="text-white">${toUser}</strong>.`,
+            time: new Date().toLocaleTimeString('en-GB')
+          };
+          io.to(userRoomId).emit('new message', notificationMessage);
+          if (messages[userRoomId]) {
+              messages[userRoomId].push(notificationMessage);
+          }
+      }
       // تحديث إنجاز "كريم"
       await updateAchievementProgress(fromUser, 'gifts', amount);
 
@@ -6216,6 +6251,367 @@ socket.on('disconnect', async (reason) => {
     }
   });
 
+  // --- أحداث لعبة الثعبان (Snake Game) ---
+  
+  const SNAKE_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b']; // أحمر، أزرق، أخضر، أصفر
+  const GRID_SIZE = 20; // حجم الشبكة
+  
+  socket.on('create snake game', (data) => {
+      const { currentUser } = data;
+      const gameId = 'snake_' + Date.now();
+      
+      snakeGames[gameId] = {
+          id: gameId,
+          host: currentUser.name,
+          players: [{
+              id: socket.id,
+              username: currentUser.name,
+              color: SNAKE_COLORS[0],
+              snake: [{x: 5, y: 5}],
+              direction: {x: 1, y: 0},
+              alive: true,
+              score: 0
+          }],
+          status: 'waiting', // waiting, playing
+          food: {x: 10, y: 10},
+          interval: null
+      };
+
+      socket.join(gameId);
+      socket.emit('snake game created', { gameId });
+      socket.emit('snake game update', snakeGames[gameId]);
+
+      // إرسال إشعار للغرف العامة
+      const notificationMessage = {
+          type: 'system',
+          user: 'نظام الألعاب',
+          avatar: BOT_AVATAR_URL,
+          content: `🐍 بدأ <strong class="text-white">${currentUser.name}</strong> لعبة الثعبان! <button onclick="joinSnakeGame('${gameId}')" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-bold transition-colors mx-1">اضغط هنا للانضمام</button>`,
+          time: new Date().toLocaleTimeString('ar-SA')
+      };
+      
+      // إرسال للغرف العامة فقط
+      rooms.forEach(r => {
+          if (!r.protected) {
+              io.to(r.id).emit('new message', notificationMessage);
+              if (messages[r.id]) messages[r.id].push(notificationMessage);
+          }
+      });
+  });
+
+  socket.on('join snake game', (data) => {
+      const { gameId, currentUser } = data;
+      const game = snakeGames[gameId];
+
+      if (!game) {
+          socket.emit('snake error', 'اللعبة غير موجودة أو انتهت.');
+          return;
+      }
+      if (game.status === 'playing') {
+          socket.emit('snake error', 'اللعبة بدأت بالفعل.');
+          return;
+      }
+      if (game.players.length >= 4) {
+          socket.emit('snake error', 'اللعبة ممتلئة (الحد الأقصى 4).');
+          return;
+      }
+      if (game.players.some(p => p.username === currentUser.name)) {
+           // المستخدم موجود بالفعل، فقط قم بتحديث الواجهة
+           socket.emit('snake game update', game);
+           return;
+      }
+
+      const playerIndex = game.players.length;
+      // تحديد موقع بداية مختلف لكل لاعب
+      const startPositions = [{x:5, y:5}, {x:15, y:5}, {x:5, y:15}, {x:15, y:15}];
+      
+      game.players.push({
+          id: socket.id,
+          username: currentUser.name,
+          color: SNAKE_COLORS[playerIndex],
+          snake: [startPositions[playerIndex]],
+          direction: {x: 0, y: 0}, // يبدأ ثابت حتى يضغط زر
+          alive: true,
+          score: 0
+      });
+
+      socket.join(gameId);
+      io.to(gameId).emit('snake game update', game);
+  });
+
+  socket.on('start snake game', (gameId) => {
+    const game = snakeGames[gameId];
+    if (!game || game.status !== 'waiting' || game.host !== onlineUsers[socket.id]?.name) return;
+
+    // تهيئة اتجاهات اللاعبين ومواقعهم قبل بدء العد التنازلي ليتم رسمهم
+    game.players.forEach((p, i) => {
+        if (i === 0) p.direction = {x: 1, y: 0};
+        else if (i === 1) p.direction = {x: -1, y: 0};
+        else if (i === 2) p.direction = {x: 1, y: 0};
+        else if (i === 3) p.direction = {x: -1, y: 0};
+    });
+
+    game.status = 'countdown';
+    io.to(gameId).emit('snake game update', game); // تحديث الواجهة لرسم الثعابين ثابتة
+
+    let countdown = 3;
+    io.to(gameId).emit('snake countdown', countdown); // إرسال الرقم 3 فوراً
+
+    const countdownInterval = setInterval(() => {
+        countdown--;
+        io.to(gameId).emit('snake countdown', countdown);
+
+        if (countdown <= 0) {
+            clearInterval(countdownInterval);
+
+            game.status = 'playing';
+            game.frameCount = 0;
+
+            io.to(gameId).emit('snake game started');
+
+            game.interval = setInterval(() => {
+                updateSnakeGame(gameId);
+            }, 100);
+        }
+    }, 1000);
+  });
+
+  socket.on('snake input', (data) => {
+      const { gameId, direction } = data;
+      const game = snakeGames[gameId];
+      if (!game || game.status !== 'playing') return;
+
+      const player = game.players.find(p => p.id === socket.id);
+      if (player && player.alive) {
+          // منع العودة للخلف مباشرة
+          if (player.direction.x + direction.x === 0 && player.direction.y + direction.y === 0) return;
+          player.nextDirection = direction; // تخزين الاتجاه للدورة القادمة
+      }
+  });
+
+  socket.on('leave snake game', (gameId) => {
+      const game = snakeGames[gameId];
+      if (game) {
+          game.players = game.players.filter(p => p.id !== socket.id);
+          socket.leave(gameId);
+          
+          if (game.players.length === 0) {
+              clearInterval(game.interval);
+              delete snakeGames[gameId];
+          } else {
+              if (game.host === onlineUsers[socket.id]?.name) {
+                  game.host = game.players[0].username; // نقل المضيف
+              }
+              io.to(gameId).emit('snake game update', game);
+          }
+      }
+  });
+
+  function updateSnakeGame(gameId) {
+      const game = snakeGames[gameId];
+      if (!game) return;
+
+      const isMultiplayer = game.players.length > 1;
+      game.frameCount = (game.frameCount || 0) + 1;
+      
+      // في اللعب الجماعي: إخفاء الطعام
+      if (isMultiplayer) {
+          game.food = { x: -10, y: -10 }; 
+      }
+
+      // النمو التلقائي كل 5 ثواني تقريباً (33 إطار * 150مللي ثانية = 4.95 ثانية)
+      const shouldGrowMultiplayer = isMultiplayer && (game.frameCount % 50 === 0); // تعديل المعدل ليتناسب مع السرعة الجديدة (100ms)
+
+      // 1. حساب المواقع القادمة للرؤوس
+      const nextHeads = {};
+
+      game.players.forEach(p => {
+          if (!p.alive) return;
+
+          if (p.nextDirection) {
+              p.direction = p.nextDirection;
+              delete p.nextDirection;
+          }
+
+          const head = { ...p.snake[0] };
+          head.x += p.direction.x;
+          head.y += p.direction.y;
+          nextHeads[p.id] = head;
+      });
+
+      // 2. التحقق من التصادمات وتحديد الخاسرين
+      const playersToKill = new Set();
+
+      game.players.forEach(p => {
+          if (!p.alive) return;
+          const head = nextHeads[p.id];
+
+          // تصادم بالجدار
+          if (head.x < 0 || head.x >= 30 || head.y < 0 || head.y >= 20) { // 30x20 grid
+              playersToKill.add(p.id);
+              return;
+          }
+
+          // تصادم بالنفس
+          if (p.snake.some(s => s.x === head.x && s.y === head.y)) {
+               playersToKill.add(p.id);
+               return;
+          }
+
+          if (isMultiplayer) {
+              game.players.forEach(other => {
+                  if (p.id === other.id || !other.alive) return;
+
+                  // تصادم رأس برأس (كلاهما يخسر)
+                  const otherHead = nextHeads[other.id];
+                  if (otherHead && head.x === otherHead.x && head.y === otherHead.y) {
+                      playersToKill.add(p.id);
+                      playersToKill.add(other.id);
+                  }
+
+                  // تصادم رأس بجسم ثعبان آخر (الذي اصطدم يخسر)
+                  if (other.snake.some(s => s.x === head.x && s.y === head.y)) {
+                      playersToKill.add(p.id);
+                  }
+              });
+          }
+      });
+
+      // 3. تطبيق التحديثات
+      game.players.forEach(p => {
+          if (!p.alive) return;
+
+          if (playersToKill.has(p.id)) {
+              p.alive = false;
+              return;
+          }
+
+          const head = nextHeads[p.id];
+          p.snake.unshift(head);
+
+          if (isMultiplayer) {
+              // في اللعب الجماعي: نمو تلقائي فقط
+              if (!shouldGrowMultiplayer) {
+                  p.snake.pop();
+              }
+          } else {
+              // في اللعب الفردي: أكل الطعام
+              if (head.x === game.food.x && head.y === game.food.y) {
+                  p.score += 1; // زيادة 1
+                  // توليد طعام جديد
+                  let validFood = false;
+                  while (!validFood) {
+                      game.food = {
+                          x: Math.floor(Math.random() * 30),
+                          y: Math.floor(Math.random() * 20)
+                      };
+                      // eslint-disable-next-line no-loop-func
+                      validFood = !p.snake.some(s => s.x === game.food.x && s.y === game.food.y);
+                  }
+              } else {
+                  p.snake.pop();
+              }
+          }
+      });
+
+      io.to(gameId).emit('snake game update', game);
+
+      // 4. شروط انتهاء اللعبة
+      const alivePlayers = game.players.filter(p => p.alive);
+
+      if (isMultiplayer) {
+          if (alivePlayers.length === 0) {
+              // الجميع ماتوا (تعادل)
+              clearInterval(game.interval);
+              io.to(gameId).emit('snake game over', { winner: "تعادل!", isMultiplayer: true });
+              delete snakeGames[gameId];
+          } else if (alivePlayers.length === 1) {
+              // فائز واحد
+              clearInterval(game.interval);
+              const winnerName = alivePlayers[0].username;
+              io.to(gameId).emit('snake game over', { winner: winnerName, isMultiplayer: true });
+              delete snakeGames[gameId];
+
+              // التأكد من وجود سجل نقاط للمستخدم ثم تحديثه
+              UserPoints.findOrCreate({
+                  where: { username: winnerName },
+                  defaults: { points: 0, level: 1, snakeHighScore: 0, snakeWins: 0 }
+              }).then(([point, created]) => {
+                  if (created) {
+                      userPoints[winnerName] = point.get({ plain: true });
+                  }
+                  const newWins = (userPoints[winnerName]?.snakeWins || 0) + 1;
+                  userPoints[winnerName].snakeWins = newWins;
+
+                  // حفظ في قاعدة البيانات
+                  point.update({ snakeWins: newWins }).catch(err => console.error('Error saving snake wins:', err));
+
+                  // إرسال إشعار للفائز
+                  const winnerSocket = Object.values(onlineUsers).find(u => u.name === winnerName);
+                  if (winnerSocket) io.to(winnerSocket.id).emit('snake win update', newWins);
+              }).catch(err => console.error('Error finding/creating user points for snake winner:', err));
+          }
+      } else {
+          // لاعب واحد
+          if (alivePlayers.length === 0) {
+              clearInterval(game.interval);
+              const finalScore = game.players[0].score;
+              const playerName = game.players[0].username;
+              
+              io.to(gameId).emit('snake game over', { winner: `انتهت اللعبة (النتيجة: ${finalScore})`, isMultiplayer: false });
+              delete snakeGames[gameId];
+
+              // التأكد من وجود سجل نقاط للمستخدم ثم تحديثه
+              UserPoints.findOrCreate({
+                  where: { username: playerName },
+                  defaults: { points: 0, level: 1, snakeHighScore: 0, snakeWins: 0 }
+              }).then(([point, created]) => {
+                  if (created) {
+                      userPoints[playerName] = point.get({ plain: true });
+                  }
+                  if (finalScore > (userPoints[playerName]?.snakeHighScore || 0)) {
+                      userPoints[playerName].snakeHighScore = finalScore;
+                      point.update({ snakeHighScore: finalScore }).catch(err => console.error('Error saving snake high score:', err));
+                  }
+              }).catch(err => console.error('Error finding/creating user points for snake score:', err));
+          }
+      }
+  }
+
+  // --- لوحة ملوك الثعبان ---
+  socket.on('get snake leaderboard', async () => {
+      try {
+          // جلب أفضل 10 في الفردي (النقاط)
+          const topSingle = await UserPoints.findAll({
+              where: { snakeHighScore: { [Sequelize.Op.gt]: 0 } },
+              order: [['snakeHighScore', 'DESC']],
+              limit: 10,
+              attributes: ['username', 'snakeHighScore']
+          });
+
+          // جلب أفضل 10 في الجماعي (الكؤوس)
+          const topMulti = await UserPoints.findAll({
+              where: { snakeWins: { [Sequelize.Op.gt]: 0 } },
+              order: [['snakeWins', 'DESC']],
+              limit: 10,
+              attributes: ['username', 'snakeWins']
+          });
+
+          const formatList = (list, type) => list.map(u => ({
+              username: u.username,
+              value: type === 'single' ? u.snakeHighScore : u.snakeWins,
+              avatar: userAvatars[u.username] || DEFAULT_AVATAR_URL
+          }));
+
+          socket.emit('snake leaderboard data', {
+              single: formatList(topSingle, 'single'),
+              multi: formatList(topMulti, 'multi')
+          });
+      } catch (error) {
+          console.error('Error fetching snake leaderboard:', error);
+      }
+  });
+
   // --- أحداث إدارة المسابقات ---
   socket.on('get quiz questions', async (data) => {
     const { currentUser } = data;
@@ -6377,6 +6773,40 @@ socket.on('disconnect', async (reason) => {
           prizeValue: selectedPrize.value,
           remainingPoints: userPoint.points 
       });
+  });
+
+  // --- لوحة ملوك الثعبان ---
+  socket.on('get snake leaderboard', async () => {
+      try {
+          // جلب أفضل 10 في الفردي (النقاط) - للجميع بدون استثناء
+          const topSingle = await UserPoints.findAll({
+              where: { snakeHighScore: { [Sequelize.Op.gt]: 0 } },
+              order: [['snakeHighScore', 'DESC']],
+              limit: 10,
+              attributes: ['username', 'snakeHighScore']
+          });
+
+          // جلب أفضل 10 في الجماعي (الكؤوس) - للجميع بدون استثناء
+          const topMulti = await UserPoints.findAll({
+              where: { snakeWins: { [Sequelize.Op.gt]: 0 } },
+              order: [['snakeWins', 'DESC']],
+              limit: 10,
+              attributes: ['username', 'snakeWins']
+          });
+
+          const formatList = (list, type) => list.map(u => ({
+              username: u.username,
+              value: type === 'single' ? u.snakeHighScore : u.snakeWins,
+              avatar: userAvatars[u.username] || DEFAULT_AVATAR_URL
+          }));
+
+          socket.emit('snake leaderboard data', {
+              single: formatList(topSingle, 'single'),
+              multi: formatList(topMulti, 'multi')
+          });
+      } catch (error) {
+          console.error('Error fetching snake leaderboard:', error);
+      }
   });
 
   // --- لوحة الشرف (XP Leaderboard) ---
