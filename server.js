@@ -5183,6 +5183,30 @@ socket.on('get private messages', async (data) => {
   // في حدث disconnect - البحث عن هذا الجزء واستبداله
 socket.on('disconnect', async (reason) => {
     const user = onlineUsers[socket.id];
+    
+    // --- تنظيف ألعاب الثعبان عند الانقطاع ---
+    // البحث عن اللاعب في جميع الألعاب النشطة وإخراجه
+    Object.keys(snakeGames).forEach(gameId => {
+        const game = snakeGames[gameId];
+        const playerIndex = game.players.findIndex(p => p.id === socket.id);
+        if (playerIndex !== -1) {
+            game.players.splice(playerIndex, 1);
+            // إذا فرغت اللعبة، قم بإنهائها فوراً
+            if (game.players.length === 0) {
+                if (game.timeout) clearTimeout(game.timeout);
+                if (game.interval) clearInterval(game.interval);
+                delete snakeGames[gameId];
+            } else {
+                // نقل المضيف إذا كان هو من خرج
+                if (game.host === user?.name && game.players.length > 0) {
+                    game.host = game.players[0].username;
+                }
+                io.to(gameId).emit('snake game update', game);
+            }
+        }
+    });
+    // ---------------------------------------
+
     if (user) {
       const roomId = user.roomId;
       const room = rooms.find(r => r.id === roomId);
@@ -6267,7 +6291,7 @@ socket.on('disconnect', async (reason) => {
               id: socket.id,
               username: currentUser.name,
               color: SNAKE_COLORS[0],
-              snake: [{x: 5, y: 5}],
+              snake: [{x: 2, y: 2}],
               direction: {x: 1, y: 0},
               alive: true,
               score: 0
@@ -6323,7 +6347,7 @@ socket.on('disconnect', async (reason) => {
 
       const playerIndex = game.players.length;
       // تحديد موقع بداية مختلف لكل لاعب
-      const startPositions = [{x:5, y:5}, {x:15, y:5}, {x:5, y:15}, {x:15, y:15}];
+      const startPositions = [{x:2, y:2}, {x:27, y:2}, {x:2, y:17}, {x:27, y:17}];
       
       game.players.push({
           id: socket.id,
@@ -6396,7 +6420,8 @@ socket.on('disconnect', async (reason) => {
           socket.leave(gameId);
           
           if (game.players.length === 0) {
-              clearInterval(game.interval);
+              if (game.timeout) clearTimeout(game.timeout);
+              if (game.interval) clearInterval(game.interval);
               delete snakeGames[gameId];
           } else {
               if (game.host === onlineUsers[socket.id]?.name) {
@@ -6406,6 +6431,33 @@ socket.on('disconnect', async (reason) => {
           }
       }
   });
+
+  // دالة تشغيل حلقة اللعبة بسرعة متغيرة
+  function runSnakeGameLoop(gameId) {
+      const game = snakeGames[gameId];
+      if (!game) return;
+
+      updateSnakeGame(gameId);
+
+      // التحقق من وجود اللعبة بعد التحديث (قد تكون انتهت وحذفت)
+      if (!snakeGames[gameId]) return;
+
+      // حساب السرعة: تبدأ بـ 200ms وتقل (تسرع) كلما زاد الوقت
+      // تقل بمقدار 5ms كل 50 إطار (حوالي كل 10 ثواني)
+      let delay = 200;
+      
+      // بداية بطيئة لأول 3 ثواني (حوالي 6 إطارات)
+      if (game.frameCount <= 6) {
+          delay = 500; 
+      } else if (game.frameCount) {
+          const speedIncrease = Math.floor((game.frameCount - 6) / 50) * 5;
+          delay = Math.max(80, 200 - speedIncrease); // الحد الأقصى للسرعة 80ms
+      }
+
+      game.timeout = setTimeout(() => {
+          runSnakeGameLoop(gameId);
+      }, delay);
+  }
 
   function updateSnakeGame(gameId) {
       const game = snakeGames[gameId];
@@ -6500,13 +6552,16 @@ socket.on('disconnect', async (reason) => {
                   p.score += 1; // زيادة 1
                   // توليد طعام جديد
                   let validFood = false;
-                  while (!validFood) {
+                  let attempts = 0;
+                  // حماية من الحلقة اللانهائية (بحد أقصى 100 محاولة)
+                  while (!validFood && attempts < 100) {
                       game.food = {
                           x: Math.floor(Math.random() * 30),
                           y: Math.floor(Math.random() * 20)
                       };
                       // eslint-disable-next-line no-loop-func
                       validFood = !p.snake.some(s => s.x === game.food.x && s.y === game.food.y);
+                      attempts++;
                   }
               } else {
                   p.snake.pop();
@@ -6522,12 +6577,12 @@ socket.on('disconnect', async (reason) => {
       if (isMultiplayer) {
           if (alivePlayers.length === 0) {
               // الجميع ماتوا (تعادل)
-              clearInterval(game.interval);
+              if (game.timeout) clearTimeout(game.timeout);
               io.to(gameId).emit('snake game over', { winner: "تعادل!", isMultiplayer: true });
               delete snakeGames[gameId];
           } else if (alivePlayers.length === 1) {
               // فائز واحد
-              clearInterval(game.interval);
+              if (game.timeout) clearTimeout(game.timeout);
               const winnerName = alivePlayers[0].username;
               io.to(gameId).emit('snake game over', { winner: winnerName, isMultiplayer: true });
               delete snakeGames[gameId];
@@ -6554,7 +6609,7 @@ socket.on('disconnect', async (reason) => {
       } else {
           // لاعب واحد
           if (alivePlayers.length === 0) {
-              clearInterval(game.interval);
+              if (game.timeout) clearTimeout(game.timeout);
               const finalScore = game.players[0].score;
               const playerName = game.players[0].username;
               
