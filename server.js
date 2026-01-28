@@ -353,6 +353,7 @@ let chatImages = {};
 let pendingGiftOffers = {}; // تخزين عروض الهدايا المعلقة { recipient: { sender, itemId, rank, price } }
 let drawingHistory = []; // تخزين تاريخ الرسم
 let snakeGames = {}; // تخزين ألعاب الثعبان النشطة
+let battleRoyaleGames = {}; // تخزين ألعاب باتل رويال
 
 // --- إعدادات QuizBot ---
 let quizState = {
@@ -5205,6 +5206,25 @@ socket.on('disconnect', async (reason) => {
             }
         }
     });
+
+    // --- تنظيف ألعاب باتل رويال عند الانقطاع ---
+    Object.keys(battleRoyaleGames).forEach(gameId => {
+        const game = battleRoyaleGames[gameId];
+        const playerIndex = game.players.findIndex(p => p.id === socket.id);
+        if (playerIndex !== -1) {
+            game.players.splice(playerIndex, 1);
+            if (game.players.length === 0) {
+                if(game.interval) clearInterval(game.interval);
+                delete battleRoyaleGames[gameId];
+            } else {
+                // إذا كان المضيف هو من خرج، انقل المضيفة
+                if (game.host === user?.name && game.players.length > 0) {
+                    game.host = game.players[0].username;
+                }
+                io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(game));
+            }
+        }
+    });
     // ---------------------------------------
 
     if (user) {
@@ -6680,6 +6700,58 @@ socket.on('disconnect', async (reason) => {
       }
   }
 
+  function updateBattleRoyaleGame(gameId) {
+    const game = battleRoyaleGames[gameId];
+    if (!game || game.status !== 'playing') {
+      if (game && game.interval) clearInterval(game.interval);
+      return;
+    }
+  
+    // 1. Move projectiles
+    game.projectiles.forEach((p, index) => {
+      if (p.dir === 'up') p.y--;
+      else if (p.dir === 'down') p.y++;
+      else if (p.dir === 'left') p.x--;
+      else if (p.dir === 'right') p.x++;
+  
+      // 2. Check for collisions
+      // Wall collision
+      if (p.x < 0 || p.x >= game.map[0].length || p.y < 0 || p.y >= game.map.length || game.map[p.y][p.x] === 1) {
+        game.projectiles.splice(index, 1);
+        return;
+      }
+  
+      // Player collision
+      let hit = false;
+      game.players.forEach(player => {
+        if (player.health > 0 && player.id !== p.ownerId && player.x === p.x && player.y === p.y) {
+          player.health -= 25; // Damage
+          hit = true;
+          if (player.health <= 0) {
+            // Player is out
+            io.to(gameId).emit('battleRoyale player out', player.username);
+          }
+        }
+      });
+      if(hit) {
+          game.projectiles.splice(index, 1);
+      }
+    });
+  
+    // 3. Check for winner
+    const alivePlayers = game.players.filter(p => p.health > 0);
+    if (alivePlayers.length === 1 && game.players.length > 1) {
+      game.status = 'over';
+      game.winner = alivePlayers[0].username;
+      if (game.interval) clearInterval(game.interval);
+      io.to(gameId).emit('battleRoyale game update', game);
+      delete battleRoyaleGames[gameId];
+    } else {
+      // 4. Emit update
+      io.to(gameId).emit('battleRoyale game update', game);
+    }
+  }
+
   // --- لوحة ملوك الثعبان ---
   socket.on('get snake leaderboard', async () => {
       try {
@@ -6723,6 +6795,177 @@ socket.on('disconnect', async (reason) => {
       if (userPoints[user.name] && score > (userPoints[user.name].snakeHighScore || 0)) {
           userPoints[user.name].snakeHighScore = score;
           await UserPoints.update({ snakeHighScore: score }, { where: { username: user.name } });
+      }
+  });
+
+  // --- أحداث لعبة باتل رويال ---
+  socket.on('create battleRoyale game', (data) => {
+      const { currentUser } = data;
+      const gameId = 'br_' + Date.now();
+
+      const MAP_WIDTH = 30;
+      const MAP_HEIGHT = 20;
+      const map = Array(MAP_HEIGHT).fill(0).map(() => Array(MAP_WIDTH).fill(0));
+      for(let i = 0; i < 45; i++) { // 45 عائق عشوائي
+          const x = Math.floor(Math.random() * (MAP_WIDTH - 2)) + 1;
+          const y = Math.floor(Math.random() * (MAP_HEIGHT - 2)) + 1;
+          map[y][x] = 1; // 1 = جدار
+      }
+      
+      battleRoyaleGames[gameId] = {
+          id: gameId,
+          host: currentUser.name,
+          players: [{
+              id: socket.id,
+              username: currentUser.name,
+              avatar: userAvatars[currentUser.name] || DEFAULT_AVATAR_URL,
+              isReady: false,
+              x: 1, y: 1,
+              health: 100, maxHealth: 100,
+              weapon: 'gun', // يبدأ بسلاح
+              direction: 'down',
+              color: '#3b82f6'
+          }],
+          status: 'waiting', // waiting, playing, over
+          map: map,
+          items: [], // يمكن إضافة أسلحة أو دروع هنا لاحقاً
+          projectiles: [],
+          winner: null,
+          interval: null
+      };
+
+      socket.join(gameId);
+      socket.emit('battleRoyale game created', { gameId });
+      io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(battleRoyaleGames[gameId]));
+
+      // إرسال إشعار للغرف العامة
+      const notificationMessage = {
+          type: 'system',
+          user: 'نظام الألعاب',
+          avatar: BOT_AVATAR_URL,
+          content: `🔫 بدأ <strong class="text-white">${currentUser.name}</strong> لعبة باتل رويال! <button onclick="joinBattleRoyaleGame('${gameId}')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition-colors mx-1">اضغط هنا للانضمام</button>`,
+          time: new Date().toLocaleTimeString('ar-SA')
+      };
+      rooms.forEach(r => {
+          if (!r.protected) {
+              io.to(r.id).emit('new message', notificationMessage);
+              if (messages[r.id]) messages[r.id].push(notificationMessage);
+          }
+      });
+  });
+
+  socket.on('join battleRoyale game', (data) => {
+      const { gameId, currentUser } = data;
+      const game = battleRoyaleGames[gameId];
+
+      if (game && game.status === 'waiting') {
+          if (game.players.some(p => p.username === currentUser.name)) return;
+           if (game.players.length >= 4) {
+               socket.emit('battleRoyale error', 'الغرفة ممتلئة.');
+               return;
+           }
+
+           const startPositions = [{x:1,y:1}, {x:28,y:1}, {x:1,y:18}, {x:28,y:18}];
+           const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b'];
+           const playerIndex = game.players.length;
+           
+          game.players.push({
+              id: socket.id,
+              username: currentUser.name,
+              avatar: userAvatars[currentUser.name] || DEFAULT_AVATAR_URL,
+              isReady: false,
+              x: startPositions[playerIndex].x, y: startPositions[playerIndex].y,
+              health: 100, maxHealth: 100,
+              weapon: 'gun',
+              direction: 'down',
+              color: colors[playerIndex]
+          });
+
+          socket.join(gameId);
+          io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(game));
+      }
+  });
+
+  socket.on('battleRoyale toggle ready', (gameId) => {
+      const game = battleRoyaleGames[gameId];
+      if (game && game.status === 'waiting') {
+          const player = game.players.find(p => p.id === socket.id);
+          if (player) {
+              player.isReady = !player.isReady;
+              io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(game));
+          }
+      }
+  });
+
+  socket.on('start battleRoyale game', (gameId) => {
+      const game = battleRoyaleGames[gameId];
+      if (!game || game.status !== 'waiting' || game.host !== onlineUsers[socket.id]?.name) return;
+
+      if (game.players.length < 2) {
+          socket.emit('battleRoyale error', 'يجب وجود لاعبين اثنين على الأقل.');
+          return;
+      }
+      if (!game.players.every(p => p.isReady)) {
+          socket.emit('battleRoyale error', 'يجب أن يكون الجميع مستعدين.');
+          return;
+      }
+
+      game.status = 'playing';
+      io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(game));
+      game.interval = setInterval(() => updateBattleRoyaleGame(gameId), 100); // Game loop
+  });
+
+  socket.on('battleRoyale move', (data) => {
+    const { gameId, direction } = data;
+    const game = battleRoyaleGames[gameId];
+    if (!game || game.status !== 'playing') return;
+    const player = game.players.find(p => p.id === socket.id);
+    if (!player || player.health <= 0) return;
+
+    let newX = player.x;
+    let newY = player.y;
+
+    if (direction === 'up') { newY--; player.direction = 'up'; }
+    else if (direction === 'down') { newY++; player.direction = 'down'; }
+    else if (direction === 'left') { newX--; player.direction = 'left'; }
+    else if (direction === 'right') { newX++; player.direction = 'right'; }
+
+    // التحقق من حدود الخريطة والجدران
+    if (newX >= 0 && newX < game.map[0].length && newY >= 0 && newY < game.map.length && game.map[newY][newX] === 0) {
+        player.x = newX;
+        player.y = newY;
+    }
+  });
+
+  socket.on('battleRoyale shoot', (gameId) => {
+    const game = battleRoyaleGames[gameId];
+    if (!game || game.status !== 'playing') return;
+    const player = game.players.find(p => p.id === socket.id);
+    if (!player || player.health <= 0 || !player.weapon) return;
+
+    const projectile = {
+        x: player.x,
+        y: player.y,
+        dir: player.direction,
+        ownerId: player.id,
+        id: 'proj_' + Date.now() + Math.random()
+    };
+    game.projectiles.push(projectile);
+  });
+
+  socket.on('leave battleRoyale game', (gameId) => {
+      const game = battleRoyaleGames[gameId];
+      if (game) {
+          game.players = game.players.filter(p => p.id !== socket.id);
+          socket.leave(gameId);
+          if (game.players.length === 0) {
+              if(game.interval) clearInterval(game.interval);
+              delete battleRoyaleGames[gameId];
+          } else {
+              if (game.host === onlineUsers[socket.id]?.name) game.host = game.players[0].username;
+              io.to(gameId).emit('battleRoyale game update', game);
+              io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(game));
+          }
       }
   });
 
@@ -6987,6 +7230,64 @@ socket.on('disconnect', async (reason) => {
       }
   });
 });
+
+function updateBattleRoyaleGame(gameId) {
+  const game = battleRoyaleGames[gameId];
+  if (!game || game.status !== 'playing') {
+    if (game && game.interval) clearInterval(game.interval);
+    return;
+  }
+
+  // 1. Move projectiles
+  game.projectiles.forEach((p, index) => {
+    if (p.dir === 'up') p.y--;
+    else if (p.dir === 'down') p.y++;
+    else if (p.dir === 'left') p.x--;
+    else if (p.dir === 'right') p.x++;
+
+    // 2. Check for collisions
+    // Wall collision
+    if (p.x < 0 || p.x >= game.map[0].length || p.y < 0 || p.y >= game.map.length || game.map[p.y][p.x] === 1) {
+      game.projectiles.splice(index, 1);
+      return;
+    }
+
+    // Player collision
+    let hit = false;
+    game.players.forEach(player => {
+      if (player.health > 0 && player.id !== p.ownerId && player.x === p.x && player.y === p.y) {
+        player.health -= 25; // Damage
+        hit = true;
+        if (player.health <= 0) {
+          // Player is out
+          io.to(gameId).emit('battleRoyale player out', player.username);
+        }
+      }
+    });
+    if(hit) {
+        game.projectiles.splice(index, 1);
+    }
+  });
+
+  // 3. Check for winner
+  const alivePlayers = game.players.filter(p => p.health > 0);
+  if (alivePlayers.length === 1 && game.players.length > 1) {
+    game.status = 'over';
+    game.winner = alivePlayers[0].username;
+    if (game.interval) clearInterval(game.interval);
+    io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(game));
+    delete battleRoyaleGames[gameId];
+  } else {
+    // 4. Emit update
+    io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(game));
+  }
+}
+
+function getSanitizedBattleRoyaleGame(game) {
+    if (!game) return null;
+    const { interval, ...sanitized } = game;
+    return sanitized;
+}
 
 app.get('/api/rooms', (req, res) => {
   res.json(rooms);
