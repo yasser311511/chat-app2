@@ -5201,7 +5201,7 @@ socket.on('disconnect', async (reason) => {
                 if (game.host === user?.name && game.players.length > 0) {
                     game.host = game.players[0].username;
                 }
-                io.to(gameId).emit('snake game update', game);
+                io.to(gameId).emit('snake game update', getSanitizedGame(game));
             }
         }
     });
@@ -6280,6 +6280,13 @@ socket.on('disconnect', async (reason) => {
   const SNAKE_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b']; // أحمر، أزرق، أخضر، أصفر
   const GRID_SIZE = 20; // حجم الشبكة
   
+  // دالة مساعدة لتنظيف كائن اللعبة من البيانات الداخلية قبل الإرسال
+  function getSanitizedGame(game) {
+      if (!game) return null;
+      const { timeout, interval, ...sanitized } = game;
+      return sanitized;
+  }
+
   socket.on('create snake game', (data) => {
       const { currentUser } = data;
       const gameId = 'snake_' + Date.now();
@@ -6294,7 +6301,8 @@ socket.on('disconnect', async (reason) => {
               snake: [{x: 2, y: 2}],
               direction: {x: 1, y: 0},
               alive: true,
-              score: 0
+              score: 0,
+              isReady: false // حالة الاستعداد
           }],
           status: 'waiting', // waiting, playing
           food: {x: 10, y: 10},
@@ -6303,7 +6311,7 @@ socket.on('disconnect', async (reason) => {
 
       socket.join(gameId);
       socket.emit('snake game created', { gameId });
-      socket.emit('snake game update', snakeGames[gameId]);
+      socket.emit('snake game update', getSanitizedGame(snakeGames[gameId]));
 
       // إرسال إشعار للغرف العامة
       const notificationMessage = {
@@ -6341,7 +6349,7 @@ socket.on('disconnect', async (reason) => {
       }
       if (game.players.some(p => p.username === currentUser.name)) {
            // المستخدم موجود بالفعل، فقط قم بتحديث الواجهة
-           socket.emit('snake game update', game);
+           socket.emit('snake game update', getSanitizedGame(game));
            return;
       }
 
@@ -6356,16 +6364,30 @@ socket.on('disconnect', async (reason) => {
           snake: [startPositions[playerIndex]],
           direction: {x: 0, y: 0}, // يبدأ ثابت حتى يضغط زر
           alive: true,
-          score: 0
+          score: 0,
+          isReady: false // حالة الاستعداد
       });
 
       socket.join(gameId);
-      io.to(gameId).emit('snake game update', game);
+      io.to(gameId).emit('snake game update', getSanitizedGame(game));
   });
 
   socket.on('start snake game', (gameId) => {
     const game = snakeGames[gameId];
     if (!game || game.status !== 'waiting' || game.host !== onlineUsers[socket.id]?.name) return;
+
+    // التحقق من عدد اللاعبين
+    if (game.players.length < 2) {
+        socket.emit('snake error', 'لا يمكن بدء اللعبة، يجب وجود لاعبين اثنين على الأقل.');
+        return;
+    }
+
+    // التحقق من أن جميع اللاعبين مستعدون
+    const allReady = game.players.every(p => p.isReady);
+    if (!allReady) {
+        socket.emit('snake error', 'يجب أن يكون جميع اللاعبين مستعدين (Ready) لبدء اللعبة.');
+        return;
+    }
 
     // تهيئة اتجاهات اللاعبين ومواقعهم قبل بدء العد التنازلي ليتم رسمهم
     game.players.forEach((p, i) => {
@@ -6376,7 +6398,7 @@ socket.on('disconnect', async (reason) => {
     });
 
     game.status = 'countdown';
-    io.to(gameId).emit('snake game update', game); // تحديث الواجهة لرسم الثعابين ثابتة
+    io.to(gameId).emit('snake game update', getSanitizedGame(game)); // تحديث الواجهة لرسم الثعابين ثابتة
 
     let countdown = 3;
     io.to(gameId).emit('snake countdown', countdown); // إرسال الرقم 3 فوراً
@@ -6398,6 +6420,31 @@ socket.on('disconnect', async (reason) => {
             }, 100);
         }
     }, 1000);
+  });
+
+  // تغيير لون الثعبان
+  socket.on('snake update color', (data) => {
+      const { gameId, color } = data;
+      const game = snakeGames[gameId];
+      if (game && game.status === 'waiting') {
+          const player = game.players.find(p => p.id === socket.id);
+          if (player) {
+              player.color = color;
+              io.to(gameId).emit('snake game update', getSanitizedGame(game));
+          }
+      }
+  });
+
+  // تبديل حالة الاستعداد
+  socket.on('snake toggle ready', (gameId) => {
+      const game = snakeGames[gameId];
+      if (game && game.status === 'waiting') {
+          const player = game.players.find(p => p.id === socket.id);
+          if (player) {
+              player.isReady = !player.isReady;
+              io.to(gameId).emit('snake game update', getSanitizedGame(game));
+          }
+      }
   });
 
   socket.on('snake input', (data) => {
@@ -6427,7 +6474,7 @@ socket.on('disconnect', async (reason) => {
               if (game.host === onlineUsers[socket.id]?.name) {
                   game.host = game.players[0].username; // نقل المضيف
               }
-              io.to(gameId).emit('snake game update', game);
+              io.to(gameId).emit('snake game update', getSanitizedGame(game));
           }
       }
   });
@@ -6569,7 +6616,7 @@ socket.on('disconnect', async (reason) => {
           }
       });
 
-      io.to(gameId).emit('snake game update', game);
+      io.to(gameId).emit('snake game update', getSanitizedGame(game));
 
       // 4. شروط انتهاء اللعبة
       const alivePlayers = game.players.filter(p => p.alive);
@@ -6664,6 +6711,18 @@ socket.on('disconnect', async (reason) => {
           });
       } catch (error) {
           console.error('Error fetching snake leaderboard:', error);
+      }
+  });
+
+  // تسجيل نتيجة اللعب الفردي (Client-side)
+  socket.on('record snake score', async (score) => {
+      const user = onlineUsers[socket.id];
+      if (!user) return;
+      
+      // تحديث أعلى نتيجة إذا كانت النتيجة الحالية أكبر
+      if (userPoints[user.name] && score > (userPoints[user.name].snakeHighScore || 0)) {
+          userPoints[user.name].snakeHighScore = score;
+          await UserPoints.update({ snakeHighScore: score }, { where: { username: user.name } });
       }
   });
 
