@@ -902,6 +902,47 @@
     50% { opacity: 1; transform: scale(1.05); }
 }
 
+/* إطارات جديدة */
+.frame-golden-rain {
+    border: 3px solid #ffd700;
+    box-shadow: 0 0 10px #ffd700, inset 0 0 5px #ffd700;
+    animation: golden-pulse 2s infinite;
+}
+@keyframes golden-pulse {
+    0% { box-shadow: 0 0 5px #ffd700, inset 0 0 5px #ffd700; border-color: #ffd700; }
+    50% { box-shadow: 0 0 20px #ffd700, inset 0 0 10px #ffd700; border-color: #fff; }
+    100% { box-shadow: 0 0 5px #ffd700, inset 0 0 5px #ffd700; border-color: #ffd700; }
+}
+
+.frame-matrix-rain {
+    border: 3px dashed #00ff00;
+    box-shadow: 0 0 10px #00ff00;
+    animation: spin 10s linear infinite;
+}
+
+.frame-fast-emerald {
+    border: 3px solid #50c878;
+    box-shadow: 0 0 15px #50c878;
+    animation: emerald-flash 0.5s infinite alternate;
+}
+@keyframes emerald-flash {
+    from { border-color: #50c878; box-shadow: 0 0 10px #50c878; }
+    to { border-color: #aaffc3; box-shadow: 0 0 25px #50c878; }
+}
+
+.frame-electricity {
+    border: 3px solid #00bfff;
+    box-shadow: 0 0 10px #00bfff;
+    animation: electric-jitter 0.3s infinite;
+}
+@keyframes electric-jitter {
+    0% { transform: translate(0, 0); border-color: #00bfff; }
+    25% { transform: translate(1px, 1px); border-color: #fff; }
+    50% { transform: translate(-1px, -1px); border-color: #00bfff; }
+    75% { transform: translate(-1px, 1px); border-color: #fff; }
+    100% { transform: translate(1px, -1px); border-color: #00bfff; }
+}
+
 /* خيارات الألوان في الميزات */
 .color-option { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.2s; }
 .color-option:hover { transform: scale(1.2); }
@@ -1600,9 +1641,9 @@
                     <span class="font-bold">لعبة الثعبان</span>
                 </button>
 
-                <button onclick="openBattleRoyaleGame(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-red-600/20 hover:text-red-400 transition-all group">
-                    <div class="bg-gray-800 p-2 rounded-lg text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg></div>
-                    <span class="font-bold">ميني باتل رويال 🔫</span>
+                <button onclick="startHideAndSeekGame(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-indigo-600/20 hover:text-indigo-400 transition-all group">
+                    <div class="bg-gray-800 p-2 rounded-lg text-indigo-500 group-hover:bg-indigo-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></div>
+                    <span class="font-bold">لعبة الاختباء 🕵️‍♂️</span>
                 </button>
 
                 <button onclick="openSnakeLeaderboard(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-yellow-600/20 hover:text-yellow-400 transition-all group">
@@ -3190,99 +3231,6 @@
     </div>
 </div>
 
-<!-- نافذة لعبة باتل رويال -->
-<div id="battleRoyaleModal" class="profile-modal">
-    <div class="profile-content custom-scrollbar" style="max-width: 800px;">
-        <div class="relative bg-gray-800 p-4 text-center border-b border-gray-700">
-             <button onclick="closeBattleRoyaleGame()" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-            <h2 class="text-xl font-bold text-white">🔫 ميني باتل رويال</h2>
-        </div>
-
-        <div class="p-4 bg-gray-900/90 flex flex-col items-center min-h-[400px]">
-            <!-- شاشة الانتظار -->
-            <div id="battleRoyaleLobby" class="w-full text-center mb-4">
-                <h3 class="text-white font-bold mb-2">قاعة الانتظار</h3>
-                <div id="battleRoyalePlayersList" class="flex justify-center gap-4 mb-4 flex-wrap">
-                    <!-- سيتم ملء اللاعبين هنا -->
-                </div>
-                <div class="flex gap-3 justify-center">
-                    <button id="battleRoyaleReadyBtn" onclick="toggleBattleRoyaleReady()" class="bg-gray-600 hover:bg-gray-500 text-white px-6 py-2 rounded-full font-bold transition-colors">استعداد ✅</button>
-                    <button id="startBattleRoyaleBtn" onclick="startBattleRoyaleGame()" class="hidden bg-green-600 hover:bg-green-700 text-white px-8 py-2 rounded-full font-bold shadow-lg animate-pulse">ابدأ اللعبة 🎮</button>
-                </div>
-                <button id="createBattleRoyaleBtn" onclick="createBattleRoyaleGame()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 rounded-full font-bold shadow-lg mt-4">
-                    إنشاء غرفة جديدة 🆕
-                </button>
-            </div>
-
-            <!-- شاشة اللعب -->
-            <div id="battleRoyaleGameArea" class="hidden w-full relative flex flex-col items-center">
-                <canvas id="battleRoyaleCanvas" width="600" height="400" class="bg-black border-2 border-gray-700 rounded-lg shadow-2xl w-full h-auto max-w-full touch-none"></canvas>
-                <div id="battleRoyaleWinnerOverlay" class="hidden absolute inset-0 bg-black/70 flex items-center justify-center text-3xl font-bold text-yellow-400"></div>
-                <!-- Mobile Controls -->
-                <div id="battleRoyaleControls" class="grid grid-cols-3 gap-4 mt-4 md:hidden w-full max-w-[280px] mx-auto" dir="ltr">
-                    <div></div>
-                    <button onclick="sendBattleRoyaleMove('up')" class="bg-gray-700/90 active:bg-gray-600 p-5 rounded-2xl text-3xl shadow-lg">⬆️</button>
-                    <button onclick="sendBattleRoyaleShoot()" class="bg-red-600/80 active:bg-red-500 p-5 rounded-full text-3xl shadow-lg">💥</button>
-                    <button onclick="sendBattleRoyaleMove('left')" class="bg-gray-700/90 active:bg-gray-600 p-5 rounded-2xl text-3xl shadow-lg">⬅️</button>
-                    <button onclick="sendBattleRoyaleMove('down')" class="bg-gray-700/90 active:bg-gray-600 p-5 rounded-2xl text-3xl shadow-lg">⬇️</button>
-                    <button onclick="sendBattleRoyaleMove('right')" class="bg-gray-700/90 active:bg-gray-600 p-5 rounded-2xl text-3xl shadow-lg">➡️</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- نافذة لعبة باتل رويال -->
-<div id="battleRoyaleModal" class="profile-modal">
-    <div class="profile-content custom-scrollbar" style="max-width: 800px;">
-        <div class="relative bg-gray-800 p-4 text-center border-b border-gray-700">
-             <button onclick="closeBattleRoyaleGame()" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-            <h2 class="text-xl font-bold text-white">🔫 ميني باتل رويال</h2>
-        </div>
-
-        <div class="p-4 bg-gray-900/90 flex flex-col items-center min-h-[400px]">
-            <!-- شاشة الانتظار -->
-            <div id="battleRoyaleLobby" class="w-full text-center mb-4">
-                <h3 class="text-white font-bold mb-2">قاعة الانتظار</h3>
-                <div id="battleRoyalePlayersList" class="flex justify-center gap-4 mb-4 flex-wrap">
-                    <!-- سيتم ملء اللاعبين هنا -->
-                </div>
-                <div class="flex gap-3 justify-center">
-                    <button id="battleRoyaleReadyBtn" onclick="toggleBattleRoyaleReady()" class="bg-gray-600 hover:bg-gray-500 text-white px-6 py-2 rounded-full font-bold transition-colors">استعداد ✅</button>
-                    <button id="startBattleRoyaleBtn" onclick="startBattleRoyaleGame()" class="hidden bg-green-600 hover:bg-green-700 text-white px-8 py-2 rounded-full font-bold shadow-lg animate-pulse">ابدأ اللعبة 🎮</button>
-                </div>
-                <button id="createBattleRoyaleBtn" onclick="createBattleRoyaleGame()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-2 rounded-full font-bold shadow-lg mt-4">
-                    إنشاء غرفة جديدة 🆕
-                </button>
-            </div>
-
-            <!-- شاشة اللعب -->
-            <div id="battleRoyaleGameArea" class="hidden w-full relative flex flex-col items-center">
-                <canvas id="battleRoyaleCanvas" width="600" height="400" class="bg-black border-2 border-gray-700 rounded-lg shadow-2xl w-full h-auto max-w-full touch-none"></canvas>
-                <div id="battleRoyaleWinnerOverlay" class="hidden absolute inset-0 bg-black/70 flex items-center justify-center text-3xl font-bold text-yellow-400" style="top: 0; height: 400px; width: 600px; max-width: 100%;"></div>
-                
-                <!-- Mobile Controls -->
-                <div class="grid grid-cols-3 gap-4 mt-4 md:hidden w-full max-w-[280px] mx-auto" dir="ltr">
-                    <div></div>
-                    <button onclick="sendBattleRoyaleMove('up')" class="bg-gray-700/90 active:bg-gray-600 p-5 rounded-2xl text-3xl shadow-lg">⬆️</button>
-                    <div></div>
-                    <button onclick="sendBattleRoyaleMove('left')" class="bg-gray-700/90 active:bg-gray-600 p-5 rounded-2xl text-3xl shadow-lg">⬅️</button>
-                    <button onclick="sendBattleRoyaleShoot()" class="bg-red-600/80 active:bg-red-500 p-5 rounded-full text-3xl shadow-lg">💥</button>
-                    <button onclick="sendBattleRoyaleMove('right')" class="bg-gray-700/90 active:bg-gray-600 p-5 rounded-2xl text-3xl shadow-lg">➡️</button>
-                    <div></div>
-                    <button onclick="sendBattleRoyaleMove('down')" class="bg-gray-700/90 active:bg-gray-600 p-5 rounded-2xl text-3xl shadow-lg">⬇️</button>
-                    <div></div>
-                </div>
-                <div class="hidden md:block mt-2 text-slate-400 text-sm">استخدم الأسهم للحركة والمسافة لإطلاق النار</div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- نافذة ملوك الثعبان (Leaderboard) -->
 <div id="snakeLeaderboardModal" class="profile-modal">
     <div class="profile-content custom-scrollbar" style="max-width: 500px;">
@@ -3351,6 +3299,37 @@
         };
         let currentUser = null;
         let BOT_AVATAR_URL = '/icon.png';
+
+        // قائمة الدول
+        const COUNTRIES = [
+            { code: 'SA', name: 'السعودية', flag: '/flags/sa.png' },
+            { code: 'EG', name: 'مصر', flag: '/flags/eg.png' },
+            { code: 'DZ', name: 'الجزائر', flag: '/flags/dz.png' },
+            { code: 'MA', name: 'المغرب', flag: '/flags/ma.png' },
+            { code: 'IQ', name: 'العراق', flag: '/flags/iq.png' },
+            { code: 'SY', name: 'سوريا', flag: '/flags/sy.png' },
+            { code: 'YE', name: 'اليمن', flag: '/flags/ye.png' },
+            { code: 'TN', name: 'تونس', flag: '/flags/tn.png' },
+            { code: 'JO', name: 'الأردن', flag: '/flags/jo.png' },
+            { code: 'AE', name: 'الإمارات', flag: '/flags/ae.png' },
+            { code: 'LB', name: 'لبنان', flag: '/flags/lb.png' },
+            { code: 'PS', name: 'فلسطين', flag: '/flags/ps.png' },
+            { code: 'KW', name: 'الكويت', flag: '/flags/kw.png' },
+            { code: 'OM', name: 'عمان', flag: '/flags/om.png' },
+            { code: 'QA', name: 'قطر', flag: '/flags/qa.png' },
+            { code: 'BH', name: 'البحرين', flag: '/flags/bh.png' },
+            { code: 'SD', name: 'السودان', flag: '/flags/sd.png' },
+            { code: 'LY', name: 'ليبيا', flag: '/flags/ly.png' },
+            { code: 'MR', name: 'موريتانيا', flag: '/flags/mr.png' },
+            { code: 'SO', name: 'الصومال', flag: '/flags/so.png' },
+            { code: 'DJ', name: 'جيبوتي', flag: '/flags/dj.png' },
+            { code: 'KM', name: 'جزر القمر', flag: '/flags/km.png' },
+            { code: 'TR', name: 'تركيا', flag: '/flags/tr.png' },
+            { code: 'US', name: 'أمريكا', flag: '/flags/us.png' },
+            { code: 'GB', name: 'بريطانيا', flag: '/flags/gb.png' },
+            { code: 'FR', name: 'فرنسا', flag: '/flags/fr.png' },
+            { code: 'DE', name: 'ألمانيا', flag: '/flags/de.png' }
+        ];
 
         // --- إعدادات المستخدم ---
         let userSettings = {
@@ -3775,6 +3754,8 @@
                 'text-emerald-500', 'text-white'
             ];
             const colorGrid = document.getElementById('nameColorGrid');
+            // إضافة الألوان الجديدة للقائمة
+            colors.push('text-glitch-red', 'text-glitch-purple');
             colorGrid.innerHTML = '';
             colors.forEach(color => {
                 const div = document.createElement('div');
@@ -3818,7 +3799,11 @@
                 { id: 'frame-matrix', name: 'ماتريكس 📟' },
                 { id: 'frame-ghostly', name: 'شبح 👻' },
                 { id: 'frame-double', name: 'مزدوج' },
-                { id: 'frame-dashed', name: 'متقطع' }
+                { id: 'frame-dashed', name: 'متقطع' },
+                { id: 'frame-golden-rain', name: 'مطر ذهبي 🌧️' },
+                { id: 'frame-matrix-rain', name: 'مصفوفة 📟' },
+                { id: 'frame-fast-emerald', name: 'زمرد سريع 💎' },
+                { id: 'frame-electricity', name: 'كهرباء ⚡' }
             ];
             const frameGrid = document.getElementById('avatarFrameGrid');
             frameGrid.innerHTML = '';
@@ -4585,6 +4570,9 @@ function updateUnreadBadges() {
             currentUser.profileBackground = userData.profileBackground;
             currentUser.profileCover = userData.profileCover;
             currentUser.nameCardBorder = userData.nameCardBorder;
+            currentUser.status = userData.status;
+            currentUser.country = userData.country;
+            currentUser.age = userData.age;
             currentUser.nameFont = userData.nameFont;
 
             document.cookie = `sessionId=${userData.sessionId}; path=/; max-age=31536000; SameSite=Lax`; // صلاحية لمدة سنة
@@ -6209,11 +6197,10 @@ function updateOnlineUsersList(users) {
                 userDiv.setAttribute('data-avatar-frame', user.avatarFrame || 'null');
                 userDiv.setAttribute('data-name-font', user.nameFont || 'null');
 
-                let rankBadge = '';
+                let rankIconHtml = '';
                 if (user.rank) {
                     const rankInfo = ranks[user.rank] || { icon: '' };
-                    const iconHtml = getRankIconHtml(rankInfo.icon, "text-[10px]");
-                    rankBadge = `<span class="text-[10px] opacity-80 mr-2 flex items-center gap-1">${iconHtml} ${user.rank}</span>`;
+                    rankIconHtml = getRankIconHtml(rankInfo.icon, "text-sm");
                 }
 
                 let frameStyle = '';
@@ -6249,16 +6236,24 @@ function updateOnlineUsersList(users) {
                 const nameStyle = getUserNameStyle(user.nameColor);
                 const fontClass = user.nameFont || '';
 
+                // الحصول على علم الدولة
+                const userCountry = COUNTRIES.find(c => c.code === user.country);
+                const flagHtml = userCountry ? `<img src="${userCountry.flag}" class="w-6 h-4 object-cover rounded-sm shadow-sm" title="${userCountry.name}" alt="${userCountry.name}" onerror="this.onerror=null;this.src='https://flagcdn.com/w40/${userCountry.code.toLowerCase()}.png';">` : '';
+
                 userDiv.innerHTML = `
-                    <div class="relative flex-shrink-0">
+                    <div class="relative flex-shrink-0 ml-3">
                         ${avatarHtml}
                         <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ${statusColor} border-2 border-gray-800"></span>
                     </div>
                     <div class="flex-1 min-w-0 flex flex-col justify-center ${user.isOnline === false ? 'opacity-60' : ''}">
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-1 mb-0.5">
+                            ${rankIconHtml ? `<span class="flex-shrink-0">${rankIconHtml}</span>` : ''}
                             <div class="font-semibold truncate ${nameStyle.class} text-sm ${fontClass}" style="${nameStyle.style}">${user.name}</div>
                         </div>
-                        ${rankBadge ? `<div class="text-gray-400 leading-none">${rankBadge}</div>` : ''}
+                        <div class="text-xs text-slate-400 truncate max-w-[150px] h-4 leading-4" title="${user.status || ''}">${user.status || ''}</div>
+                    </div>
+                    <div class="flex-shrink-0 ml-1">
+                        ${flagHtml}
                     </div>
                 `;
                 fragment.appendChild(userDiv);
@@ -6735,6 +6730,8 @@ function updateOnlineUsersList(users) {
             const profileHeader = document.getElementById('profileHeader');
             const profileContent = document.getElementById('profileContent');
             const profileBody = document.getElementById('profileBody');
+            const statusInputContainer = document.getElementById('statusInputContainer');
+            const countryAgeContainer = document.getElementById('countryAgeContainer');
             
             // تعبئة البيانات
             avatar.src = profileData.avatar || DEFAULT_AVATAR_URL;
@@ -6816,6 +6813,29 @@ function updateOnlineUsersList(users) {
             }
 
             usernameElem.className = `text-2xl font-bold tracking-wide ${profileData.nameColor || 'text-white'}`;
+
+            // عرض الحالة (Status)
+            const existingStatus = document.getElementById('profileStatusText');
+            if (existingStatus) existingStatus.remove();
+            
+            if (profileData.status) {
+                const statusDiv = document.createElement('div');
+                statusDiv.id = 'profileStatusText';
+                statusDiv.className = 'text-slate-300 text-sm mt-2 text-center italic px-4 break-words';
+                statusDiv.textContent = `"${profileData.status}"`;
+                // إدراج الحالة تحت الاسم
+                usernameElem.parentNode.insertBefore(statusDiv, usernameElem.nextSibling);
+            }
+
+            // إعداد حقل تعديل الحالة للمالك
+            if (isOwner) {
+                // سيتم إنشاء الحقل في قسم التفاصيل إذا لم يكن موجوداً
+                createStatusInput(profileData.status || '');
+                createCountryAgeInputs(profileData.country || '', profileData.age || '');
+            } else {
+                // عرض الدولة والعمر للزوار
+                displayCountryAge(profileData.country, profileData.age);
+            }
             
             // عرض الجنس
             const genderText = profileData.gender === 'male' ? 'ذكر' : 'أنثى';
@@ -7040,6 +7060,17 @@ function updateOnlineUsersList(users) {
                 editBioButton.classList.remove('hidden');
                 saveBioButton.classList.add('hidden');
                 visitorActions.classList.add('hidden');
+                
+                // إظهار حاوية تعديل الحالة
+                const statusContainer = document.getElementById('statusEditContainer');
+                if (statusContainer) statusContainer.classList.remove('hidden');
+
+                // إظهار حاوية تعديل الدولة والعمر
+                const caContainer = document.getElementById('countryAgeEditContainer');
+                if (caContainer) caContainer.classList.remove('hidden');
+                const caDisplay = document.getElementById('countryAgeDisplay');
+                if (caDisplay) caDisplay.classList.add('hidden');
+
                 profileMenuContainer.innerHTML = ''; // إخفاء قائمة الإدارة
                 document.getElementById('accountTabButton').classList.remove('hidden');
             } else {
@@ -7049,6 +7080,17 @@ function updateOnlineUsersList(users) {
                 removeCoverBtn.classList.add('hidden'); // إخفاء زر حذف الغلاف
                 editBioButton.classList.add('hidden');
                 saveBioButton.classList.add('hidden');
+                
+                // إخفاء حاوية تعديل الحالة
+                const statusContainer = document.getElementById('statusEditContainer');
+                if (statusContainer) statusContainer.classList.add('hidden');
+
+                // إخفاء حاوية تعديل الدولة والعمر
+                const caContainer = document.getElementById('countryAgeEditContainer');
+                if (caContainer) caContainer.classList.add('hidden');
+                const caDisplay = document.getElementById('countryAgeDisplay');
+                if (caDisplay) caDisplay.classList.remove('hidden');
+
                 visitorActions.classList.remove('hidden');
                 const privateChatButton = document.getElementById('privateChatButton');
                 privateChatButton.style.display = 'flex';
@@ -7130,6 +7172,132 @@ function updateOnlineUsersList(users) {
                 }
                 badge.textContent = unreadCount;
             }
+        }
+
+        function createStatusInput(currentStatus) {
+            let container = document.getElementById('statusEditContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'statusEditContainer';
+                container.className = 'mt-4 mb-4 p-3 bg-gray-800/50 rounded-xl border border-gray-700/30';
+                
+                const label = document.createElement('label');
+                label.className = 'block text-slate-400 text-xs font-bold mb-2';
+                label.textContent = 'الحالة (تظهر تحت اسمك)';
+                
+                const inputGroup = document.createElement('div');
+                inputGroup.className = 'flex gap-2';
+                
+                inputGroup.innerHTML = `
+                    <input type="text" id="statusInput" maxlength="200" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="اكتب حالتك هنا (200 حرف)...">
+                    <button onclick="saveStatus()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors">حفظ</button>
+                `;
+                
+                container.appendChild(label);
+                container.appendChild(inputGroup);
+                
+                // إضافته في بداية قسم التفاصيل
+                const detailsTab = document.getElementById('profileTab-details');
+                detailsTab.insertBefore(container, detailsTab.firstChild);
+            }
+            document.getElementById('statusInput').value = currentStatus;
+        }
+
+        function createCountryAgeInputs(currentCountry, currentAge) {
+            let container = document.getElementById('countryAgeEditContainer');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'countryAgeEditContainer';
+                container.className = 'mt-2 mb-4 p-3 bg-gray-800/50 rounded-xl border border-gray-700/30';
+                
+                const grid = document.createElement('div');
+                grid.className = 'grid grid-cols-2 gap-3';
+
+                // Country Select
+                const countryDiv = document.createElement('div');
+                countryDiv.innerHTML = `
+                    <label class="block text-slate-400 text-xs font-bold mb-1">الدولة</label>
+                    <select id="countryInput" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">اختر الدولة...</option>
+                        ${COUNTRIES.map(c => `<option value="${c.code}">${c.name}</option>`).join('')}
+                    </select>
+                `;
+
+                // Age Input
+                const ageDiv = document.createElement('div');
+                ageDiv.innerHTML = `
+                    <label class="block text-slate-400 text-xs font-bold mb-1">العمر</label>
+                    <input type="number" id="ageInput" min="10" max="99" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-2 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="العمر">
+                `;
+
+                grid.appendChild(countryDiv);
+                grid.appendChild(ageDiv);
+                container.appendChild(grid);
+
+                // زر حفظ التغييرات للدولة والعمر
+                const saveBtnContainer = document.createElement('div');
+                saveBtnContainer.className = 'mt-3 text-center';
+                saveBtnContainer.innerHTML = `<button onclick="saveStatus()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-bold transition-colors w-full">حفظ التغييرات</button>`;
+                container.appendChild(saveBtnContainer);
+                
+                // إضافته بعد حقل الحالة
+                const detailsTab = document.getElementById('profileTab-details');
+                const statusContainer = document.getElementById('statusEditContainer');
+                if (statusContainer) {
+                    detailsTab.insertBefore(container, statusContainer.nextSibling);
+                } else {
+                    detailsTab.insertBefore(container, detailsTab.firstChild);
+                }
+            }
+            document.getElementById('countryInput').value = currentCountry || '';
+            document.getElementById('ageInput').value = currentAge || '';
+        }
+
+        function displayCountryAge(countryCode, age) {
+            let container = document.getElementById('countryAgeDisplay');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'countryAgeDisplay';
+                container.className = 'flex justify-center gap-4 mb-4';
+                const detailsTab = document.getElementById('profileTab-details');
+                detailsTab.insertBefore(container, detailsTab.firstChild);
+            }
+            
+            const country = COUNTRIES.find(c => c.code === countryCode);
+            const countryHtml = country ? 
+                `<div class="bg-gray-800/60 px-3 py-1 rounded-full border border-gray-700/50 flex items-center gap-2">
+                    <img src="${country.flag}" class="w-6 h-4 object-cover rounded-sm" alt="${country.name}" onerror="this.onerror=null;this.src='https://flagcdn.com/w40/${country.code.toLowerCase()}.png';">
+                    <span class="text-sm text-slate-300">${country.name}</span>
+                </div>` : '';
+                
+            const ageHtml = age ? 
+                `<div class="bg-gray-800/60 px-3 py-1 rounded-full border border-gray-700/50 flex items-center gap-2">
+                    <span class="text-lg">🎂</span>
+                    <span class="text-sm text-slate-300">${age} سنة</span>
+                </div>` : '';
+
+            container.innerHTML = countryHtml + ageHtml;
+            if (!countryHtml && !ageHtml) container.classList.add('hidden');
+            else container.classList.remove('hidden');
+        }
+
+        function saveStatus() {
+            const status = document.getElementById('statusInput').value.trim();
+            const country = document.getElementById('countryInput').value;
+            const age = document.getElementById('ageInput').value;
+
+            if (status.length > 200) {
+                showNotification('الحالة يجب أن لا تتجاوز 200 حرف', 'error');
+                return;
+            }
+            socket.emit('update user details', { 
+                username: currentUser.name,
+                bio: document.getElementById('profileBioInput').value.trim(), // إرسال البيو أيضاً للحفاظ عليه
+                status, 
+                country, 
+                age, 
+                currentUser 
+            });
         }
 
         function toggleSetting(setting) {
@@ -10862,11 +11030,7 @@ socket.on('join error', (error) => {
         };
     </script>
     <script>
-        // --- منطق لعبة باتل رويال ---
-        let currentBattleRoyaleGameId = null;
-        const brCanvas = document.getElementById('battleRoyaleCanvas');
-        const brCtx = brCanvas.getContext('2d');
-        const BR_CELL_SIZE = 20;
+       
 
         function openBattleRoyaleGame() {
             document.getElementById('battleRoyaleModal').classList.add('show');

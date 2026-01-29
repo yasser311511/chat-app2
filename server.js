@@ -41,7 +41,10 @@ const User = sequelize.define('User', {
   profileCover: { type: DataTypes.TEXT, allowNull: true },
   nameCardBorder: { type: DataTypes.STRING, allowNull: true },
   referredBy: { type: DataTypes.STRING, allowNull: true }, // المستخدم الذي قام بدعوته
-  nameFont: { type: DataTypes.STRING, allowNull: true } // نوع الخط
+  nameFont: { type: DataTypes.STRING, allowNull: true }, // نوع الخط
+  status: { type: DataTypes.STRING(200), allowNull: true }, // الحالة
+  country: { type: DataTypes.STRING, allowNull: true }, // الدولة
+  age: { type: DataTypes.INTEGER, allowNull: true } // العمر
 });
 
 const UserRank = sequelize.define('UserRank', {
@@ -353,7 +356,187 @@ let chatImages = {};
 let pendingGiftOffers = {}; // تخزين عروض الهدايا المعلقة { recipient: { sender, itemId, rank, price } }
 let drawingHistory = []; // تخزين تاريخ الرسم
 let snakeGames = {}; // تخزين ألعاب الثعبان النشطة
-let battleRoyaleGames = {}; // تخزين ألعاب باتل رويال
+
+// --- إعدادات لعبة الاختباء ---
+
+// --- رسائل النظام التلقائية ---
+const automatedMessages = [
+    "اللهم صّلِ وسَلّمْ عَلۓِ نَبِيْنَامُحَمد ﷺ",
+    "اهـلا وسهــلا بكم في موقع وال✨شـــــــات",
+    "كن إيجابيًا للحفاظ علي جهودك انت والجميع وبلغ الإدارة عن الأعضاء المخالفة التي تقوم بعمل فلود وتكرار لكسب نقاط بطرق غير شرعية",
+    "للعب لعبة الاختباء اكتب @رسائل النظام لعبة الاختباء",
+    "للعب لعبة تخمين الرقم اكتب @رسائل النظام لعبة تخمين الرقم",
+    "لاستدعاء الذكاء الاصطناعي اكتب @الذكاء الاصطناعي"
+];
+let automatedMessageIndex = 0;
+
+let hideAndSeekState = {
+    active: false,
+    phase: 'idle', // 'idle', 'registration', 'hiding'
+    roomId: null,
+    participants: [], // { username, chosenSpot, alive }
+    round: 0,
+    maxRounds: 5,
+    initialCount: 0
+};
+
+// --- دوال لعبة الاختباء ---
+function sendSystemGameMessage(roomId, content) {
+    const msg = {
+        type: 'system',
+        user: 'رسائل النظام',
+        avatar: BOT_AVATAR_URL,
+        content: content,
+        time: new Date().toLocaleTimeString('ar-SA')
+    };
+    io.to(roomId).emit('new message', msg);
+    if (messages[roomId]) messages[roomId].push(msg);
+}
+
+function startHideAndSeek(roomId) {
+    hideAndSeekState = {
+        active: true,
+        phase: 'registration',
+        roomId: roomId,
+        participants: [],
+        round: 0,
+        maxRounds: 5,
+        initialCount: 0
+    };
+
+    setTimeout(() => {
+        sendSystemGameMessage(roomId, '🕵️‍♂️ <strong>لقد بدأت لعبة الاختباء!</strong><br>من يريد المشاركة يمنشنني ويقول "<strong>انا</strong>" في غضون 10 ثواني.');
+        
+        setTimeout(() => {
+            if (hideAndSeekState.participants.length === 0) {
+                sendSystemGameMessage(roomId, '❌ لم يشارك أحد، تم إلغاء اللعبة.');
+                hideAndSeekState.active = false;
+                hideAndSeekState.phase = 'idle';
+            } else {
+                hideAndSeekState.initialCount = hideAndSeekState.participants.length;
+                const names = hideAndSeekState.participants.map(p => `<span class="text-blue-400">${p.username}</span>`).join('، ');
+                sendSystemGameMessage(roomId, `👥 المشاركون هم: ${names}`);
+                
+                setTimeout(() => {
+                    nextHideAndSeekRound();
+                }, 5000);
+            }
+        }, 10000); // فترة التسجيل 10 ثواني
+    }, 5000); // تأخير البدء 5 ثواني
+}
+
+function nextHideAndSeekRound() {
+    if (!hideAndSeekState.active) return;
+    
+    hideAndSeekState.round++;
+    hideAndSeekState.phase = 'hiding';
+    
+    // تصفير اختيارات اللاعبين الأحياء
+    hideAndSeekState.participants.forEach(p => p.chosenSpot = null);
+
+    sendSystemGameMessage(hideAndSeekState.roomId, `
+        🔔 <strong>الجولة ${hideAndSeekState.round} من ${hideAndSeekState.maxRounds}</strong>
+        <br>🏠 لديكم 10 أماكن في المنزل مرقمة من <strong>1</strong> إلى <strong>10</strong>.
+        <br>🔪 سيدخل القاتل ليفتش عن مكانين ويقتل من كان فيهما!
+        <br>🏃‍♂️ <strong>هيا اختاروا مكاناً (رقماً) بسرعة!</strong>
+    `);
+}
+
+function resolveHideAndSeekRound() {
+    const killerSpots = [];
+    while(killerSpots.length < 2) {
+        const r = Math.floor(Math.random() * 10) + 1;
+        if(killerSpots.indexOf(r) === -1) killerSpots.push(r);
+    }
+
+    const victims = [];
+    hideAndSeekState.participants.forEach(p => {
+        if (p.alive && killerSpots.includes(p.chosenSpot)) {
+            p.alive = false;
+            victims.push(p.username);
+        }
+    });
+
+    let msg = `👀 لقد زار القاتل المكانين: <strong class="text-red-500 text-xl">[ ${killerSpots.join(' و ')} ]</strong>`;
+    
+    if (victims.length > 0) {
+        msg += `<br>💀 <strong>تم إقصاء:</strong> ${victims.map(v => `<span class="text-red-400 line-through">${v}</span>`).join(' و ')}`;
+    } else {
+        msg += `<br>✨ لم يعثر القاتل على أحد في هذه الأماكن!`;
+    }
+
+    sendSystemGameMessage(hideAndSeekState.roomId, msg);
+
+    const survivors = hideAndSeekState.participants.filter(p => p.alive);
+
+    // شروط الفوز والخسارة
+    if (survivors.length === 0) {
+        setTimeout(() => {
+            sendSystemGameMessage(hideAndSeekState.roomId, '💀 <strong>انتهت اللعبة!</strong> لقد قضى القاتل على الجميع.');
+            hideAndSeekState.active = false;
+        }, 3000);
+        return;
+    }
+
+    // حالة لاعب واحد متبقي (إذا كانت اللعبة بدأت بأكثر من لاعب)
+    if (hideAndSeekState.initialCount > 1 && survivors.length === 1) {
+        const winnerName = survivors[0].username;
+        setTimeout(async () => {
+            if (!userPoints[winnerName]) userPoints[winnerName] = { points: 0, level: 1 };
+            userPoints[winnerName].points += 1000;
+            await saveUserPoints(winnerName, userPoints[winnerName].points, userPoints[winnerName].level);
+
+            sendSystemGameMessage(hideAndSeekState.roomId, `🏆 <strong>مبروك!</strong> الفائز هو <strong class="text-yellow-400">${winnerName}</strong> لأنه الناجي الوحيد! (حصل على 1000 نقطة)`);
+            hideAndSeekState.active = false;
+        }, 3000);
+        return;
+    }
+
+    // انتهاء الجولات
+    if (hideAndSeekState.round >= hideAndSeekState.maxRounds) {
+        setTimeout(async () => {
+            for (const survivor of survivors) {
+                const winnerName = survivor.username;
+                if (!userPoints[winnerName]) userPoints[winnerName] = { points: 0, level: 1 };
+                userPoints[winnerName].points += 1000;
+                await saveUserPoints(winnerName, userPoints[winnerName].points, userPoints[winnerName].level);
+            }
+            const winners = survivors.map(p => p.username).join('، ');
+            sendSystemGameMessage(hideAndSeekState.roomId, `🎉 <strong>انتهت الجولات الـ 5!</strong><br>الناجون الفائزون هم: <strong class="text-green-400">${winners}</strong> (حصل كل منهم على 1000 نقطة)`);
+            hideAndSeekState.active = false;
+        }, 3000);
+        return;
+    }
+
+    // الانتقال للجولة التالية
+    setTimeout(() => {
+        const qualified = survivors.map(p => p.username).join('، ');
+        sendSystemGameMessage(hideAndSeekState.roomId, `✅ <strong>المتأهلون للجولة القادمة:</strong> ${qualified}`);
+        setTimeout(() => {
+            nextHideAndSeekRound();
+        }, 2000);
+    }, 5000);
+}
+
+function startAutomatedMessages() {
+    setInterval(() => {
+        // لا ترسل رسائل إذا لم يكن هناك أي مستخدمين على الإطلاق
+        const totalOnlineUsers = Object.keys(onlineUsers).length;
+        if (totalOnlineUsers === 0) {
+            return;
+        }
+
+        const messageContent = automatedMessages[automatedMessageIndex];
+
+        rooms.forEach(room => {
+            if (room.users && room.users.length > 0) {
+                sendSystemGameMessage(room.id, messageContent);
+            }
+        });
+
+        automatedMessageIndex = (automatedMessageIndex + 1) % automatedMessages.length;
+    }, 15 * 60 * 1000); // 15 minutes
+}
 
 // --- إعدادات QuizBot ---
 let quizState = {
@@ -829,12 +1012,39 @@ async function loadData() {
         console.error('فشل إضافة عمود nameFont:', err);
       }
     }
+
+    // التحقق من عمود status
+    const hasStatus = await columnExists('Users', 'status');
+    if (!hasStatus) {
+      try {
+        await sequelize.getQueryInterface().addColumn('Users', 'status', { type: DataTypes.STRING(200), allowNull: true });
+        console.log('تم إضافة عمود status بنجاح');
+      } catch (err) { console.error('فشل إضافة عمود status:', err); }
+    }
+
+    // التحقق من عمود country
+    const hasCountry = await columnExists('Users', 'country');
+    if (!hasCountry) {
+      try {
+        await sequelize.getQueryInterface().addColumn('Users', 'country', { type: DataTypes.STRING, allowNull: true });
+        console.log('تم إضافة عمود country بنجاح');
+      } catch (err) { console.error('فشل إضافة عمود country:', err); }
+    }
+
+    // التحقق من عمود age
+    const hasAge = await columnExists('Users', 'age');
+    if (!hasAge) {
+      try {
+        await sequelize.getQueryInterface().addColumn('Users', 'age', { type: DataTypes.INTEGER, allowNull: true });
+        console.log('تم إضافة عمود age بنجاح');
+      } catch (err) { console.error('فشل إضافة عمود age:', err); }
+    }
     await delay(10); // تقليل وقت الانتظار لتسريع البدء
     
     // تحميل البيانات بشكل تسلسلي لتجنب مشاكل SSL مع البيانات الكبيرة
     // ملاحظة: تم استبعاد الحقول الكبيرة (بيو وصورة الغلاف) من التحميل الأولي لتجنب أخطاء SSL
     const usersData = await User.findAll({ 
-      attributes: ['username', 'password', 'gender', 'nameColor', 'nameBackground', 'avatarFrame', 'userCardBackground', 'profileBackground', 'nameCardBorder', 'nameFont', 'referredBy', 'createdAt'] 
+      attributes: ['username', 'password', 'gender', 'nameColor', 'nameBackground', 'avatarFrame', 'userCardBackground', 'profileBackground', 'nameCardBorder', 'nameFont', 'referredBy', 'createdAt', 'status', 'country', 'age'] 
     });
     await delay(10);
     
@@ -924,7 +1134,10 @@ async function loadData() {
         nameCardBorder: user.nameCardBorder || null,
         nameFont: user.nameFont || null,
         referredBy: user.referredBy || null,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
+        status: user.status || null,
+        country: user.country || null,
+        age: user.age || null
       };
       // bio and profileCover are purposefully omitted here to be loaded on-demand
       // as they can be large and cause SSL issues during mass loading.
@@ -1235,7 +1448,10 @@ async function saveUser(username, userData) {
       profileCover: userData.profileCover || null,
       nameCardBorder: userData.nameCardBorder || null,
       nameFont: userData.nameFont || null,
-      referredBy: userData.referredBy || null
+      referredBy: userData.referredBy || null,
+      status: userData.status || null,
+      country: userData.country || null,
+      age: userData.age || null
     });
     console.log(`تم حفظ بيانات المستخدم ${username} بنجاح (الإطار: ${userData.nameCardBorder || 'لا يوجد'})`);
   } catch (error) {
@@ -2309,7 +2525,10 @@ socket.on('send private image', async (data) => {
             profileBackground: userInMemory.profileBackground,
             profileCover: userInMemory.profileCover,
             nameCardBorder: userInMemory.nameCardBorder,
-            nameFont: userInMemory.nameFont
+            nameFont: userInMemory.nameFont,
+            status: userInMemory.status,
+            country: userInMemory.country,
+            age: userInMemory.age
           });
           socket.join(userData.username); // الانضمام لغرفة المستخدم لتلقي الرسائل الخاصة
           socket.emit('ranks update', ranks); // إرسال الرتب الحالية عند تسجيل الدخول
@@ -2478,7 +2697,10 @@ socket.on('join room', async (data) => {
       userCardBackground: userFromDB.userCardBackground,
       nameCardBorder: userFromDB.nameCardBorder,
       nameFont: userFromDB.nameFont,
-      badges: getUserBadges(user.name)
+      badges: getUserBadges(user.name),
+      status: userFromDB.status,
+      country: userFromDB.country,
+      age: userFromDB.age
     };
 
     // تسجيل وقت الدخول لتتبع الساعات
@@ -2524,6 +2746,9 @@ socket.on('join room', async (data) => {
             userCardBackground: onlineUsers[socket.id].userCardBackground,
             nameCardBorder: onlineUsers[socket.id].nameCardBorder,
             nameFont: onlineUsers[socket.id].nameFont,
+            status: onlineUsers[socket.id].status,
+            country: onlineUsers[socket.id].country,
+            age: onlineUsers[socket.id].age,
             isOnline: true
         });
     }
@@ -2695,6 +2920,54 @@ socket.on('join room', async (data) => {
       socket.emit('message error', 'لا يمكنك إرسال الرسائل الآن. قد تكون مكتوماً أو محظوراً.');
       return;
     }
+
+    // --- منطق لعبة الاختباء (داخل send message) ---
+    
+    // 1. بدء اللعبة
+    if (message.includes('@رسائل النظام') && message.includes('لعبة الاختباء')) {
+        if (!hideAndSeekState.active) {
+            startHideAndSeek(roomId);
+        } else {
+            // يمكن إرسال رسالة أن اللعبة قائمة بالفعل
+        }
+    }
+
+    // 2. التسجيل في اللعبة
+    if (hideAndSeekState.active && hideAndSeekState.phase === 'registration' && hideAndSeekState.roomId === roomId) {
+        if (message.includes('@رسائل النظام') && message.includes('انا')) {
+            const alreadyJoined = hideAndSeekState.participants.some(p => p.username === user.name);
+            if (!alreadyJoined) {
+                hideAndSeekState.participants.push({ username: user.name, chosenSpot: null, alive: true });
+                // يمكن إضافة رد فعل بسيط أو تركه صامتاً حتى إعلان الأسماء
+            }
+        }
+    }
+
+    // 3. اختيار المكان (أثناء اللعب)
+    if (hideAndSeekState.active && hideAndSeekState.phase === 'hiding' && hideAndSeekState.roomId === roomId) {
+        const player = hideAndSeekState.participants.find(p => p.username === user.name && p.alive);
+        if (player) {
+            const choice = parseInt(message.trim());
+            if (!isNaN(choice) && choice >= 1 && choice <= 10) {
+                if (player.chosenSpot === null) {
+                    player.chosenSpot = choice;
+                    
+                    // التحقق مما إذا اختار الجميع
+                    const alivePlayers = hideAndSeekState.participants.filter(p => p.alive);
+                    const allChosen = alivePlayers.every(p => p.chosenSpot !== null);
+                    
+                    if (allChosen) {
+                        hideAndSeekState.phase = 'resolving'; // منع تغيير الاختيار
+                        sendSystemGameMessage(hideAndSeekState.roomId, '🔒 <strong>تم إغلاق الاختيارات!</strong> القاتل في طريقه...');
+                        setTimeout(() => {
+                            resolveHideAndSeekRound();
+                        }, 5000);
+                    }
+                }
+            }
+        }
+    }
+
     // ... (كود النقاط والمستويات يبقى كما هو)
 
     // --- Anti-Spam Bot Logic ---
@@ -3941,6 +4214,9 @@ socket.on('leave room', async (data) => {
         profileCover: userData ? userData.profileCover : null,
         nameCardBorder: userData ? userData.nameCardBorder : null,
         nameFont: userData ? userData.nameFont : null,
+        status: userData ? userData.status : null,
+        country: userData ? userData.country : null,
+        age: userData ? userData.age : null,
         rankExpiry: userRankExpiry[username] || null, // إرسال تاريخ انتهاء الرتبة
         interactionScore: pointsData.interactionScore || 0, // درجة التفاعل
         xp: pointsData.xp || 0, // نقاط الخبرة
@@ -4254,28 +4530,71 @@ socket.on('leave room', async (data) => {
     }
   });
 
-  socket.on('update user bio', async (data) => {
-    const { username, bio, currentUser } = data;
+  socket.on('update user details', async (data) => {
+    const { username, bio, status, country, age, currentUser } = data;
 
     if (currentUser.name !== username) {
-        socket.emit('bio error', 'لا يمكنك تحديث معلومات مستخدم آخر.');
+        socket.emit('update details error', 'لا يمكنك تحديث معلومات مستخدم آخر.');
         return;
     }
 
     // التحقق من طول النص
     if (bio && bio.length > 500) {
-        socket.emit('bio error', 'المعلومات الشخصية يجب أن لا تتجاوز 500 حرف.');
+        socket.emit('update details error', 'المعلومات الشخصية يجب أن لا تتجاوز 500 حرف.');
+        return;
+    }
+    if (status && status.length > 200) {
+        socket.emit('update details error', 'الحالة يجب أن لا تتجاوز 200 حرف.');
         return;
     }
  
     if (users[username]) {
         try {
-            users[username].bio = bio; // تحديث الذاكرة
-            await User.update({ bio }, { where: { username } });
-            socket.emit('bio success', 'تم تحديث معلوماتك بنجاح.');
+            const updateData = { bio };
+            if (status !== undefined) updateData.status = status;
+            if (country !== undefined) updateData.country = country;
+            if (age !== undefined) updateData.age = age ? parseInt(age) : null;
+
+            await User.update(updateData, { where: { username } });
+            
+            // تحديث الذاكرة
+            users[username].bio = bio;
+            if (status !== undefined) users[username].status = status;
+            if (country !== undefined) users[username].country = country;
+            if (age !== undefined) users[username].age = updateData.age;
+
+            // تحديث المستخدمين المتصلين والغرف
+            Object.keys(onlineUsers).forEach(id => {
+                if (onlineUsers[id].name === username) {
+                    if (status !== undefined) onlineUsers[id].status = status;
+                    if (country !== undefined) onlineUsers[id].country = country;
+                    if (age !== undefined) onlineUsers[id].age = updateData.age;
+                }
+            });
+            
+            // تحديث بيانات المستخدم في الغرف (للقوائم الجانبية)
+            rooms.forEach(r => {
+                if (r.users) {
+                    r.users.forEach(u => {
+                        if (u.name === username) {
+                            if (status !== undefined) u.status = status;
+                            if (country !== undefined) u.country = country;
+                            if (age !== undefined) u.age = updateData.age;
+                        }
+                    });
+                }
+            });
+
+            broadcastRoomsUpdate();
+            socket.emit('update details success', { 
+                message: 'تم تحديث معلوماتك بنجاح.',
+                status: status,
+                country: country,
+                age: updateData.age
+            });
         } catch (error) {
             console.error('خطأ في تحديث معلومات المستخدم:', error);
-            socket.emit('bio error', 'حدث خطأ أثناء تحديث المعلومات.');
+            socket.emit('update details error', 'حدث خطأ أثناء تحديث المعلومات.');
         }
     }
   });
@@ -5206,26 +5525,6 @@ socket.on('disconnect', async (reason) => {
             }
         }
     });
-
-    // --- تنظيف ألعاب باتل رويال عند الانقطاع ---
-    Object.keys(battleRoyaleGames).forEach(gameId => {
-        const game = battleRoyaleGames[gameId];
-        const playerIndex = game.players.findIndex(p => p.id === socket.id);
-        if (playerIndex !== -1) {
-            game.players.splice(playerIndex, 1);
-            if (game.players.length === 0) {
-                if(game.interval) clearInterval(game.interval);
-                delete battleRoyaleGames[gameId];
-            } else {
-                // إذا كان المضيف هو من خرج، انقل المضيفة
-                if (game.host === user?.name && game.players.length > 0) {
-                    game.host = game.players[0].username;
-                }
-                io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(game));
-            }
-        }
-    });
-    // ---------------------------------------
 
     if (user) {
       const roomId = user.roomId;
@@ -6700,58 +6999,6 @@ socket.on('disconnect', async (reason) => {
       }
   }
 
-  function updateBattleRoyaleGame(gameId) {
-    const game = battleRoyaleGames[gameId];
-    if (!game || game.status !== 'playing') {
-      if (game && game.interval) clearInterval(game.interval);
-      return;
-    }
-  
-    // 1. Move projectiles
-    game.projectiles.forEach((p, index) => {
-      if (p.dir === 'up') p.y--;
-      else if (p.dir === 'down') p.y++;
-      else if (p.dir === 'left') p.x--;
-      else if (p.dir === 'right') p.x++;
-  
-      // 2. Check for collisions
-      // Wall collision
-      if (p.x < 0 || p.x >= game.map[0].length || p.y < 0 || p.y >= game.map.length || game.map[p.y][p.x] === 1) {
-        game.projectiles.splice(index, 1);
-        return;
-      }
-  
-      // Player collision
-      let hit = false;
-      game.players.forEach(player => {
-        if (player.health > 0 && player.id !== p.ownerId && player.x === p.x && player.y === p.y) {
-          player.health -= 25; // Damage
-          hit = true;
-          if (player.health <= 0) {
-            // Player is out
-            io.to(gameId).emit('battleRoyale player out', player.username);
-          }
-        }
-      });
-      if(hit) {
-          game.projectiles.splice(index, 1);
-      }
-    });
-  
-    // 3. Check for winner
-    const alivePlayers = game.players.filter(p => p.health > 0);
-    if (alivePlayers.length === 1 && game.players.length > 1) {
-      game.status = 'over';
-      game.winner = alivePlayers[0].username;
-      if (game.interval) clearInterval(game.interval);
-      io.to(gameId).emit('battleRoyale game update', game);
-      delete battleRoyaleGames[gameId];
-    } else {
-      // 4. Emit update
-      io.to(gameId).emit('battleRoyale game update', game);
-    }
-  }
-
   // --- لوحة ملوك الثعبان ---
   socket.on('get snake leaderboard', async () => {
       try {
@@ -6795,177 +7042,6 @@ socket.on('disconnect', async (reason) => {
       if (userPoints[user.name] && score > (userPoints[user.name].snakeHighScore || 0)) {
           userPoints[user.name].snakeHighScore = score;
           await UserPoints.update({ snakeHighScore: score }, { where: { username: user.name } });
-      }
-  });
-
-  // --- أحداث لعبة باتل رويال ---
-  socket.on('create battleRoyale game', (data) => {
-      const { currentUser } = data;
-      const gameId = 'br_' + Date.now();
-
-      const MAP_WIDTH = 30;
-      const MAP_HEIGHT = 20;
-      const map = Array(MAP_HEIGHT).fill(0).map(() => Array(MAP_WIDTH).fill(0));
-      for(let i = 0; i < 45; i++) { // 45 عائق عشوائي
-          const x = Math.floor(Math.random() * (MAP_WIDTH - 2)) + 1;
-          const y = Math.floor(Math.random() * (MAP_HEIGHT - 2)) + 1;
-          map[y][x] = 1; // 1 = جدار
-      }
-      
-      battleRoyaleGames[gameId] = {
-          id: gameId,
-          host: currentUser.name,
-          players: [{
-              id: socket.id,
-              username: currentUser.name,
-              avatar: userAvatars[currentUser.name] || DEFAULT_AVATAR_URL,
-              isReady: false,
-              x: 1, y: 1,
-              health: 100, maxHealth: 100,
-              weapon: 'gun', // يبدأ بسلاح
-              direction: 'down',
-              color: '#3b82f6'
-          }],
-          status: 'waiting', // waiting, playing, over
-          map: map,
-          items: [], // يمكن إضافة أسلحة أو دروع هنا لاحقاً
-          projectiles: [],
-          winner: null,
-          interval: null
-      };
-
-      socket.join(gameId);
-      socket.emit('battleRoyale game created', { gameId });
-      io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(battleRoyaleGames[gameId]));
-
-      // إرسال إشعار للغرف العامة
-      const notificationMessage = {
-          type: 'system',
-          user: 'نظام الألعاب',
-          avatar: BOT_AVATAR_URL,
-          content: `🔫 بدأ <strong class="text-white">${currentUser.name}</strong> لعبة باتل رويال! <button onclick="joinBattleRoyaleGame('${gameId}')" class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs font-bold transition-colors mx-1">اضغط هنا للانضمام</button>`,
-          time: new Date().toLocaleTimeString('ar-SA')
-      };
-      rooms.forEach(r => {
-          if (!r.protected) {
-              io.to(r.id).emit('new message', notificationMessage);
-              if (messages[r.id]) messages[r.id].push(notificationMessage);
-          }
-      });
-  });
-
-  socket.on('join battleRoyale game', (data) => {
-      const { gameId, currentUser } = data;
-      const game = battleRoyaleGames[gameId];
-
-      if (game && game.status === 'waiting') {
-          if (game.players.some(p => p.username === currentUser.name)) return;
-           if (game.players.length >= 4) {
-               socket.emit('battleRoyale error', 'الغرفة ممتلئة.');
-               return;
-           }
-
-           const startPositions = [{x:1,y:1}, {x:28,y:1}, {x:1,y:18}, {x:28,y:18}];
-           const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b'];
-           const playerIndex = game.players.length;
-           
-          game.players.push({
-              id: socket.id,
-              username: currentUser.name,
-              avatar: userAvatars[currentUser.name] || DEFAULT_AVATAR_URL,
-              isReady: false,
-              x: startPositions[playerIndex].x, y: startPositions[playerIndex].y,
-              health: 100, maxHealth: 100,
-              weapon: 'gun',
-              direction: 'down',
-              color: colors[playerIndex]
-          });
-
-          socket.join(gameId);
-          io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(game));
-      }
-  });
-
-  socket.on('battleRoyale toggle ready', (gameId) => {
-      const game = battleRoyaleGames[gameId];
-      if (game && game.status === 'waiting') {
-          const player = game.players.find(p => p.id === socket.id);
-          if (player) {
-              player.isReady = !player.isReady;
-              io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(game));
-          }
-      }
-  });
-
-  socket.on('start battleRoyale game', (gameId) => {
-      const game = battleRoyaleGames[gameId];
-      if (!game || game.status !== 'waiting' || game.host !== onlineUsers[socket.id]?.name) return;
-
-      if (game.players.length < 2) {
-          socket.emit('battleRoyale error', 'يجب وجود لاعبين اثنين على الأقل.');
-          return;
-      }
-      if (!game.players.every(p => p.isReady)) {
-          socket.emit('battleRoyale error', 'يجب أن يكون الجميع مستعدين.');
-          return;
-      }
-
-      game.status = 'playing';
-      io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(game));
-      game.interval = setInterval(() => updateBattleRoyaleGame(gameId), 100); // Game loop
-  });
-
-  socket.on('battleRoyale move', (data) => {
-    const { gameId, direction } = data;
-    const game = battleRoyaleGames[gameId];
-    if (!game || game.status !== 'playing') return;
-    const player = game.players.find(p => p.id === socket.id);
-    if (!player || player.health <= 0) return;
-
-    let newX = player.x;
-    let newY = player.y;
-
-    if (direction === 'up') { newY--; player.direction = 'up'; }
-    else if (direction === 'down') { newY++; player.direction = 'down'; }
-    else if (direction === 'left') { newX--; player.direction = 'left'; }
-    else if (direction === 'right') { newX++; player.direction = 'right'; }
-
-    // التحقق من حدود الخريطة والجدران
-    if (newX >= 0 && newX < game.map[0].length && newY >= 0 && newY < game.map.length && game.map[newY][newX] === 0) {
-        player.x = newX;
-        player.y = newY;
-    }
-  });
-
-  socket.on('battleRoyale shoot', (gameId) => {
-    const game = battleRoyaleGames[gameId];
-    if (!game || game.status !== 'playing') return;
-    const player = game.players.find(p => p.id === socket.id);
-    if (!player || player.health <= 0 || !player.weapon) return;
-
-    const projectile = {
-        x: player.x,
-        y: player.y,
-        dir: player.direction,
-        ownerId: player.id,
-        id: 'proj_' + Date.now() + Math.random()
-    };
-    game.projectiles.push(projectile);
-  });
-
-  socket.on('leave battleRoyale game', (gameId) => {
-      const game = battleRoyaleGames[gameId];
-      if (game) {
-          game.players = game.players.filter(p => p.id !== socket.id);
-          socket.leave(gameId);
-          if (game.players.length === 0) {
-              if(game.interval) clearInterval(game.interval);
-              delete battleRoyaleGames[gameId];
-          } else {
-              if (game.host === onlineUsers[socket.id]?.name) game.host = game.players[0].username;
-              io.to(gameId).emit('battleRoyale game update', game);
-              io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(game));
-          }
       }
   });
 
@@ -7231,64 +7307,6 @@ socket.on('disconnect', async (reason) => {
   });
 });
 
-function updateBattleRoyaleGame(gameId) {
-  const game = battleRoyaleGames[gameId];
-  if (!game || game.status !== 'playing') {
-    if (game && game.interval) clearInterval(game.interval);
-    return;
-  }
-
-  // 1. Move projectiles
-  game.projectiles.forEach((p, index) => {
-    if (p.dir === 'up') p.y--;
-    else if (p.dir === 'down') p.y++;
-    else if (p.dir === 'left') p.x--;
-    else if (p.dir === 'right') p.x++;
-
-    // 2. Check for collisions
-    // Wall collision
-    if (p.x < 0 || p.x >= game.map[0].length || p.y < 0 || p.y >= game.map.length || game.map[p.y][p.x] === 1) {
-      game.projectiles.splice(index, 1);
-      return;
-    }
-
-    // Player collision
-    let hit = false;
-    game.players.forEach(player => {
-      if (player.health > 0 && player.id !== p.ownerId && player.x === p.x && player.y === p.y) {
-        player.health -= 25; // Damage
-        hit = true;
-        if (player.health <= 0) {
-          // Player is out
-          io.to(gameId).emit('battleRoyale player out', player.username);
-        }
-      }
-    });
-    if(hit) {
-        game.projectiles.splice(index, 1);
-    }
-  });
-
-  // 3. Check for winner
-  const alivePlayers = game.players.filter(p => p.health > 0);
-  if (alivePlayers.length === 1 && game.players.length > 1) {
-    game.status = 'over';
-    game.winner = alivePlayers[0].username;
-    if (game.interval) clearInterval(game.interval);
-    io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(game));
-    delete battleRoyaleGames[gameId];
-  } else {
-    // 4. Emit update
-    io.to(gameId).emit('battleRoyale game update', getSanitizedBattleRoyaleGame(game));
-  }
-}
-
-function getSanitizedBattleRoyaleGame(game) {
-    if (!game) return null;
-    const { interval, ...sanitized } = game;
-    return sanitized;
-}
-
 app.get('/api/rooms', (req, res) => {
   res.json(rooms);
 });
@@ -7409,6 +7427,7 @@ async function startServer() {
   await loadData(); // انتظر حتى تكتمل عملية تحميل ومزامنة البيانات
   isServerReady = true; // تعيين السيرفر كجاهز
   startQuizMonitor(); // بدء مراقبة غرفة التسلية
+  startAutomatedMessages(); // بدء إرسال الرسائل التلقائية
   server.listen(PORT, () => {
     console.log(`السيرفر يعمل على المنفذ ${PORT}`);
   });
