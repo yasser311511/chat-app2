@@ -404,25 +404,9 @@ function startHideAndSeek(roomId) {
         initialCount: 0
     };
 
-    setTimeout(() => {
-        sendSystemGameMessage(roomId, '🕵️‍♂️ <strong>لقد بدأت لعبة الاختباء!</strong><br>من يريد المشاركة يمنشنني ويقول "<strong>انا</strong>" في غضون 10 ثواني.');
-        
-        setTimeout(() => {
-            if (hideAndSeekState.participants.length === 0) {
-                sendSystemGameMessage(roomId, '❌ لم يشارك أحد، تم إلغاء اللعبة.');
-                hideAndSeekState.active = false;
-                hideAndSeekState.phase = 'idle';
-            } else {
-                hideAndSeekState.initialCount = hideAndSeekState.participants.length;
-                const names = hideAndSeekState.participants.map(p => `<span class="text-blue-400">${p.username}</span>`).join('، ');
-                sendSystemGameMessage(roomId, `👥 المشاركون هم: ${names}`);
-                
-                setTimeout(() => {
-                    nextHideAndSeekRound();
-                }, 5000);
-            }
-        }, 10000); // فترة التسجيل 10 ثواني
-    }, 5000); // تأخير البدء 5 ثواني
+    // تم تغيير الرسالة وإزالة المؤقت بناءً على طلب المستخدم
+    // ستبدأ اللعبة الآن عندما يكتب أحد "تم"
+    sendSystemGameMessage(roomId, '🕵️‍♂️ <strong>لقد بدأت لعبة الاختباء!</strong><br>من يريد المشاركة يمنشنني ويقول "<strong>انا</strong>" ولما تنتهو منشنوني وقولو تم');
 }
 
 function nextHideAndSeekRound() {
@@ -2926,19 +2910,44 @@ socket.on('join room', async (data) => {
     // 1. بدء اللعبة
     if (message.includes('@رسائل النظام') && message.includes('لعبة الاختباء')) {
         if (!hideAndSeekState.active) {
-            startHideAndSeek(roomId);
+            hideAndSeekState.active = true;
+            setTimeout(() => {
+                startHideAndSeek(roomId);
+            }, 5000);
         } else {
             // يمكن إرسال رسالة أن اللعبة قائمة بالفعل
         }
     }
 
-    // 2. التسجيل في اللعبة
+    // 2. التسجيل في اللعبة وإنهاء التسجيل
     if (hideAndSeekState.active && hideAndSeekState.phase === 'registration' && hideAndSeekState.roomId === roomId) {
+        // التسجيل
         if (message.includes('@رسائل النظام') && message.includes('انا')) {
             const alreadyJoined = hideAndSeekState.participants.some(p => p.username === user.name);
             if (!alreadyJoined) {
                 hideAndSeekState.participants.push({ username: user.name, chosenSpot: null, alive: true });
                 // يمكن إضافة رد فعل بسيط أو تركه صامتاً حتى إعلان الأسماء
+            }
+        }
+
+        // إنهاء التسجيل وبدء اللعبة عند قول "تم"
+        if (message.includes('@رسائل النظام') && message.includes('تم')) {
+            if (hideAndSeekState.participants.length === 0) {
+                sendSystemGameMessage(roomId, '❌ لم يشارك أحد، تم إلغاء اللعبة.');
+                hideAndSeekState.active = false;
+                hideAndSeekState.phase = 'idle';
+            } else {
+                hideAndSeekState.phase = 'starting'; // منع انضمام المزيد من اللاعبين
+                
+                setTimeout(() => {
+                    hideAndSeekState.initialCount = hideAndSeekState.participants.length;
+                    const names = hideAndSeekState.participants.map(p => `<span class="text-blue-400">${p.username}</span>`).join('، ');
+                    sendSystemGameMessage(roomId, `👥 المشاركون هم: ${names}`);
+                    
+                    setTimeout(() => {
+                        nextHideAndSeekRound();
+                    }, 5000);
+                }, 5000);
             }
         }
     }
@@ -2958,10 +2967,14 @@ socket.on('join room', async (data) => {
                     
                     if (allChosen) {
                         hideAndSeekState.phase = 'resolving'; // منع تغيير الاختيار
-                        sendSystemGameMessage(hideAndSeekState.roomId, '🔒 <strong>تم إغلاق الاختيارات!</strong> القاتل في طريقه...');
+                        // انتظار 10 ثواني قبل إعلان إغلاق الاختيارات
                         setTimeout(() => {
-                            resolveHideAndSeekRound();
-                        }, 5000);
+                            sendSystemGameMessage(hideAndSeekState.roomId, '🔒 <strong>تم إغلاق الاختيارات!</strong> القاتل في طريقه...');
+                            // انتظار 10 ثواني أخرى قبل كشف أماكن القاتل
+                            setTimeout(() => {
+                                resolveHideAndSeekRound();
+                            }, 10000);
+                        }, 10000);
                     }
                 }
             }
