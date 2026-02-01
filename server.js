@@ -40,6 +40,7 @@ const User = sequelize.define('User', {
   profileBackground: { type: DataTypes.STRING, allowNull: true },
   profileCover: { type: DataTypes.TEXT, allowNull: true },
   nameCardBorder: { type: DataTypes.STRING, allowNull: true },
+  joinMessageBackground: { type: DataTypes.STRING, allowNull: true },
   referredBy: { type: DataTypes.STRING, allowNull: true }, // المستخدم الذي قام بدعوته
   nameFont: { type: DataTypes.STRING, allowNull: true }, // نوع الخط
   status: { type: DataTypes.STRING(200), allowNull: true }, // الحالة
@@ -248,8 +249,8 @@ app.use(compression());
 const cacheTime = 86400000 * 30; // 30 يوم
 app.use(express.static(path.join(__dirname, 'public'), {
     maxAge: cacheTime,
-    setHeaders: (res, path) => {
-        if (path.endsWith('.html')) {
+    setHeaders: (res, filePath) => {
+        if (filePath.endsWith('.html') || filePath.match(/[/\\]f[/\\]/)) {
             res.setHeader('Cache-Control', 'public, max-age=0'); // لا تخزن HTML لضمان التحديثات
         } else {
             res.setHeader('Cache-Control', `public, max-age=${cacheTime}`);
@@ -790,6 +791,15 @@ const DEFAULT_AVATAR_URL = '/my-avatar.png';
 const userLastAction = {};
 
 
+// دالة مساعدة لجلب العناصر المملوكة للمستخدم (قيم العناصر)
+function getOwnedItems(username) {
+    const userInv = userInventories[username] || [];
+    return userInv.map(inv => {
+        const item = shopItems.find(i => i.id === inv.itemId);
+        return item ? item.itemValue : null;
+    }).filter(v => v);
+}
+
 function getUserBadges(username) {
   const userAchs = userAchievements[username] || {};
   return Object.values(achievements)
@@ -1023,12 +1033,22 @@ async function loadData() {
         console.log('تم إضافة عمود age بنجاح');
       } catch (err) { console.error('فشل إضافة عمود age:', err); }
     }
+
+    // التحقق من عمود joinMessageBackground
+    const hasJoinBg = await columnExists('Users', 'joinMessageBackground');
+    if (!hasJoinBg) {
+      try {
+        await sequelize.getQueryInterface().addColumn('Users', 'joinMessageBackground', { type: DataTypes.STRING, allowNull: true });
+        console.log('تم إضافة عمود joinMessageBackground بنجاح');
+      } catch (err) { console.error('فشل إضافة عمود joinMessageBackground:', err); }
+    }
+
     await delay(10); // تقليل وقت الانتظار لتسريع البدء
     
     // تحميل البيانات بشكل تسلسلي لتجنب مشاكل SSL مع البيانات الكبيرة
     // ملاحظة: تم استبعاد الحقول الكبيرة (بيو وصورة الغلاف) من التحميل الأولي لتجنب أخطاء SSL
     const usersData = await User.findAll({ 
-      attributes: ['username', 'password', 'gender', 'nameColor', 'nameBackground', 'avatarFrame', 'userCardBackground', 'profileBackground', 'nameCardBorder', 'nameFont', 'referredBy', 'createdAt', 'status', 'country', 'age'] 
+      attributes: ['username', 'password', 'gender', 'nameColor', 'nameBackground', 'avatarFrame', 'userCardBackground', 'profileBackground', 'nameCardBorder', 'nameFont', 'joinMessageBackground', 'referredBy', 'createdAt', 'status', 'country', 'age'] 
     });
     await delay(10);
     
@@ -1089,6 +1109,8 @@ async function loadData() {
     await delay(10);
     const likesData = await PostLike.findAll();
     await delay(10);
+    const laughsData = await PostLaugh.findAll();
+    await delay(10);
     const commentsData = await PostComment.findAll({ order: [['timestamp', 'ASC']] });
     await delay(10);
 
@@ -1117,6 +1139,7 @@ async function loadData() {
         profileBackground: user.profileBackground || null,
         nameCardBorder: user.nameCardBorder || null,
         nameFont: user.nameFont || null,
+        joinMessageBackground: user.joinMessageBackground || null,
         referredBy: user.referredBy || null,
         createdAt: user.createdAt,
         status: user.status || null,
@@ -1312,9 +1335,37 @@ async function loadData() {
         { name: 'رتبة بريميوم', description: 'شراء رتبة بريميوم', price: 3000, itemType: 'rank', itemValue: 'بريميوم' },
         { name: 'رتبة ادمن', description: 'شراء رتبة ادمن', price: 10000, itemType: 'rank', itemValue: 'ادمن' },
         { name: 'رتبة سوبر ادمن', description: 'شراء رتبة سوبر ادمن', price: 20000, itemType: 'rank', itemValue: 'سوبر ادمن' },
-        { name: 'رتبة منشئ', description: 'شراء رتبة منشئ', price: 50000, itemType: 'rank', itemValue: 'منشئ' }
+        { name: 'رتبة منشئ', description: 'شراء رتبة منشئ', price: 50000, itemType: 'rank', itemValue: 'منشئ' },
+        { name: 'خلفية انضمام نارية', description: 'رسالة انضمام بخلفية نارية متحركة وجذابة', price: 50000, itemType: 'join_message_bg', itemValue: 'fire-join-bg' }
       ]);
     }
+
+    // التأكد من وجود خلفية الانضمام النارية (للمستخدمين الحاليين)
+    const fireBgItem = await ShopItem.findOne({ where: { itemValue: 'fire-join-bg' } });
+    if (!fireBgItem) {
+        await ShopItem.create({ name: 'خلفية انضمام نارية', description: 'رسالة انضمام بخلفية نارية متحركة وجذابة', price: 50000, itemType: 'join_message_bg', itemValue: 'fire-join-bg' });
+    }
+    
+    // إضافة إطارات التاج الخاصة
+    const crownGoldItem = await ShopItem.findOne({ where: { itemValue: 'frame-crown-gold' } });
+    if (!crownGoldItem) {
+        await ShopItem.create({ name: 'إطار التاج الذهبي', description: 'إطار دائري ذهبي مضيء مع تاج', price: 50000, itemType: 'avatar_frame', itemValue: 'frame-crown-gold' });
+    }
+    const crownRainbowItem = await ShopItem.findOne({ where: { itemValue: 'frame-crown-rainbow' } });
+    if (!crownRainbowItem) {
+        await ShopItem.create({ name: 'إطار التاج الملون', description: 'إطار دائري بألوان متحركة مع تاج', price: 50000, itemType: 'avatar_frame', itemValue: 'frame-crown-rainbow' });
+    }
+    
+    const blueFireItem = await ShopItem.findOne({ where: { itemValue: 'frame-blue-fire' } });
+    if (!blueFireItem) {
+        await ShopItem.create({ name: 'إطار النار الأزرق', description: 'إطار ناري أزرق مع تاج يدور', price: 60000, itemType: 'avatar_frame', itemValue: 'frame-blue-fire' });
+    }
+    
+    const orangeFireItem = await ShopItem.findOne({ where: { itemValue: 'frame-orange-fire' } });
+    if (!orangeFireItem) {
+        await ShopItem.create({ name: 'إطار النار البرتقالي', description: 'إطار ناري برتقالي مشع (1000 XP)', price: 1000, itemType: 'avatar_frame', itemValue: 'frame-orange-fire' });
+    }
+
     shopItems = await ShopItem.findAll({ order: [['price', 'ASC']] });
 
     inventoriesData.forEach(inventory => {
@@ -1361,7 +1412,14 @@ async function loadData() {
         nameColor: ownerUser.nameColor, nameBackground: ownerUser.nameBackground,
         avatarFrame: ownerUser.avatarFrame, userCardBackground: ownerUser.userCardBackground,
         profileBackground: ownerUser.profileBackground, profileCover: ownerUser.profileCover,
-        nameCardBorder: ownerUser.nameCardBorder
+        nameCardBorder: ownerUser.nameCardBorder,
+        joinMessageBackground: ownerUser.joinMessageBackground,
+        status: ownerUser.status,
+        country: ownerUser.country,
+        age: ownerUser.age,
+        nameFont: ownerUser.nameFont,
+        createdAt: ownerUser.createdAt,
+        referredBy: ownerUser.referredBy
       };
     } catch (e) {
       console.error('Error ensuring site owner:', e);
@@ -1432,6 +1490,7 @@ async function saveUser(username, userData) {
       profileCover: userData.profileCover || null,
       nameCardBorder: userData.nameCardBorder || null,
       nameFont: userData.nameFont || null,
+      joinMessageBackground: userData.joinMessageBackground || null,
       referredBy: userData.referredBy || null,
       status: userData.status || null,
       country: userData.country || null,
@@ -2512,7 +2571,8 @@ socket.on('send private image', async (data) => {
             nameFont: userInMemory.nameFont,
             status: userInMemory.status,
             country: userInMemory.country,
-            age: userInMemory.age
+            age: userInMemory.age,
+            ownedItems: getOwnedItems(userData.username)
           });
           socket.join(userData.username); // الانضمام لغرفة المستخدم لتلقي الرسائل الخاصة
           socket.emit('ranks update', ranks); // إرسال الرتب الحالية عند تسجيل الدخول
@@ -2586,7 +2646,8 @@ socket.on('send private image', async (data) => {
     profileBackground: null,
     profileCover: null,
     nameCardBorder: null,
-    nameFont: null
+    nameFont: null,
+    ownedItems: []
   });
   socket.join(userData.username);
   socket.emit('ranks update', ranks);
@@ -2756,6 +2817,7 @@ socket.on('join room', async (data) => {
       avatar: userAvatars[user.name] || DEFAULT_AVATAR_URL,
       rank: user.rank,
       rankLevel: rankInfo ? rankInfo.level : 0,
+      joinBg: users[user.name]?.joinMessageBackground, // إرسال خلفية الانضمام
       time: new Date().toLocaleTimeString('en-GB'),
       timestamp: Date.now()
     };
@@ -4314,6 +4376,14 @@ socket.on('leave room', async (data) => {
             await User.update({ nameBackground: value }, { where: { username } });
             users[username].nameBackground = value;
         } else if (feature === 'avatarFrame') {
+            const premiumFrames = ['frame-crown-gold', 'frame-crown-rainbow'];
+            if (premiumFrames.includes(value)) {
+                const owned = getOwnedItems(username);
+                if (!owned.includes(value)) {
+                    socket.emit('feature error', 'يجب شراء هذا الإطار من المتجر أولاً.');
+                    return;
+                }
+            }
             await User.update({ avatarFrame: value }, { where: { username } });
             users[username].avatarFrame = value;
         } else if (feature === 'userCardBackground') {
@@ -5698,20 +5768,37 @@ socket.on('disconnect', async (reason) => {
 
     // التحقق من النقاط فقط إذا لم يكن المستخدم خاصًا
     if (!SPECIAL_USERS_CONFIG[username]) {
-        const userPointsData = userPoints[username] || { points: 0, isInfinite: false };
-        if (!userPointsData.isInfinite && userPointsData.points < item.price) {
-            socket.emit('buy item error', 'ليس لديك نقاط كافية لشراء هذه الرتبة.');
-            return;
+        const userPointsData = userPoints[username] || { points: 0, xp: 0, isInfinite: false };
+        
+        // التحقق الخاص لإطار النار البرتقالي (يستخدم XP)
+        if (item.itemValue === 'frame-orange-fire') {
+            if (userPointsData.xp < item.price) {
+                socket.emit('buy item error', 'ليس لديك نقاط خبرة (XP) كافية لشراء هذا الإطار.');
+                return;
+            }
+        } else {
+            if (!userPointsData.isInfinite && userPointsData.points < item.price) {
+                socket.emit('buy item error', 'ليس لديك نقاط كافية لشراء هذا العنصر.');
+                return;
+            }
         }
     }
 
     try {
       // 1. خصم النقاط
       let newPoints = userPoints[username]?.points || 0;
+      let newXP = userPoints[username]?.xp || 0;
+
       if (!SPECIAL_USERS_CONFIG[username] && !userPoints[username]?.isInfinite) {
-          newPoints -= item.price;
-          await saveUserPoints(username, newPoints, userPoints[username].level);
-          userPoints[username].points = newPoints;
+          if (item.itemValue === 'frame-orange-fire') {
+              newXP -= item.price;
+              await UserPoints.update({ xp: newXP }, { where: { username } });
+              userPoints[username].xp = newXP;
+          } else {
+              newPoints -= item.price;
+              await saveUserPoints(username, newPoints, userPoints[username].level);
+              userPoints[username].points = newPoints;
+          }
       }
 
       // 2. منح الرتبة مباشرة
@@ -5737,6 +5824,24 @@ socket.on('disconnect', async (reason) => {
               if (u.name === username) u.rank = newRank;
           }));
           broadcastRoomsUpdate();
+      } else if (item.itemType === 'avatar_frame' || item.itemType === 'join_message_bg') {
+          // معالجة شراء العناصر التي تضاف للمخزون (إطارات، خلفيات)
+          await saveUserInventory(username, item.id);
+          
+          // تفعيل خلفية الانضمام تلقائياً إذا كانت هي العنصر المشترى
+          if (item.itemType === 'join_message_bg') {
+               await User.update({ joinMessageBackground: item.itemValue }, { where: { username } });
+               if (users[username]) users[username].joinMessageBackground = item.itemValue;
+          }
+
+          socket.emit('buy item success', {
+              message: `🎉 تهانينا! لقد اشتريت "${item.name}" بنجاح.`,
+              reload: false,
+              newPoints: newPoints,
+              newXP: newXP,
+              ownedItems: getOwnedItems(username)
+          });
+          return;
       }
 
       // 3. إرسال إشعار نجاح وطلب تحديث الصفحة
@@ -7356,7 +7461,8 @@ app.get('/check-auth', async (req, res) => {
                     profileBackground: user.profileBackground,
                     profileCover: user.profileCover,
                     nameCardBorder: user.nameCardBorder,
-                    nameFont: user.nameFont
+                    nameFont: user.nameFont,
+                    ownedItems: getOwnedItems(sessionData.username)
                 }
             });
         }
