@@ -199,7 +199,7 @@
                 right: -100%;
                 width: 80%;
                 height: 100vh;
-                z-index: 50;
+                z-index: 200 !important;
                 transition: transform 0.3s ease;
                 background: rgba(15, 23, 42, 0.95);
                 backdrop-filter: blur(10px);
@@ -209,6 +209,7 @@
             .users-container.show {
                 right: 0;
                 transform: translateX(0);
+                display: block !important;
             }
             
             .users-overlay {
@@ -1428,13 +1429,18 @@
         @media (max-width: 640px) {
             /* 1. تحسين النوافذ المنبثقة (Modals) لتملأ الشاشة تقريباً */
             .profile-content {
-                width: 95% !important;
+                width: 100% !important;
                 max-width: none !important;
-                max-height: 90vh !important;
-                margin: 10px auto !important;
-                border-radius: 1rem !important;
+                height: auto !important;
+                min-height: 100% !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+                overflow: visible !important;
             }
-
+            .profile-modal {
+                padding: 0 !important;
+                overflow-y: auto !important;
+            }
             /* 2. تحويل المحادثة الخاصة إلى ملء الشاشة */
             .private-chat-modal {
                 width: 100% !important;
@@ -1770,7 +1776,7 @@
     </div>
 
     <!-- صفحة المحادثة -->
-    <div id="chatPage" class="hidden h-screen flex flex-col overflow-hidden">
+    <div id="chatPage" class="hidden h-full w-full flex flex-col overflow-hidden fixed inset-0">
         <!-- القائمة الجانبية اليسرى -->
         <div id="leftSidebar" class="fixed top-0 left-0 h-full w-72 bg-gray-900/95 backdrop-blur-xl border-r border-gray-700 transform -translate-x-full transition-transform duration-300 z-[60] flex flex-col shadow-2xl">
             <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
@@ -1940,11 +1946,16 @@
         <div class="flex-1 flex overflow-hidden relative">
             <!-- قائمة المستخدمين المتصلين (للشاشات الكبيرة) -->
             <div id="onlineUsersPanel" class="hidden md:block w-72 flex-shrink-0 bg-gray-800/70 backdrop-blur-lg border-l border-gray-700 p-4 users-container custom-scrollbar z-20">
-                <h3 class="text-white font-bold mb-4 flex items-center space-x-2 space-x-reverse">
-                    <span class="w-3 h-3 bg-green-500 rounded-full"></span>
-                    <span>المستخدمون المتصلون</span>
-                    <span id="onlineUsersCount" class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">0</span>
-                </h3>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-white font-bold flex items-center space-x-2 space-x-reverse">
+                        <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                        <span>المستخدمون المتصلون</span>
+                        <span id="onlineUsersCount" class="bg-blue-600 text-white text-xs px-2 py-1 rounded-full">0</span>
+                    </h3>
+                    <button onclick="toggleUsersList()" class="md:hidden text-slate-400 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
         
                 <div id="onlineUsersList" class="space-y-3">
                     <!-- المستخدمون المتصلون سيتم تحميلهم ديناميكياً -->
@@ -1959,7 +1970,7 @@
                 </div>
 
                 <!-- منطقة إرسال الرسائل -->
-                <div id="messageArea" class="bg-gray-900/95 backdrop-blur-xl border-t border-gray-700 p-4 shrink-0 w-full z-10">
+                <div id="messageArea" class="bg-gray-900/95 backdrop-blur-xl border-t border-gray-700 p-2 shrink-0 w-full z-10">
                     <div class="w-full">
                         <!-- لوحة إدارة الرتب -->
                         <div id="rankManagementPanel" class="hidden mb-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-4 border border-purple-500/50">
@@ -2124,12 +2135,12 @@
                         </div>
                     </div>
 
-                    <div id="messageInputContainer" class="flex space-x-4 space-x-reverse relative z-10">
+                    <div id="messageInputContainer" class="flex space-x-2 space-x-reverse relative z-10">
                         <input 
                         type="text"
                         id="messageInput"
                         placeholder="اكتب رسالتك هنا..."
-                        class="flex-1 bg-gray-800 border border-gray-700 rounded-full px-6 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
+                        class="flex-1 bg-gray-800 border border-gray-700 rounded-full px-4 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-colors"
                         onkeypress="handleKeyPress(event)"
                         oninput="checkMessageLength()"
                         style="text-align: start; direction: rtl; padding-left: 20px; position: relative; z-index: 10;"
@@ -2137,7 +2148,7 @@
                         <button 
                             id="sendMessageButton"
                             onclick="sendMessage()"
-                            class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse disabled:bg-gray-500 disabled:cursor-not-allowed"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-full font-semibold transition-colors flex items-center space-x-2 space-x-reverse disabled:bg-gray-500 disabled:cursor-not-allowed"
                         >
                             <span>إرسال</span>
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2218,6 +2229,7 @@
                 <button onclick="switchProfileTab(event, 'details')" class="profile-tab-btn active">تفاصيل</button>
                 <button onclick="switchProfileTab(event, 'friends')" class="profile-tab-btn">الأصدقاء</button>
                 <button onclick="switchProfileTab(event, 'achievements')" class="profile-tab-btn">🏅 الإنجازات</button>
+                <button id="actionsTabButton" onclick="switchProfileTab(event, 'actions')" class="profile-tab-btn hidden">الأمر ⚡</button>
                 <button id="featuresTabButton" onclick="switchProfileTab(event, 'features')" class="profile-tab-btn hidden">ميزات 🌟</button>
                 <button id="optionsTabButton" onclick="switchProfileTab(event, 'options')" class="profile-tab-btn hidden">خيارات ⚙️</button>
                 <button id="accountTabButton" onclick="switchProfileTab(event, 'account')" class="profile-tab-btn hidden">حول الحساب</button>
@@ -2281,22 +2293,6 @@
                         </div>
                     </div>
 
-                    <!-- أزرار الإجراءات للزوار -->
-                    <div id="visitorActions" class="space-y-3 pt-6">
-                        <button id="privateChatButton" onclick="startPrivateChat()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-900/20 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 space-x-reverse">
-                            <span>محادثة خاصة</span>
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                        </button>
-                        <button id="addFriendButton" onclick="sendFriendRequest()" class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-green-900/20 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 space-x-reverse">
-                            <span>إضافة صديق</span>
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
-                        </button>
-                        <button id="sendPointsButton" onclick="sendPoints()" class="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-purple-900/20 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 space-x-reverse">
-                            <span>إرسال نقاط</span>
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1m0-1V4m0 2v1m0 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                        </button>
-                    </div>
-
                     <!-- إحصائيات التفاعل ونظام الدعوة -->
                     <div id="referralSection" class="mt-6 p-4 bg-gray-800/40 border border-gray-700/50 rounded-2xl">
                         <div class="flex items-center justify-between mb-4">
@@ -2339,6 +2335,24 @@
                                 إلغاء
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- قسم الأمر (Actions) -->
+                <div id="profileTab-actions" class="profile-tab-content hidden">
+                    <div id="visitorActions" class="space-y-3 pt-2">
+                        <button id="privateChatButton" onclick="startPrivateChat()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-900/20 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 space-x-reverse">
+                            <span>محادثة خاصة</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                        </button>
+                        <button id="addFriendButton" onclick="sendFriendRequest()" class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-green-900/20 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 space-x-reverse">
+                            <span>إضافة صديق</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                        </button>
+                        <button id="sendPointsButton" onclick="sendPoints()" class="w-full bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-purple-900/20 transition-all duration-200 transform hover:-translate-y-0.5 flex items-center justify-center space-x-2 space-x-reverse">
+                            <span>إرسال نقاط</span>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1m0-1V4m0 2v1m0 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        </button>
                     </div>
                 </div>
 
@@ -4161,7 +4175,7 @@
 
         function getRankIconHtml(icon, className = "text-xl") {
             // تم إضافة transform: translateY(2px) لإنزال الصورة قليلاً لتكون في نفس مستوى النص
-            if (icon && (icon.startsWith('data:image') || icon.startsWith('http'))) return `<img src="${icon}" class="${className} inline-block object-contain" style="width: 1.5em; height: 1.5em; vertical-align: middle; transform: translateY(2px);">`;
+            if (icon && (icon.startsWith('data:image') || icon.startsWith('http'))) return `<img src="${icon}" class="${className} inline-block object-contain" style="width: 1.5em; height: 1.5em; vertical-align: middle; transform: translateY(-3px);">`;
             return `<span class="${className}">${icon || ''}</span>`;
         }
 
@@ -5137,14 +5151,15 @@ socket.on('private messages history', (messages) => {
                 const addFriendButton = document.getElementById('addFriendButton');
                 if (addFriendButton) {
                     addFriendButton.innerHTML = `
-                        <span>صديق</span>
+                        <span>حذف الصديق</span>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6"></path>
                         </svg>
                     `;
-                    addFriendButton.classList.remove('bg-green-600', 'hover:bg-green-700', 'bg-blue-600');
-                    addFriendButton.classList.add('bg-gray-600', 'hover:bg-gray-700');
-                    addFriendButton.disabled = true;
+                    addFriendButton.classList.remove('bg-green-600', 'hover:bg-green-700', 'bg-blue-600', 'bg-gray-600', 'hover:bg-gray-700');
+                    addFriendButton.classList.add('bg-red-600', 'hover:bg-red-700');
+                    addFriendButton.disabled = false;
+                    addFriendButton.onclick = () => removeFriend(data.byUser);
                 }
             }
         });
@@ -5161,14 +5176,15 @@ socket.on('private messages history', (messages) => {
                 const addFriendButton = document.getElementById('addFriendButton');
                 if (addFriendButton) {
                     addFriendButton.innerHTML = `
-                        <span>صديق</span>
+                        <span>حذف الصديق</span>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6"></path>
                         </svg>
                     `;
-                    addFriendButton.classList.remove('bg-green-600', 'hover:bg-green-700', 'bg-blue-600');
-                    addFriendButton.classList.add('bg-gray-600', 'hover:bg-gray-700');
-                    addFriendButton.disabled = true;
+                    addFriendButton.classList.remove('bg-green-600', 'hover:bg-green-700', 'bg-blue-600', 'bg-gray-600', 'hover:bg-gray-700');
+                    addFriendButton.classList.add('bg-red-600', 'hover:bg-red-700');
+                    addFriendButton.disabled = false;
+                    addFriendButton.onclick = () => removeFriend(profileUsername);
                 }
             }
             
@@ -5178,7 +5194,23 @@ socket.on('private messages history', (messages) => {
 
         socket.on('friend removed', (message) => {
             showNotification(message, 'success');
-            updateFriendsList();
+            // تحديث قائمة الأصدقاء من السيرفر
+            socket.emit('get friends list', currentUser.name);
+            
+            // إعادة تعيين الزر في الملف الشخصي إذا كان مفتوحاً
+            const addFriendButton = document.getElementById('addFriendButton');
+            if (addFriendButton && addFriendButton.style.display !== 'none') {
+                addFriendButton.innerHTML = `
+                    <span>إضافة صديق</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                    </svg>
+                `;
+                addFriendButton.classList.remove('bg-red-600', 'hover:bg-red-700', 'bg-gray-600', 'hover:bg-gray-700');
+                addFriendButton.classList.add('bg-green-600', 'hover:bg-green-700');
+                addFriendButton.disabled = false;
+                addFriendButton.onclick = sendFriendRequest;
+            }
         });
 
         socket.on('friend removed you', (data) => {
@@ -6006,8 +6038,8 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
                 <div class="message-bubble relative ${messageBgClass + ' ' + messageTextColorClass} rounded-lg p-2 min-w-[50px]" style="${bubbleStyle}">
                     ${replyHtml}
                     <div class="message-content leading-snug flex items-center flex-wrap gap-1">
-                        <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''} ${nameFontClass}" onclick="mentionUser('${user}')">${user}</span>
                         ${rankBadge}
+                        <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''} ${nameFontClass}" onclick="mentionUser('${user}')">${user}</span>
                         <span class="font-bold">:</span>
                         <span class="break-words">${formattedMessage}</span>
                     </div>
@@ -6923,6 +6955,8 @@ function updateOnlineUsersList(users) {
             const removeCoverBtn = document.getElementById('removeCoverBtn');
             const featuresTabButton = document.getElementById('featuresTabButton');
             const optionsTabButton = document.getElementById('optionsTabButton');
+            const actionsTabButton = document.getElementById('actionsTabButton');
+            const sendPointsButton = document.getElementById('sendPointsButton');
             const specialUsers = ["Walid dz 31", "سيد احمد", "ميارا"]; 
             const profileHeader = document.getElementById('profileHeader');
             const profileContent = document.getElementById('profileContent');
@@ -7257,6 +7291,7 @@ function updateOnlineUsersList(users) {
                 editBioButton.classList.remove('hidden');
                 saveBioButton.classList.add('hidden');
                 visitorActions.classList.add('hidden');
+                if (actionsTabButton) actionsTabButton.classList.add('hidden');
                 
                 // إظهار حاوية تعديل الحالة
                 const statusContainer = document.getElementById('statusEditContainer');
@@ -7289,6 +7324,7 @@ function updateOnlineUsersList(users) {
                 if (caDisplay) caDisplay.classList.remove('hidden');
 
                 visitorActions.classList.remove('hidden');
+                if (actionsTabButton) actionsTabButton.classList.remove('hidden');
                 const privateChatButton = document.getElementById('privateChatButton');
                 privateChatButton.style.display = 'flex';
                 privateChatButton.setAttribute('data-username', profileData.username);
@@ -7300,16 +7336,18 @@ function updateOnlineUsersList(users) {
                 addFriendButton.setAttribute('data-username', profileData.username);
                 
                 // التحقق إذا كان المستخدم صديقاً بالفعل
-                if (friendsList.includes(profileData.username)) {
+                // التحقق من قائمة الأصدقاء (سواء كانت كائنات أو نصوص)
+                if (friendsList.some(f => (typeof f === 'string' ? f : f.username) === profileData.username)) {
                     addFriendButton.innerHTML = `
-                        <span>صديق</span>
+                        <span>حذف الصديق</span>
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6"></path>
                         </svg>
                     `;
-                    addFriendButton.classList.remove('bg-green-600', 'hover:bg-green-700');
-                    addFriendButton.classList.add('bg-gray-600', 'hover:bg-gray-700');
-                    addFriendButton.disabled = true;
+                    addFriendButton.classList.remove('bg-green-600', 'hover:bg-green-700', 'bg-gray-600', 'hover:bg-gray-700');
+                    addFriendButton.classList.add('bg-red-600', 'hover:bg-red-700');
+                    addFriendButton.disabled = false;
+                    addFriendButton.onclick = () => removeFriend(profileData.username);
                 } else {
                     addFriendButton.innerHTML = `
                         <span>إضافة صديق</span>
@@ -7317,9 +7355,10 @@ function updateOnlineUsersList(users) {
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
                         </svg>
                     `;
-                    addFriendButton.classList.remove('bg-gray-600', 'hover:bg-gray-700');
+                    addFriendButton.classList.remove('bg-gray-600', 'hover:bg-gray-700', 'bg-red-600', 'hover:bg-red-700');
                     addFriendButton.classList.add('bg-green-600', 'hover:bg-green-700');
                     addFriendButton.disabled = false;
+                    addFriendButton.onclick = sendFriendRequest;
                 }
 
                 // إظهار قائمة الإدارة إذا كان المستخدم الحالي مشرفاً
@@ -8936,8 +8975,8 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
                     ${replyHtml}
                     <div class="message-content leading-snug flex flex-col gap-1">
                         <div class="flex items-center flex-wrap gap-1">
-                            <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''} ${nameFontClass}" onclick="mentionUser('${user}')">${user}</span>
                             ${rankBadge}
+                            <span class="username-text font-bold cursor-pointer ${nameColorClass} ${nameBgClass ? nameBgClass + ' px-1 rounded' : ''} ${nameFontClass}" onclick="mentionUser('${user}')">${user}</span>
                             <span class="font-bold">:</span>
                         </div>
                         <div class="relative">
@@ -9080,7 +9119,7 @@ function updateUIWithImageButtons() {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                 </svg>
             `;
-            imageButton.className = 'bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-full font-semibold transition-colors flex items-center justify-center';
+                    imageButton.className = 'bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full font-semibold transition-colors flex items-center justify-center';
             imageButton.onclick = openImageUpload;
             imageButton.title = 'إرسال صورة';
             
@@ -9097,7 +9136,7 @@ function updateUIWithImageButtons() {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
             `;
-            emojiButton.className = 'bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-3 rounded-full font-semibold transition-colors flex items-center justify-center';
+                    emojiButton.className = 'bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-full font-semibold transition-colors flex items-center justify-center';
             emojiButton.onclick = (e) => {
                 e.stopPropagation();
                 toggleEmojiPicker(false);

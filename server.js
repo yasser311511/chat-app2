@@ -545,35 +545,54 @@ let guessGameState = {
     roomId: null
 };
 
+// --- ذاكرة الذكاء الاصطناعي ---
+const aiConversationHistory = {}; // { username: [ { role, content } ] }
+
 // --- إعدادات بوت الذكاء الاصطناعي ---
 const AI_BOT_CONFIG = {
     name: "الذكاء الاصطناعي",
-    avatar: "/images.png",
-    apiUrl: "https://router.huggingface.co/v1/chat/completions",
-    model: "Qwen/Qwen2.5-7B-Instruct",
-    apiKey: process.env.HF_API_KEY || "" 
+    avatar: "/images.png", // يمكنك تغيير هذا
+    apiUrl: "https://openrouter.ai/api/v1/chat/completions",
+    model: "openrouter/auto", // نموذج Qwen المجاني
+    apiKey: process.env.OPENROUTER_API_KEY || "" 
 };
 
-async function askAIBot(question) {
-    if (!AI_BOT_CONFIG.apiKey || AI_BOT_CONFIG.apiKey === "your_huggingface_api_key_here") {
-        return "⚠️ عذراً، لم يتم وضع مفتاح API الحقيقي في ملف .env. يرجى استبدال 'your_huggingface_api_key_here' بمفتاحك الخاص من Hugging Face.";
+async function askAIBot(username, question) {
+    if (!AI_BOT_CONFIG.apiKey || AI_BOT_CONFIG.apiKey.startsWith("sk-or-v1-abc")) {
+        return "⚠️ عذراً، لم يتم إعداد مفتاح API للذكاء الاصطناعي. يرجى الحصول على مفتاح من OpenRouter.ai ووضعه في ملف .env.";
+    }
+
+    // إدارة الذاكرة للمستخدم
+    if (!aiConversationHistory[username]) {
+        aiConversationHistory[username] = [];
+    }
+
+    // إضافة رسالة المستخدم الجديدة
+    aiConversationHistory[username].push({ role: "user", content: question });
+
+    // الاحتفاظ بآخر 20 رسالة فقط (10 محادثات) لضمان ذاكرة قصيرة المدى فعالة
+    if (aiConversationHistory[username].length > 20) {
+        aiConversationHistory[username] = aiConversationHistory[username].slice(-20);
     }
 
     const payload = JSON.stringify({
         model: AI_BOT_CONFIG.model,
         messages: [
-            { role: "system", content: "You are a helpful assistant in an Arabic chat application called WalChat. Keep your responses concise and friendly in Arabic." },
-            { role: "user", content: question }
+            { role: "system", content: "أنت مساعد ذكي في تطبيق دردشة عربي. تحدث باللغة العربية الفصحى بأسلوب واضح ومختصر. تجنب الرموز التعبيرية والتنسيقات غير الضرورية." },
+            ...aiConversationHistory[username]
         ],
         max_tokens: 400,
-        temperature: 0.7
+        temperature: 0.6 // زيادة طفيفة في الإبداع
     });
 
     const options = {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${AI_BOT_CONFIG.apiKey.trim()}`
+            'Authorization': `Bearer ${AI_BOT_CONFIG.apiKey.trim()}`,
+            // OpenRouter يتطلب هذه الترويسات
+            'HTTP-Referer': 'https://walidchating.onrender.com', 
+            'X-Title': 'WalChat'
         }
     };
 
@@ -605,7 +624,17 @@ async function askAIBot(question) {
 
                     const response = JSON.parse(data);
                     if (response.choices && response.choices[0] && response.choices[0].message) {
-                        resolve(response.choices[0].message.content.trim());
+                        let aiReply = response.choices[0].message.content.trim();
+                        
+                        // تنظيف الرد من أي حروف صينية قد تتسرب (احتياط أمني)
+                        aiReply = aiReply.replace(/[\u4e00-\u9fa5]/g, '');
+                        
+                        // تنظيف الرموز الغريبة وتنسيقات الماركداون التي قد تظهر كنص مشوه
+                        aiReply = aiReply.replace(/[*_#`~]/g, '');
+                        
+                        // حفظ رد البوت في الذاكرة
+                        aiConversationHistory[username].push({ role: "assistant", content: aiReply });
+                        resolve(aiReply);
                     } else if (response.error) {
                         const errorMsg = response.error.message || response.error;
                         if (errorMsg.includes("currently loading")) {
@@ -911,6 +940,7 @@ async function updateAchievementProgress(username, type, value = 1, targetUserna
     console.error('Error updating achievement progress:', err);
   }
 }
+
 
 async function loadData() {
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms)); // دالة تأخير
@@ -1349,16 +1379,22 @@ async function loadData() {
     // إضافة إطارات التاج الخاصة
     const crownGoldItem = await ShopItem.findOne({ where: { itemValue: 'frame-crown-gold' } });
     if (!crownGoldItem) {
-        await ShopItem.create({ name: 'إطار التاج الذهبي', description: 'إطار دائري ذهبي مضيء مع تاج', price: 50000, itemType: 'avatar_frame', itemValue: 'frame-crown-gold' });
+        await ShopItem.create({ name: 'إطار التاج الذهبي', description: 'إطار دائري ذهبي مضيء مع تاج', price: 20000, itemType: 'avatar_frame', itemValue: 'frame-crown-gold' });
+    } else {
+        await crownGoldItem.update({ price: 20000 });
     }
     const crownRainbowItem = await ShopItem.findOne({ where: { itemValue: 'frame-crown-rainbow' } });
     if (!crownRainbowItem) {
-        await ShopItem.create({ name: 'إطار التاج الملون', description: 'إطار دائري بألوان متحركة مع تاج', price: 50000, itemType: 'avatar_frame', itemValue: 'frame-crown-rainbow' });
+        await ShopItem.create({ name: 'إطار التاج الملون', description: 'إطار دائري بألوان متحركة مع تاج', price: 20000, itemType: 'avatar_frame', itemValue: 'frame-crown-rainbow' });
+    } else {
+        await crownRainbowItem.update({ price: 20000 });
     }
     
     const blueFireItem = await ShopItem.findOne({ where: { itemValue: 'frame-blue-fire' } });
     if (!blueFireItem) {
-        await ShopItem.create({ name: 'إطار النار الأزرق', description: 'إطار ناري أزرق مع تاج يدور', price: 60000, itemType: 'avatar_frame', itemValue: 'frame-blue-fire' });
+        await ShopItem.create({ name: 'إطار النار الأزرق', description: 'إطار ناري أزرق مع تاج يدور', price: 20000, itemType: 'avatar_frame', itemValue: 'frame-blue-fire' });
+    } else {
+        await blueFireItem.update({ price: 20000 });
     }
     
     const orangeFireItem = await ShopItem.findOne({ where: { itemValue: 'frame-orange-fire' } });
@@ -2969,12 +3005,23 @@ socket.on('join room', async (data) => {
 
     // --- منطق لعبة الاختباء (داخل send message) ---
     
-    // 1. بدء اللعبة
-    if (message.includes('@رسائل النظام') && message.includes('لعبة الاختباء')) {
+    // 1. إيقاف اللعبة (جديد)
+    if (message.includes('@رسائل النظام') && message.includes('ايقاف لعبة الاختباء')) {
+        if (hideAndSeekState.active) {
+            hideAndSeekState.active = false;
+            hideAndSeekState.phase = 'idle';
+            sendSystemGameMessage(roomId, '🛑 <strong>تم إيقاف لعبة الاختباء بنجاح.</strong>');
+        }
+    }
+    // 2. بدء اللعبة
+    else if (message.includes('@رسائل النظام') && message.includes('لعبة الاختباء')) {
         if (!hideAndSeekState.active) {
             hideAndSeekState.active = true;
             setTimeout(() => {
-                startHideAndSeek(roomId);
+                // التحقق مرة أخرى في حال تم الإيقاف أثناء الانتظار
+                if (hideAndSeekState.active) {
+                    startHideAndSeek(roomId);
+                }
             }, 5000);
         } else {
             // يمكن إرسال رسالة أن اللعبة قائمة بالفعل
@@ -3193,7 +3240,7 @@ socket.on('join room', async (data) => {
     if (message && message.includes(aiMention)) {
         const question = message.replace(aiMention, "").trim();
         if (question) {
-            askAIBot(question).then(aiResponse => {
+            askAIBot(user.name, question).then(aiResponse => {
                 const aiMessage = {
                     type: 'user',
                     roomId: roomId,
