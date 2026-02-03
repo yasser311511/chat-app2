@@ -557,6 +557,12 @@ const AI_BOT_CONFIG = {
     apiKey: process.env.OPENROUTER_API_KEY || "" 
 };
 
+if (!AI_BOT_CONFIG.apiKey) {
+    console.warn("⚠️ تحذير: مفتاح API للذكاء الاصطناعي غير موجود في ملف .env");
+} else {
+    console.log("✅ تم تحميل مفتاح API للذكاء الاصطناعي بنجاح");
+}
+
 async function askAIBot(username, question) {
     if (!AI_BOT_CONFIG.apiKey || AI_BOT_CONFIG.apiKey.startsWith("sk-or-v1-abc")) {
         return "⚠️ عذراً، لم يتم إعداد مفتاح API للذكاء الاصطناعي. يرجى الحصول على مفتاح من OpenRouter.ai ووضعه في ملف .env.";
