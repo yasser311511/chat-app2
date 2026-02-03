@@ -5985,8 +5985,14 @@ function addMessageToChat(user, message, time, isOwn, userRank, avatarUrl, messa
         const isImageReply = replyTo.content && (replyTo.content.startsWith('data:image') || replyTo.content.startsWith('http') || replyTo.content.includes('🖼️ صورة') || replyTo.content.includes('صورة 🖼️'));
         
         let displayContent = replyTo.content;
+        
+        // قص النص الطويل في الرد
+        if (!isImageReply && displayContent && displayContent.length > 100) {
+            displayContent = displayContent.substring(0, 100) + '...';
+        }
+
         if (containsEmoji) {
-            displayContent = formatMessageWithInlineEmojis(replyTo.content);
+            displayContent = formatMessageWithInlineEmojis(displayContent);
         } else if (isImageReply) {
             displayContent = 'صورة 🖼️';
         }
@@ -6165,7 +6171,12 @@ function startReply(messageId, user, content) {
         replyContent.setAttribute('data-is-image', 'true');
         replyContent.setAttribute('data-image-url', content);
     } else {
-        replyContent.textContent = content;
+        // قص النص الطويل في معاينة الرد
+        let displayContent = content;
+        if (displayContent && displayContent.length > 100) {
+            displayContent = displayContent.substring(0, 100) + '...';
+        }
+        replyContent.textContent = displayContent;
         replyContent.removeAttribute('data-is-image');
         replyContent.removeAttribute('data-image-url');
     }
@@ -8895,8 +8906,14 @@ function addImageMessageToChat(user, imageData, time, isOwn, userRank, avatarUrl
         const isImageReply = replyTo.content && (replyTo.content.startsWith('data:image') || replyTo.content.startsWith('http') || replyTo.content.includes('🖼️ صورة') || replyTo.content.includes('صورة 🖼️'));
         
         let displayContent = replyTo.content;
+        
+        // قص النص الطويل في الرد
+        if (!isImageReply && displayContent && displayContent.length > 100) {
+            displayContent = displayContent.substring(0, 100) + '...';
+        }
+
         if (containsEmoji) {
-            displayContent = formatMessageWithInlineEmojis(replyTo.content);
+            displayContent = formatMessageWithInlineEmojis(displayContent);
         } else if (isImageReply) {
             displayContent = 'صورة 🖼️';
         }
