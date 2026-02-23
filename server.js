@@ -3078,13 +3078,17 @@ socket.on('join room', async (data) => {
     // 2. بدء اللعبة
     else if (message.includes('@رسائل النظام') && message.includes('لعبة الاختباء')) {
         if (!hideAndSeekState.active) {
-            hideAndSeekState.active = true;
-            setTimeout(() => {
-                // التحقق مرة أخرى في حال تم الإيقاف أثناء الانتظار
-                if (hideAndSeekState.active) {
-                    startHideAndSeek(roomId);
-                }
-            }, 5000);
+            if (guessGameState.active) {
+                sendSystemGameMessage(roomId, '⚠️ <strong>عذراً!</strong> لا يمكن بدء لعبة الاختباء لأن "لعبة تخمين الرقم" قيد التشغيل حالياً.');
+            } else {
+                hideAndSeekState.active = true;
+                setTimeout(() => {
+                    // التحقق مرة أخرى في حال تم الإيقاف أثناء الانتظار
+                    if (hideAndSeekState.active) {
+                        startHideAndSeek(roomId);
+                    }
+                }, 5000);
+            }
         } else {
             // يمكن إرسال رسالة أن اللعبة قائمة بالفعل
         }
@@ -3403,22 +3407,33 @@ socket.on('join room', async (data) => {
     }
     
     // --- لعبة تخمين الرقم ---
-    if (message && message.includes(systemMention) && message.includes("لعبة تخمين الرقم")) {
-        if (!guessGameState.active) {
-            guessGameState.active = true;
-            guessGameState.phase = 'registration';
-            guessGameState.roomId = roomId;
+    if (message && message.includes(systemMention) && message.includes("ايقاف لعبة تخمين الرقم")) {
+        if (guessGameState.active) {
+            guessGameState.active = false;
+            guessGameState.phase = 'idle';
             guessGameState.participants = {};
-            
-            const startMsg = {
-                type: 'system',
-                user: 'رسائل النظام',
-                avatar: BOT_AVATAR_URL,
-                content: `🎮 <strong>بدأ التسجيل في لعبة تخمين الرقم!</strong><br>من يريد المشاركة يمنشنني ويقول "<strong>انا</strong>".<br>عند اكتمال العدد، قولوا "<strong>تم</strong>" لتبدأ اللعبة.`,
-                time: new Date().toLocaleTimeString('ar-SA')
-            };
-            io.to(roomId).emit('new message', startMsg);
-            if (messages[roomId]) messages[roomId].push(startMsg);
+            sendSystemGameMessage(roomId, '🛑 <strong>تم إيقاف لعبة تخمين الرقم بنجاح.</strong>');
+        }
+    } else if (message && message.includes(systemMention) && message.includes("لعبة تخمين الرقم")) {
+        if (!guessGameState.active) {
+            if (hideAndSeekState.active) {
+                sendSystemGameMessage(roomId, '⚠️ <strong>عذراً!</strong> لا يمكن بدء لعبة تخمين الرقم لأن "لعبة الاختباء" قيد التشغيل حالياً.');
+            } else {
+                guessGameState.active = true;
+                guessGameState.phase = 'registration';
+                guessGameState.roomId = roomId;
+                guessGameState.participants = {};
+                
+                const startMsg = {
+                    type: 'system',
+                    user: 'رسائل النظام',
+                    avatar: BOT_AVATAR_URL,
+                    content: `🎮 <strong>بدأ التسجيل في لعبة تخمين الرقم!</strong><br>من يريد المشاركة يمنشنني ويقول "<strong>انا</strong>".<br>عند اكتمال العدد، قولوا "<strong>تم</strong>" لتبدأ اللعبة.`,
+                    time: new Date().toLocaleTimeString('ar-SA')
+                };
+                io.to(roomId).emit('new message', startMsg);
+                if (messages[roomId]) messages[roomId].push(startMsg);
+            }
         }
     } 
     
