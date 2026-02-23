@@ -300,6 +300,7 @@ const Post = sequelize.define('Post', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     username: { type: DataTypes.STRING, allowNull: false },
     content: { type: DataTypes.TEXT, allowNull: false },
+    image: { type: DataTypes.TEXT, allowNull: true }, // إضافة حقل الصورة
     timestamp: { type: DataTypes.BIGINT, allowNull: false }
 });
 
@@ -402,7 +403,9 @@ function startHideAndSeek(roomId) {
         participants: [],
         round: 0,
         maxRounds: 5,
-        initialCount: 0
+        initialCount: 0,
+        criticalRound: Math.floor(Math.random() * 5) + 1, // تحديد جولة حاسمة عشوائية من 1 إلى 5
+        pendingRPS: [] // قائمة اللاعبين الذين يجب عليهم لعب المقص
     };
 
     // تم تغيير الرسالة وإزالة المؤقت بناءً على طلب المستخدم
@@ -419,17 +422,29 @@ function nextHideAndSeekRound() {
     // تصفير اختيارات اللاعبين الأحياء
     hideAndSeekState.participants.forEach(p => p.chosenSpot = null);
 
+    const isCritical = hideAndSeekState.round === hideAndSeekState.criticalRound;
+    const roundTitle = isCritical 
+        ? `🔥 <strong>الجولة الحاسمة (${hideAndSeekState.round} من ${hideAndSeekState.maxRounds})</strong> 🔥` 
+        : `🔔 <strong>الجولة ${hideAndSeekState.round} من ${hideAndSeekState.maxRounds}</strong>`;
+
+    const killerDesc = isCritical
+        ? `🔪 <strong>القاتل غاضب جداً!</strong> سيبحث في <strong class="text-red-500 text-xl">5</strong> أماكن عشوائية!`
+        : `🔪 سيدخل القاتل ليفتش عن مكانين ويقتل من كان فيهما!`;
+
     sendSystemGameMessage(hideAndSeekState.roomId, `
-        🔔 <strong>الجولة ${hideAndSeekState.round} من ${hideAndSeekState.maxRounds}</strong>
+        ${roundTitle}
         <br>🏠 لديكم 10 أماكن في المنزل مرقمة من <strong>1</strong> إلى <strong>10</strong>.
-        <br>🔪 سيدخل القاتل ليفتش عن مكانين ويقتل من كان فيهما!
+        <br>${killerDesc}
         <br>🏃‍♂️ <strong>هيا اختاروا مكاناً (رقماً) بسرعة!</strong>
     `);
 }
 
 function resolveHideAndSeekRound() {
+    const isCritical = hideAndSeekState.round === hideAndSeekState.criticalRound;
+    const spotsToCheck = isCritical ? 5 : 2; // 5 أماكن في الجولة الحاسمة، 2 في العادية
+
     const killerSpots = [];
-    while(killerSpots.length < 2) {
+    while(killerSpots.length < spotsToCheck) {
         const r = Math.floor(Math.random() * 10) + 1;
         if(killerSpots.indexOf(r) === -1) killerSpots.push(r);
     }
@@ -437,21 +452,60 @@ function resolveHideAndSeekRound() {
     const victims = [];
     hideAndSeekState.participants.forEach(p => {
         if (p.alive && killerSpots.includes(p.chosenSpot)) {
-            p.alive = false;
+            // في الجولة الحاسمة لا يموتون فوراً، بل ينتقلون للمقص
+            if (!isCritical) {
+                p.alive = false;
+            }
             victims.push(p.username);
         }
     });
 
     let msg = `👀 لقد زار القاتل المكانين: <strong class="text-red-500 text-xl">[ ${killerSpots.join(' و ')} ]</strong>`;
+    if (isCritical) {
+        msg = `🔥 <strong>الجولة الحاسمة!</strong> زار القاتل الأماكن: <strong class="text-red-500 text-xl">[ ${killerSpots.join(' و ')} ]</strong>`;
+    }
     
     if (victims.length > 0) {
-        msg += `<br>💀 <strong>تم إقصاء:</strong> ${victims.map(v => `<span class="text-red-400 line-through">${v}</span>`).join(' و ')}`;
+        if (isCritical) {
+            // منطق الجولة الحاسمة (لعبة المقص)
+            hideAndSeekState.phase = 'rps'; // تغيير المرحلة إلى Rock-Paper-Scissors
+            hideAndSeekState.pendingRPS = [...victims]; // نسخ قائمة الضحايا
+            
+            msg += `<br>😱 <strong>لقد وجد القاتل:</strong> ${victims.map(v => `<strong class="text-yellow-400">${v}</strong>`).join(' و ')}`;
+            msg += `<br>😈 <strong>لكن لحسن حظكم!</strong> أشفق القاتل عليكم وقرر اللعب معكم لعبة <strong>المقص</strong>.`;
+            msg += `<br>✊✋✌️ <strong>يا ${victims.join(' و ')}، اختاروا بسرعة: (حجرة) أو (ورقة) أو (مقص) للنجاة!</strong>`;
+            
+            sendSystemGameMessage(hideAndSeekState.roomId, msg);
+            
+            // مؤقت لإنهاء الجولة في حال عدم الرد
+            setTimeout(() => {
+                if (hideAndSeekState.phase === 'rps') {
+                    // إقصاء من لم يختر
+                    hideAndSeekState.pendingRPS.forEach(username => {
+                        const p = hideAndSeekState.participants.find(u => u.username === username);
+                        if (p && p.alive) p.alive = false;
+                    });
+                    if (hideAndSeekState.pendingRPS.length > 0) {
+                        sendSystemGameMessage(hideAndSeekState.roomId, `💀 <strong>انتهى الوقت!</strong> تم القضاء على من لم يختر: ${hideAndSeekState.pendingRPS.join('، ')}`);
+                    }
+                    finalizeHideAndSeekRound();
+                }
+            }, 40000); // 40 ثانية للاختيار
+            return; // توقف هنا وانتظر ردود اللاعبين
+        } else {
+            // الإقصاء العادي
+            msg += `<br>💀 <strong>تم إقصاء:</strong> ${victims.map(v => `<span class="text-red-400 line-through">${v}</span>`).join(' و ')}`;
+        }
     } else {
         msg += `<br>✨ لم يعثر القاتل على أحد في هذه الأماكن!`;
     }
 
     sendSystemGameMessage(hideAndSeekState.roomId, msg);
+    finalizeHideAndSeekRound();
+}
 
+// دالة جديدة لإنهاء الجولة والانتقال للتالية (تستخدم في الوضع العادي وبعد لعبة المقص)
+function finalizeHideAndSeekRound() {
     const survivors = hideAndSeekState.participants.filter(p => p.alive);
 
     // شروط الفوز والخسارة
@@ -541,8 +595,12 @@ let quizState = {
 // --- إعدادات لعبة تخمين الرقم ---
 let guessGameState = {
     active: false,
+    phase: 'idle', // 'idle', 'registration', 'playing'
     target: 0,
-    roomId: null
+    roomId: null,
+    participants: {}, // { username: { attempts: 0, eliminated: false } }
+    maxAttempts: 20,
+    totalAttempts: 0
 };
 
 // --- ذاكرة الذكاء الاصطناعي ---
@@ -553,15 +611,9 @@ const AI_BOT_CONFIG = {
     name: "الذكاء الاصطناعي",
     avatar: "/images.png", // يمكنك تغيير هذا
     apiUrl: "https://openrouter.ai/api/v1/chat/completions",
-    model: "openrouter/auto", // نموذج Qwen المجاني
+    model: "qwen/qwen3-4b:free", // نموذج Qwen المجاني
     apiKey: process.env.OPENROUTER_API_KEY || "" 
 };
-
-if (!AI_BOT_CONFIG.apiKey) {
-    console.warn("⚠️ تحذير: مفتاح API للذكاء الاصطناعي غير موجود في ملف .env");
-} else {
-    console.log("✅ تم تحميل مفتاح API للذكاء الاصطناعي بنجاح");
-}
 
 async function askAIBot(username, question) {
     if (!AI_BOT_CONFIG.apiKey || AI_BOT_CONFIG.apiKey.startsWith("sk-or-v1-abc")) {
@@ -964,7 +1016,7 @@ async function loadData() {
       }
     }
     
-    await sequelize.sync();
+    await sequelize.sync({ alter: true });
     console.log('تم مزامنة قاعدة البيانات بنجاح');
     await delay(100);
 
@@ -1140,8 +1192,8 @@ async function loadData() {
     // ملاحظة: تم إزالة التحميل الجماعي للرسائل الخاصة وصور الدردشة لتجنب أخطاء SSL
     // سيتم تحميل الرسائل عند الطلب من قاعدة البيانات مباشرة
     console.log('تخطي تحميل الرسائل والصور الجماعية لتسريع البدء ومنع أخطاء SSL');
-
-    const postsData = await Post.findAll({ order: [['timestamp', 'DESC']], limit: 100 });
+    // تقليل عدد المنشورات المحملة في الذاكرة لتوفير الرام
+    const postsData = await Post.findAll({ order: [['timestamp', 'DESC']], limit: 20 });
     await delay(10);
     const likesData = await PostLike.findAll();
     await delay(10);
@@ -1420,7 +1472,7 @@ async function loadData() {
       friendRequests[request.toUser].push(request.fromUser);
     });
 
-    postsData.forEach(post => { posts[post.id] = { username: post.username, content: post.content, timestamp: parseInt(post.timestamp, 10), likes: [], laughs: [], comments: [] }; });
+    postsData.forEach(post => { posts[post.id] = { username: post.username, content: post.content, image: post.image, timestamp: parseInt(post.timestamp, 10), likes: [], laughs: [], comments: [] }; });
     likesData.forEach(like => { if (posts[like.postId]) posts[like.postId].likes.push(like.username); });
     laughsData.forEach(laugh => { if (posts[laugh.postId]) posts[laugh.postId].laughs.push(laugh.username); });
     commentsData.forEach(comment => { if (posts[comment.postId]) posts[comment.postId].comments.push({ username: comment.username, content: comment.content, timestamp: parseInt(comment.timestamp, 10) }); });
@@ -1810,11 +1862,12 @@ async function removeUser(username) {
     console.error('خطأ في حذف المستخدم:', error);
   }
 }
-async function savePost(username, content, timestamp) {
+async function savePost(username, content, image, timestamp) {
     try {
         const post = await Post.create({
             username,
             content,
+            image,
             timestamp
         });
         return post.id;
@@ -1970,7 +2023,8 @@ function optimizeImageStorage() {
       }
     });
     
-    messages[roomId] = uniqueMessages;
+    // تقليل حد الذاكرة للرسائل بشكل كبير
+    messages[roomId] = uniqueMessages.slice(-30);
   });
 }
 
@@ -2169,7 +2223,7 @@ function broadcastRoomsUpdate() {
   roomsUpdateTimeout = setTimeout(() => {
     io.emit('rooms update', getLightRooms());
     roomsUpdateTimeout = null;
-  }, 2000); // إرسال التحديث كل ثانيتين كحد أقصى
+  }, 5000); // زيادة وقت التحديث لتقليل الضغط عند دخول مستخدمين جدد
 }
 
 io.on('connection', (socket) => {
@@ -2218,7 +2272,7 @@ socket.on('get user avatars', () => {
 
     // أحداث المنشورات
 socket.on('create post', async (data) => {
-    const { content, username } = data;
+    const { content, image, username } = data;
     const timestamp = Date.now();
     
     // منع التكرار السريع (Debounce) - 2 ثانية
@@ -2230,12 +2284,13 @@ socket.on('create post', async (data) => {
     userLastAction[username] = { type: 'create_post', content, timestamp };
     
     try {
-        const postId = await savePost(username, content, timestamp);
+        const postId = await savePost(username, content, image, timestamp);
         
         // إضافة إلى الذاكرة
         posts[postId] = {
             username,
             content,
+            image,
             timestamp,
             likes: [],
             laughs: [],
@@ -2247,6 +2302,7 @@ socket.on('create post', async (data) => {
             id: postId,
             username,
             content,
+            image,
             avatar: userAvatars[username] || DEFAULT_AVATAR_URL,
             timestamp,
             likes: [],
@@ -2510,8 +2566,8 @@ socket.on('send image message', async (data) => {
   };
   
   if (!messages[roomId]) messages[roomId] = [];
-  if (messages[roomId].length > 300) {
-    messages[roomId] = messages[roomId].slice(-300);
+  if (messages[roomId].length > 30) { // تقليل الحد الأقصى للرسائل في الذاكرة
+    messages[roomId] = messages[roomId].slice(-30);
   }
   messages[roomId].push(newMessage);
   
@@ -2866,8 +2922,8 @@ socket.on('join room', async (data) => {
     
     // إضافة الرسالة للسجل قبل إرسالها
     if (!messages[roomId]) messages[roomId] = [];
-    if (messages[roomId].length > 300) {
-      messages[roomId] = messages[roomId].slice(-300);
+    if (messages[roomId].length > 30) { // تقليل الحد الأقصى للرسائل في الذاكرة
+      messages[roomId] = messages[roomId].slice(-30);
     }
     messages[roomId].push(welcomeMessage);
     
@@ -3067,6 +3123,54 @@ socket.on('join room', async (data) => {
         }
     }
 
+    // 4. منطق لعبة المقص (الجولة الحاسمة)
+    if (hideAndSeekState.active && hideAndSeekState.phase === 'rps' && hideAndSeekState.roomId === roomId) {
+        if (hideAndSeekState.pendingRPS.includes(user.name)) {
+            const choice = message.trim();
+            if (['حجرة', 'ورقة', 'مقص'].includes(choice)) {
+                // اختيار القاتل
+                const killerChoices = ['حجرة', 'ورقة', 'مقص'];
+                const killerChoice = killerChoices[Math.floor(Math.random() * killerChoices.length)];
+                
+                let result = '';
+                let survived = false;
+
+                if (choice === killerChoice) {
+                    result = 'تعادل (نجوت بأعجوبة!)';
+                    survived = true;
+                } else if (
+                    (choice === 'حجرة' && killerChoice === 'مقص') ||
+                    (choice === 'ورقة' && killerChoice === 'حجرة') ||
+                    (choice === 'مقص' && killerChoice === 'ورقة')
+                ) {
+                    result = 'ربحت! (تركك تهرب)';
+                    survived = true;
+                } else {
+                    result = 'خسرت! (تم القضاء عليك)';
+                    survived = false;
+                }
+
+                // تحديث حالة اللاعب
+                const playerIndex = hideAndSeekState.participants.findIndex(p => p.username === user.name);
+                if (playerIndex !== -1 && !survived) {
+                    hideAndSeekState.participants[playerIndex].alive = false;
+                }
+
+                // إزالة اللاعب من قائمة الانتظار
+                hideAndSeekState.pendingRPS = hideAndSeekState.pendingRPS.filter(u => u !== user.name);
+
+                // إرسال النتيجة
+                const statusColor = survived ? 'text-green-400' : 'text-red-500';
+                sendSystemGameMessage(roomId, `🎲 <strong>@${user.name}</strong> اختار: ${choice} | القاتل اختار: ${killerChoice}<br><span class="${statusColor} font-bold">${result}</span>`);
+
+                // إذا انتهى الجميع من الاختيار
+                if (hideAndSeekState.pendingRPS.length === 0) {
+                    setTimeout(finalizeHideAndSeekRound, 2000);
+                }
+            }
+        }
+    }
+
     // 3. اختيار المكان (أثناء اللعب)
     if (hideAndSeekState.active && hideAndSeekState.phase === 'hiding' && hideAndSeekState.roomId === roomId) {
         const player = hideAndSeekState.participants.find(p => p.username === user.name && p.alive);
@@ -3234,8 +3338,8 @@ socket.on('join room', async (data) => {
     };
     
     if (!messages[roomId]) messages[roomId] = [];
-    if (messages[roomId].length > 300) {
-      messages[roomId] = messages[roomId].slice(-300);
+    if (messages[roomId].length > 30) { // تقليل الحد الأقصى للرسائل في الذاكرة
+      messages[roomId] = messages[roomId].slice(-30);
     }
     messages[roomId].push(newMessage);
     
@@ -3269,7 +3373,7 @@ socket.on('join room', async (data) => {
                 
                 if (messages[roomId]) {
                     messages[roomId].push(aiMessage);
-                    if (messages[roomId].length > 300) messages[roomId].shift();
+                    if (messages[roomId].length > 30) messages[roomId].shift();
                 }
                 io.to(roomId).emit('new message', aiMessage);
             });
@@ -3292,7 +3396,7 @@ socket.on('join room', async (data) => {
             };
             if (messages[roomId]) {
                 messages[roomId].push(welcomeMsg);
-                if (messages[roomId].length > 300) messages[roomId].shift();
+                if (messages[roomId].length > 30) messages[roomId].shift();
             }
             io.to(roomId).emit('new message', welcomeMsg);
         }, 5000); // مهلة 5 ثواني
@@ -3300,31 +3404,77 @@ socket.on('join room', async (data) => {
     
     // --- لعبة تخمين الرقم ---
     if (message && message.includes(systemMention) && message.includes("لعبة تخمين الرقم")) {
-        if (!guessGameState.active || guessGameState.roomId !== roomId) {
+        if (!guessGameState.active) {
             guessGameState.active = true;
-            guessGameState.target = Math.floor(Math.random() * 101); // 0 to 100
+            guessGameState.phase = 'registration';
             guessGameState.roomId = roomId;
+            guessGameState.participants = {};
             
             const startMsg = {
                 type: 'system',
                 user: 'رسائل النظام',
                 avatar: BOT_AVATAR_URL,
-                content: `🎮 بدأت لعبة تخمين الرقم! لقد اخترت رقماً عشوائياً بين 0 و 100. حاولوا تخمينه!`,
+                content: `🎮 <strong>بدأ التسجيل في لعبة تخمين الرقم!</strong><br>من يريد المشاركة يمنشنني ويقول "<strong>انا</strong>".<br>عند اكتمال العدد، قولوا "<strong>تم</strong>" لتبدأ اللعبة.`,
                 time: new Date().toLocaleTimeString('ar-SA')
             };
             io.to(roomId).emit('new message', startMsg);
             if (messages[roomId]) messages[roomId].push(startMsg);
         }
-    } else if (guessGameState.active && guessGameState.roomId === roomId) {
+    } 
+    
+    // مرحلة التسجيل وبدء اللعبة
+    if (guessGameState.active && guessGameState.phase === 'registration' && guessGameState.roomId === roomId) {
+        if (message.includes(systemMention) && message.includes('انا')) {
+            if (!guessGameState.participants[user.name]) {
+                guessGameState.participants[user.name] = { attempts: 0, eliminated: false };
+                // يمكن إضافة رد فعل أو رسالة تأكيد هنا إذا رغبت
+            }
+        }
+        
+        if (message.includes('تم')) {
+            const playerCount = Object.keys(guessGameState.participants).length;
+            if (playerCount > 0) {
+                guessGameState.phase = 'playing';
+                guessGameState.target = Math.floor(Math.random() * 101); // 0 to 100
+                guessGameState.totalAttempts = 0;
+                
+                const playersList = Object.keys(guessGameState.participants).join('، ');
+                const startMsg = {
+                    type: 'system',
+                    user: 'رسائل النظام',
+                    avatar: BOT_AVATAR_URL,
+                    content: `🚀 <strong>انطلقت اللعبة!</strong><br>المشاركون: [ ${playersList} ]<br>لقد اخترت رقماً بين 0 و 100.<br>⚠️ <strong>تنبيه:</strong> لكل لاعب 20 محاولة فقط!`,
+                    time: new Date().toLocaleTimeString('ar-SA')
+                };
+                io.to(roomId).emit('new message', startMsg);
+                if (messages[roomId]) messages[roomId].push(startMsg);
+            } else {
+                sendSystemGameMessage(roomId, '❌ لم يسجل أحد، تم إلغاء اللعبة.');
+                guessGameState.active = false;
+            }
+        }
+    }
+
+    // مرحلة اللعب (التخمين)
+    else if (guessGameState.active && guessGameState.phase === 'playing' && guessGameState.roomId === roomId) {
+        // التحقق من أن المستخدم مشارك ولم يتم إقصاؤه
+        const participant = guessGameState.participants[user.name];
+        if (!participant || participant.eliminated) return;
+
         // التحقق من التخمين (إذا كانت الرسالة رقماً فقط)
         const guess = parseInt(message.trim());
         if (!isNaN(guess) && String(guess) === message.trim()) {
+            
+            // زيادة عدد المحاولات
+            participant.attempts++;
+            
             let replyContent = '';
             let isWin = false;
+            let isEliminated = false;
             
             if (guess === guessGameState.target) {
                 isWin = true;
-                replyContent = `🎉 إجابة صحيحة! الرقم هو ${guessGameState.target}. مبروك <strong class="text-yellow-300">@${user.name}</strong> لقد فزت بـ 300 نقطة!`;
+                replyContent = `🎉 <strong>إجابة صحيحة!</strong> الرقم هو ${guessGameState.target}.<br>مبروك <strong class="text-yellow-300">@${user.name}</strong> لقد فزت بـ 300 نقطة! (من المحاولة ${participant.attempts})`;
                 
                 // منح النقاط للفائز
                 if (!userPoints[user.name]) userPoints[user.name] = { points: 0, level: 1 };
@@ -3332,10 +3482,35 @@ socket.on('join room', async (data) => {
                 await saveUserPoints(user.name, userPoints[user.name].points, userPoints[user.name].level);
                 
                 guessGameState.active = false; // إيقاف اللعبة
-            } else if (guess < guessGameState.target) {
-                replyContent = `📉 الرقم أكبر من ${guess} يا <strong class="text-white">@${user.name}</strong>`;
             } else {
-                replyContent = `📈 الرقم أصغر من ${guess} يا <strong class="text-white">@${user.name}</strong>`;
+                guessGameState.totalAttempts++;
+
+                if (participant.attempts >= guessGameState.maxAttempts) {
+                    participant.eliminated = true;
+                    isEliminated = true;
+                    replyContent = `💀 <strong>@${user.name}</strong> لقد استنفذت جميع محاولاتك الـ 20! تم إقصاؤك من اللعبة.`;
+                } else if (guess < guessGameState.target) {
+                    replyContent = `📉 الرقم <strong>أكبر</strong> من ${guess} يا <strong class="text-white">@${user.name}</strong> (محاولة ${participant.attempts}/20)`;
+                } else {
+                    replyContent = `📈 الرقم <strong>أصغر</strong> من ${guess} يا <strong class="text-white">@${user.name}</strong> (محاولة ${participant.attempts}/20)`;
+                }
+
+                if (guessGameState.totalAttempts % 10 === 0) {
+                    const isEven = guessGameState.target % 2 === 0;
+                    const hintType = isEven ? 'زوجي' : 'فردي';
+                    setTimeout(() => {
+                        const hintMsg = {
+                            type: 'system',
+                            user: 'رسائل النظام',
+                            avatar: BOT_AVATAR_URL,
+                            content: `💡 <strong>تلميح:</strong> بعد ${guessGameState.totalAttempts} محاولة خاطئة، الرقم المطلوب هو عدد <strong>${hintType}</strong>!`,
+                            time: new Date().toLocaleTimeString('ar-SA'),
+                            systemStatus: 'neutral'
+                        };
+                        io.to(roomId).emit('new message', hintMsg);
+                        if (messages[roomId]) messages[roomId].push(hintMsg);
+                    }, 1000);
+                }
             }
             
             const gameMsg = {
@@ -3344,7 +3519,7 @@ socket.on('join room', async (data) => {
                 avatar: BOT_AVATAR_URL,
                 content: replyContent,
                 time: new Date().toLocaleTimeString('ar-SA'),
-                systemStatus: isWin ? 'positive' : 'neutral'
+                systemStatus: isWin ? 'positive' : (isEliminated ? 'negative' : 'neutral')
             };
             
             // إرسال الرد بعد تأخير بسيط
