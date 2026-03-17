@@ -368,6 +368,47 @@
             transform: translateY(0);
             opacity: 1;
         }
+
+        /* أنماط تقسيم الشاشة للعبة توصيل المربعات */
+        @media (min-width: 768px) {
+            #chatPage.dnb-split-view {
+                display: flex !important;
+                flex-direction: row !important;
+            }
+            #chatPage.dnb-split-view > div:last-child {
+                flex: 1 !important;
+                min-width: 0;
+            }
+            .docked-left {
+                position: relative !important;
+                top: 0 !important;
+                left: 0 !important;
+                bottom: 0 !important;
+                right: 0 !important;
+                width: 450px !important;
+                height: 100% !important;
+                margin: 0 !important;
+                border-radius: 0 !important;
+                border: none !important;
+                border-right: 2px solid rgba(255, 255, 255, 0.1) !important;
+                transform: none !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+                z-index: 10 !important;
+                background: rgba(15, 23, 42, 0.9) !important;
+                order: 10; /* ضمان ظهورها في أقصى اليسار في RTL */
+            }
+            .docked-left .profile-content {
+                width: 100% !important;
+                height: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                border: none !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                transform: none !important;
+            }
+        }
         
         .private-chat-header {
             background: rgba(30, 41, 59, 0.8);
@@ -1799,24 +1840,9 @@
                     <span class="font-bold">المركز اليومي</span>
                 </button>
 
-                <button onclick="openSnakeGame(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-green-600/20 hover:text-green-400 transition-all group">
-                    <div class="bg-gray-800 p-2 rounded-lg text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>
-                    <span class="font-bold">لعبة الثعبان</span>
-                </button>
-
                 <button onclick="startHideAndSeekGame(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-indigo-600/20 hover:text-indigo-400 transition-all group">
                     <div class="bg-gray-800 p-2 rounded-lg text-indigo-500 group-hover:bg-indigo-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></div>
                     <span class="font-bold">لعبة الاختباء 🕵️‍♂️</span>
-                </button>
-
-                <button onclick="openSnakeLeaderboard(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-yellow-600/20 hover:text-yellow-400 transition-all group">
-                    <div class="bg-gray-800 p-2 rounded-lg text-yellow-500 group-hover:bg-yellow-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg></div>
-                    <span class="font-bold">ملوك الثعبان 🐍</span>
-                </button>
-
-                <button id="shopButton" onclick="openShopModal(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-purple-600/20 hover:text-purple-400 transition-all group relative">
-                    <div class="bg-gray-800 p-2 rounded-lg text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
-                    <span class="font-bold">المتجر</span>
                 </button>
 
                 <button onclick="openDrawingBoard(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-pink-600/20 hover:text-pink-400 transition-all group relative">
@@ -1849,6 +1875,21 @@
                 <button onclick="openInteractionLeaderboard(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-rose-600/20 hover:text-rose-400 transition-all group relative">
                     <div class="bg-gray-800 p-2 rounded-lg text-rose-500 group-hover:bg-rose-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
                     <span class="font-bold">لوحة المشاركين</span>
+                </button>
+
+                <button onclick="openDotsAndBoxesGame(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-teal-600/20 hover:text-teal-400 transition-all group">
+                    <div class="bg-gray-800 p-2 rounded-lg text-teal-500 group-hover:bg-teal-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m3 6V7m-9 4h.01M4 21h16a2 2 0 002-2V5a2 2 0 00-2-2H4a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg></div>
+                    <span class="font-bold">لعبة توصيل المربعات</span>
+                </button>
+
+                <button id="shopButton" onclick="openShopModal(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-purple-600/20 hover:text-purple-400 transition-all group relative">
+                    <div class="bg-gray-800 p-2 rounded-lg text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg></div>
+                    <span class="font-bold">المتجر</span>
+                </button>
+                <button onclick="openInventoryModal(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-cyan-600/20 hover:text-cyan-400 transition-all group relative">
+                    <div class="bg-gray-800 p-2 rounded-lg text-cyan-500 group-hover:bg-cyan-500 group-hover:text-white transition-colors"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg></div>
+                    <span class="font-bold">مشترياتي</span>
+                    <span id="inventoryNotificationDot" class="notification-dot hidden"></span>
                 </button>
 
                 <button id="chatFriendsButton" onclick="openFriendsSidebar(); toggleLeftSidebar();" class="w-full flex items-center space-x-3 space-x-reverse text-slate-200 p-3 rounded-xl hover:bg-green-600/20 hover:text-green-400 transition-all group relative">
@@ -1943,7 +1984,7 @@
         </div>
 
         <!-- المحتوى الرئيسي -->
-        <div class="flex-1 flex overflow-hidden relative">
+        <div id="chatMainContent" class="flex-1 flex overflow-hidden relative">
             <!-- قائمة المستخدمين المتصلين (للشاشات الكبيرة) -->
             <div id="onlineUsersPanel" class="hidden md:block w-72 flex-shrink-0 bg-gray-800/70 backdrop-blur-lg border-l border-gray-700 p-4 users-container custom-scrollbar z-20">
                 <div class="flex justify-between items-center mb-4">
@@ -2516,6 +2557,9 @@
                             <span class="text-[10px] text-slate-300">لون مخصص للبطاقة:</span>
                             <input type="color" id="customCardColorPicker" onchange="applyCustomColor('userCardBackground', this.value)" class="w-8 h-6 bg-transparent cursor-pointer">
                         </div>
+                        <button onclick="openGradientModal('userCardBackground')" class="w-full mt-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-[10px] font-bold py-2 px-3 rounded-lg transition-all shadow-md flex items-center justify-center gap-2">
+                            <span>✨</span> تخصيص تدرج لوني
+                        </button>
                     </div>
 
                     <!-- محتوى لون البروفايل (جديد) -->
@@ -2535,6 +2579,9 @@
                             <span class="text-[10px] text-slate-300">لون مخصص للملف:</span>
                             <input type="color" id="customProfileColorPicker" onchange="applyCustomColor('profileBackground', this.value)" class="w-8 h-6 bg-transparent cursor-pointer">
                         </div>
+                        <button onclick="openGradientModal('profileBackground')" class="w-full mt-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white text-[10px] font-bold py-2 px-3 rounded-lg transition-all shadow-md flex items-center justify-center gap-2">
+                            <span>✨</span> تخصيص تدرج لوني
+                        </button>
                     </div>
 
                     <!-- محتوى إطار بطاقة الاسم (جديد) -->
@@ -3012,6 +3059,98 @@
     </div>
 </div>
 
+<!-- نافذة المشتريات (Inventory) -->
+<div id="inventoryModal" class="profile-modal">
+    <div class="profile-content custom-scrollbar" style="width: 95%; max-width: 500px;">
+        <div class="relative bg-gray-800 p-6 text-center border-b border-gray-700">
+             <button onclick="closeInventoryModal()" class="absolute top-4 right-4 text-slate-300 hover:text-blue-500 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-2xl font-bold text-white">🛍️ مشترياتي</h2>
+            <p class="text-slate-400 text-sm">العناصر التي قمت بشرائها</p>
+        </div>
+
+        <div id="inventoryItemsContainer" class="flex-1 p-4 overflow-y-auto custom-scrollbar">
+            <div class="text-center text-slate-400 p-8">
+                <div class="spinner mx-auto"></div>
+                <p class="mt-2">جاري تحميل المشتريات...</p>
+            </div>
+        </div>
+    </div>
+</div>
+<div id="inventoryOverlay" class="friends-overlay" onclick="closeInventoryModal()"></div>
+
+<!-- نافذة لعبة توصيل المربعات -->
+<div id="dotsAndBoxesModal" class="profile-modal">
+    <div class="profile-content custom-scrollbar" style="width: 95%; max-width: 500px;">
+        <div class="relative bg-gray-800 p-4 text-center border-b border-gray-700">
+            <!-- زر التثبيت جانبا -->
+            <button id="dnbDockBtn" onclick="toggleDnbDocking()" class="hidden md:block absolute top-4 left-4 text-slate-300 hover:text-sky-400 transition-colors" title="تثبيت اللعبة جانبا">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>
+            </button>
+            <button onclick="closeDotsAndBoxesGame()" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-xl font-bold text-white">🎲 لعبة توصيل المربعات</h2>
+        </div>
+
+        <div class="p-4 bg-gray-900/90 flex flex-col items-center">
+            <!-- Creation Options -->
+            <div id="dotsAndBoxesCreateOptions" class="w-full max-w-xs mx-auto mb-6 flex flex-col gap-4">
+                <h3 class="text-white font-bold text-center mb-2">إعدادات الغرفة الجديدة</h3>
+                <div>
+                    <label for="dnbGridSize" class="block text-slate-300 text-sm mb-2">اختر حجم الشبكة:</label>
+                    <select id="dnbGridSize" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="4x4">4 × 4 (سريع)</option>
+                        <option value="5x5" selected>5 × 5 (متوازن)</option>
+                        <option value="6x6">6 × 6 (تحدي)</option>
+                        <option value="8x8">8 × 8 (كبير)</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="dnbPlayerCount" class="block text-slate-300 text-sm mb-2">عدد اللاعبين:</label>
+                    <select id="dnbPlayerCount" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="2" selected>2 لاعبين</option>
+                        <option value="3">3 لاعبين</option>
+                        <option value="4">4 لاعبين</option>
+                    </select>
+                </div>
+                <button id="createDotsAndBoxesBtn" onclick="createDotsAndBoxesGame()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-bold shadow-lg transition-all transform hover:scale-105 active:scale-95">
+                    إنشاء الغرفة 🆕
+                </button>
+            </div>
+
+            <!-- Lobby -->
+            <div id="dotsAndBoxesLobby" class="hidden w-full text-center mb-4 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                <h3 class="text-white font-bold mb-4">قاعة الانتظار</h3>
+                <div id="dotsAndBoxesPlayersList" class="flex justify-center gap-4 mb-6 flex-wrap">
+                    <!-- Players will be populated here -->
+                </div>
+                <div class="flex flex-col gap-3 items-center">
+                    <p class="text-slate-400 text-sm italic">في انتظار انضمام اللاعبين...</p>
+                    <button id="startDotsAndBoxesBtn" onclick="startDotsAndBoxesGame()" class="hidden bg-green-600 hover:bg-green-700 text-white px-10 py-3 rounded-full font-bold shadow-lg animate-pulse transition-all transform hover:scale-110">
+                        ابدأ اللعبة الآن 🎮
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game Area -->
+            <div id="dotsAndBoxesGameArea" class="hidden w-full animate-in zoom-in-95 duration-500">
+                <div id="dotsAndBoxesScoreboard" class="grid grid-cols-2 gap-2 mb-4 text-white font-bold bg-gray-800/50 p-3 rounded-xl"></div>
+                <div id="dotsAndBoxesTurn" class="text-center text-yellow-400 mb-4 font-bold text-lg bg-gray-800/30 py-2 rounded-full border border-yellow-400/20"></div>
+                <div class="relative group">
+                    <canvas id="dotsAndBoxesCanvas" width="440" height="440" class="bg-slate-900 border-4 border-gray-700 rounded-2xl shadow-2xl w-full h-auto max-w-full touch-none transition-all duration-300"></canvas>
+                    <div id="dotsAndBoxesWinnerOverlay" class="hidden absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-3xl font-bold text-yellow-400 rounded-2xl backdrop-blur-sm animate-in fade-in zoom-in duration-500">
+                        <div class="mb-4">🏆</div>
+                        <div id="winnerText">الفائز: </div>
+                        <button onclick="resetDotsAndBoxesUI()" class="mt-6 text-sm bg-blue-600 text-white px-6 py-2 rounded-full hover:bg-blue-700">لعب مرة أخرى</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- نافذة تغيير كلمة المرور -->
 <div id="changePasswordModal" class="profile-modal">
     <div class="profile-content" style="width: 95%; max-width: 400px;">
@@ -3341,99 +3480,6 @@
     </div>
 </div>
 
-<!-- نافذة لعبة الثعبان -->
-<div id="snakeGameModal" class="profile-modal">
-    <div class="profile-content custom-scrollbar" style="width: 95%; max-width: 650px;">
-        <div class="relative bg-gray-800 p-4 text-center border-b border-gray-700">
-             <button onclick="closeSnakeGame()" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-            <h2 class="text-xl font-bold text-white">🐍 لعبة الثعبان الجماعية</h2>
-        </div>
-
-        <div class="p-4 bg-gray-900/90 flex flex-col items-center">
-            <!-- شاشة الانتظار -->
-            <div id="snakeScoreDisplay" class="text-xl font-bold text-yellow-400 mb-2 hidden">النتيجة: 0</div>
-            <div id="snakeLobby" class="w-full text-center mb-4">
-                <h3 class="text-white font-bold mb-2">قاعة الانتظار</h3>
-                <div id="snakePlayersList" class="flex justify-center gap-4 mb-4 flex-wrap">
-                    <!-- سيتم ملء اللاعبين هنا -->
-                </div>
-                
-                <!-- أدوات التخصيص والاستعداد -->
-                <div id="snakeLobbyControls" class="flex flex-col items-center gap-3 mb-4 hidden">
-                    <div id="snakeColorPicker" class="flex gap-2 bg-gray-800 p-2 rounded-lg border border-gray-700">
-                        <!-- أزرار الألوان ستضاف هنا -->
-                    </div>
-                    <div class="flex gap-3">
-                        <button id="snakeReadyBtn" onclick="toggleSnakeReady()" class="bg-gray-600 hover:bg-gray-500 text-white px-6 py-2 rounded-full font-bold transition-colors">استعداد ✅</button>
-                        <button id="startSnakeBtn" onclick="startSnakeGame()" class="hidden bg-green-600 hover:bg-green-700 text-white px-8 py-2 rounded-full font-bold shadow-lg animate-pulse">ابدأ اللعبة 🎮</button>
-                    </div>
-                </div>
-
-                <button id="createSnakeBtn" onclick="createSnakeGame()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2 rounded-full font-bold shadow-lg">
-                    إنشاء غرفة جديدة 🆕
-                </button>
-                <!-- أزرار اختيار الوضع -->
-                <div id="snakeModeSelection" class="hidden flex flex-col gap-3 mt-4 w-full max-w-xs mx-auto">
-                    <button onclick="startSinglePlayerSnake()" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg transform transition hover:scale-105 flex items-center justify-center gap-2"><span>👤</span> لعب فردي (بدون إشعار)</button>
-                    <button onclick="startMultiPlayerSnake()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-bold shadow-lg transform transition hover:scale-105 flex items-center justify-center gap-2"><span>👥</span> لعب جماعي (مع إشعار)</button>
-                    <button onclick="cancelSnakeModeSelection()" class="text-slate-400 hover:text-white text-sm mt-2">إلغاء</button>
-                </div>
-            </div>
-
-            <!-- لوحة اللعب -->
-            <div class="relative">
-                <canvas id="snakeCanvas" width="600" height="400" class="bg-black border-2 border-gray-700 rounded-lg shadow-2xl hidden w-full h-auto max-w-full touch-none"></canvas>
-                <div id="snakeCountdownOverlay" class="absolute inset-0 flex items-center justify-center bg-gray-900/60 backdrop-blur-sm hidden z-10 rounded-lg" style="transition: transform 0.3s, opacity 0.3s;">
-                    <!-- سيظهر العد التنازلي هنا -->
-                </div>
-                <div id="snakeOverlay" class="absolute inset-0 flex items-center justify-center bg-black/70 hidden">
-                    <h2 id="snakeWinnerText" class="text-3xl font-bold text-yellow-400"></h2>
-                </div>
-            </div>
-            
-            <!-- أزرار التحكم للجوال -->
-            <div id="snakeControls" class="grid grid-cols-3 gap-4 mt-6 md:hidden hidden w-full max-w-[280px] mx-auto" dir="ltr">
-                <div></div>
-                <button onclick="sendSnakeDir(0, -1)" class="bg-gray-700/90 active:bg-gray-600 p-5 rounded-2xl text-3xl shadow-lg backdrop-blur-sm transition-transform active:scale-90 flex items-center justify-center border border-white/10">⬆️</button>
-                <div></div>
-                
-                <button onclick="sendSnakeDir(-1, 0)" class="bg-gray-700/90 active:bg-gray-600 p-5 rounded-2xl text-3xl shadow-lg backdrop-blur-sm transition-transform active:scale-90 flex items-center justify-center border border-white/10">⬅️</button>
-                <div></div>
-                <button onclick="sendSnakeDir(1, 0)" class="bg-gray-700/90 active:bg-gray-600 p-5 rounded-2xl text-3xl shadow-lg backdrop-blur-sm transition-transform active:scale-90 flex items-center justify-center border border-white/10">➡️</button>
-                
-                <div></div>
-                <button onclick="sendSnakeDir(0, 1)" class="bg-gray-700/90 active:bg-gray-600 p-5 rounded-2xl text-3xl shadow-lg backdrop-blur-sm transition-transform active:scale-90 flex items-center justify-center border border-white/10">⬇️</button>
-                <div></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- نافذة ملوك الثعبان (Leaderboard) -->
-<div id="snakeLeaderboardModal" class="profile-modal">
-    <div class="profile-content custom-scrollbar" style="width: 95%; max-width: 500px;">
-        <div class="relative bg-gray-800 p-6 text-center border-b border-gray-700">
-             <button onclick="closeSnakeLeaderboard()" class="absolute top-4 right-4 text-slate-300 hover:text-blue-500 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-            <h2 class="text-2xl font-bold text-white">🐍 ملوك الثعبان</h2>
-        </div>
-
-        <div class="flex border-b border-gray-700">
-            <button onclick="switchSnakeTab('single')" class="flex-1 py-3 text-sm font-bold text-white border-b-2 border-green-500 bg-gray-700/50" id="tab-snake-single">🏆 الفردي (أعلى نتيجة)</button>
-            <button onclick="switchSnakeTab('multi')" class="flex-1 py-3 text-sm font-bold text-slate-400 hover:text-white" id="tab-snake-multi">⚔️ الجماعي (الكؤوس)</button>
-        </div>
-
-        <div class="p-4 bg-gray-900/50 min-h-[300px]">
-            <div id="snake-leaderboard-content" class="space-y-3">
-                <div class="text-center text-slate-400 p-8"><div class="spinner mx-auto"></div></div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- نافذة قبول الهدية (تم النقل للنهاية لضمان الظهور) -->
 <div id="giftOfferModal" class="profile-modal" style="z-index: 100000;">
     <div class="profile-content" style="width: 95%; max-width: 400px;">
@@ -3460,6 +3506,68 @@
 <input type="file" id="profileImageUpload" accept="image/*" class="hidden">
 <input type="file" id="coverUpload" accept="image/*" class="hidden">
 
+    <!-- نافذة تخصيص التدرج اللوني -->
+    <div id="gradientCustomizerModal" class="fixed inset-0 z-[11000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl shadow-2xl max-w-sm w-full transform scale-95 transition-transform duration-300 overflow-hidden">
+            <div class="bg-slate-800 px-6 py-4 flex justify-between items-center border-b border-slate-700">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🎨</span>
+                    <h3 class="text-white font-bold">تخصيص التدرج</h3>
+                </div>
+                <button onclick="closeGradientModal()" class="text-white/80 hover:text-white transition-colors bg-white/10 p-1.5 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 space-y-6">
+                <div>
+                    <p class="text-sm font-semibold text-slate-300 mb-4 text-center">اختر الألوان الثلاثة:</p>
+                    <div class="flex justify-center items-center gap-6">
+                        <div class="flex flex-col items-center gap-2">
+                            <div class="relative group">
+                                <input type="color" id="gradColor1" value="#ffffff" oninput="updateGradientPreview()" class="w-12 h-12 rounded-2xl cursor-pointer bg-gray-800 border-2 border-white/10 hover:border-white transition-all">
+                                <span class="absolute -top-2 -right-2 bg-slate-600 text-[10px] text-white w-5 h-5 rounded-full flex items-center justify-center shadow-lg">1</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-center gap-2">
+                            <div class="relative group">
+                                <input type="color" id="gradColor2" value="#808080" oninput="updateGradientPreview()" class="w-12 h-12 rounded-2xl cursor-pointer bg-gray-800 border-2 border-white/10 hover:border-slate-400 transition-all">
+                                <span class="absolute -top-2 -right-2 bg-slate-700 text-[10px] text-white w-5 h-5 rounded-full flex items-center justify-center shadow-lg">2</span>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-center gap-2">
+                            <div class="relative group">
+                                <input type="color" id="gradColor3" value="#000000" oninput="updateGradientPreview()" class="w-12 h-12 rounded-2xl cursor-pointer bg-gray-800 border-2 border-white/10 hover:border-black transition-all">
+                                <span class="absolute -top-2 -right-2 bg-slate-800 text-[10px] text-white w-5 h-5 rounded-full flex items-center justify-center shadow-lg">3</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <p class="text-sm font-semibold text-slate-300 mb-3 text-center">نوع التدرج:</p>
+                    <div class="flex bg-gray-800/50 p-1 rounded-2xl border border-white/5">
+                        <button onclick="setGradientType('to right')" id="gradTypeHorizontal" class="flex-1 py-2.5 rounded-xl bg-slate-700 text-white text-xs font-bold shadow-lg transition-all">
+                            ↔️ أفقي
+                        </button>
+                        <button onclick="setGradientType('to bottom')" id="gradTypeVertical" class="flex-1 py-2.5 rounded-xl text-slate-400 text-xs font-bold hover:bg-white/5 transition-all">
+                            ↕️ عمودي
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider text-center">معاينة التدرج</p>
+                    <div id="gradientPreviewBox" class="h-20 w-full rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.3)] border border-white/10" style="background: linear-gradient(to right, #ffffff, #808080, #000000);"></div>
+                </div>
+
+                <button onclick="applyGradientSelection()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-4 rounded-2xl transition-all transform active:scale-95 shadow-xl shadow-green-900/20 flex items-center justify-center gap-2">
+                    <span>✅</span> تطبيق التدرج
+                </button>
+            </div>
+        </div>
+    </div>
 
 
     <script src="/socket.io/socket.io.js"></script>
@@ -3735,6 +3843,65 @@
             value: null
         };
 
+        // --- دوال تخصيص التدرج اللوني ---
+        let currentGradientFeature = null;
+        let currentGradientType = 'to right';
+
+        function openGradientModal(feature) {
+            currentGradientFeature = feature;
+            const modal = document.getElementById('gradientCustomizerModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.firstElementChild.classList.remove('scale-95');
+            }, 10);
+            updateGradientPreview(); // Initialize preview
+        }
+
+        function closeGradientModal() {
+            const modal = document.getElementById('gradientCustomizerModal');
+            modal.classList.add('opacity-0');
+            modal.firstElementChild.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function setGradientType(type) {
+            currentGradientType = type;
+            const horizontalBtn = document.getElementById('gradTypeHorizontal');
+            const verticalBtn = document.getElementById('gradTypeVertical');
+            if (type === 'to right') {
+                horizontalBtn.classList.add('bg-slate-700', 'text-white', 'shadow-lg');
+                horizontalBtn.classList.remove('text-slate-400', 'hover:bg-white/5');
+                verticalBtn.classList.remove('bg-slate-700', 'text-white', 'shadow-lg');
+                verticalBtn.classList.add('text-slate-400', 'hover:bg-white/5');
+            } else {
+                verticalBtn.classList.add('bg-slate-700', 'text-white', 'shadow-lg');
+                verticalBtn.classList.remove('text-slate-400', 'hover:bg-white/5');
+                horizontalBtn.classList.remove('bg-slate-700', 'text-white', 'shadow-lg');
+                horizontalBtn.classList.add('text-slate-400', 'hover:bg-white/5');
+            }
+            updateGradientPreview();
+        }
+
+        function updateGradientPreview() {
+            const color1 = document.getElementById('gradColor1').value;
+            const color2 = document.getElementById('gradColor2').value;
+            const color3 = document.getElementById('gradColor3').value;
+            const previewBox = document.getElementById('gradientPreviewBox');
+
+            previewBox.style.background = `linear-gradient(${currentGradientType}, ${color1}, ${color2}, ${color3})`;
+        }
+
+        function applyGradientSelection() {
+            if (!currentGradientFeature) return;
+            const gradientString = document.getElementById('gradientPreviewBox').style.background;
+            const valueToSave = `background:${gradientString}`;
+            selectFeature(currentGradientFeature, valueToSave);
+            closeGradientModal();
+        }
+
         function switchFeatureSubTab(tabName) {
             // تحديث الأزرار
             document.querySelectorAll('.feature-sub-btn').forEach(btn => {
@@ -3831,9 +3998,13 @@
                 
                 const previewDiv = document.getElementById('previewCardDiv');
                 previewDiv.style.backgroundColor = '';
+                previewDiv.style.background = '';
                 if (value && value.startsWith('background-color:')) {
                     previewDiv.className = `flex items-center space-x-3 space-x-reverse p-2 rounded-lg`;
                     previewDiv.style.backgroundColor = value.split(':')[1];
+                } else if (value && value.startsWith('background:')) {
+                    previewDiv.className = `flex items-center space-x-3 space-x-reverse p-2 rounded-lg`;
+                    previewDiv.style.background = value.split('background:')[1];
                 } else {
                     previewDiv.className = `flex items-center space-x-3 space-x-reverse p-2 rounded-lg ${value || 'bg-gray-800'}`;
                 }
@@ -3845,9 +4016,13 @@
                 
                 const previewDiv = document.getElementById('previewProfileDiv');
                 previewDiv.style.backgroundColor = '';
+                previewDiv.style.background = '';
                 if (value && value.startsWith('background-color:')) {
                     previewDiv.className = `p-4 rounded-lg text-center`;
                     previewDiv.style.backgroundColor = value.split(':')[1];
+                } else if (value && value.startsWith('background:')) {
+                    previewDiv.className = `p-4 rounded-lg text-center`;
+                    previewDiv.style.background = value.split('background:')[1];
                 } else {
                     previewDiv.className = `p-4 rounded-lg text-center ${value || 'bg-gradient-to-b from-gray-800 to-gray-900'}`;
                 }
@@ -3875,6 +4050,63 @@
                 ];
                 fontClasses.forEach(cls => preview.classList.remove(cls));
                 if (value) preview.classList.add(value);
+            }
+        }
+
+        // تحديث المعاينات في تبويب الميزات
+        function updateFeaturesPreviews(profileData) {
+            if (!profileData) return;
+
+            // 1. معاينة خلفية الاسم
+            const nameBgPreview = document.getElementById('nameBackgroundPreview');
+            if (nameBgPreview) {
+                nameBgPreview.className = `px-2 py-1 rounded ${profileData.nameBackground || ''}`;
+            }
+
+            // 2. معاينة خلفية البطاقة
+            const cardPreviewDiv = document.getElementById('previewCardDiv');
+            if (cardPreviewDiv) {
+                cardPreviewDiv.style.backgroundColor = '';
+                cardPreviewDiv.style.background = '';
+                const val = profileData.userCardBackground;
+                if (val && val.startsWith('background-color:')) {
+                    cardPreviewDiv.className = `flex items-center space-x-3 space-x-reverse p-2 rounded-lg`;
+                    cardPreviewDiv.style.backgroundColor = val.split(':')[1];
+                } else if (val && val.startsWith('background:')) {
+                    cardPreviewDiv.className = `flex items-center space-x-3 space-x-reverse p-2 rounded-lg`;
+                    cardPreviewDiv.style.background = val.split('background:')[1];
+                } else {
+                    cardPreviewDiv.className = `flex items-center space-x-3 space-x-reverse p-2 rounded-lg ${val || 'bg-gray-800'}`;
+                }
+            }
+
+            // 3. معاينة خلفية الملف الشخصي
+            const profilePreviewDiv = document.getElementById('previewProfileDiv');
+            if (profilePreviewDiv) {
+                profilePreviewDiv.style.backgroundColor = '';
+                profilePreviewDiv.style.background = '';
+                const val = profileData.profileBackground;
+                if (val && val.startsWith('background-color:')) {
+                    profilePreviewDiv.className = `p-4 rounded-lg text-center`;
+                    profilePreviewDiv.style.backgroundColor = val.split(':')[1];
+                } else if (val && val.startsWith('background:')) {
+                    profilePreviewDiv.className = `p-4 rounded-lg text-center`;
+                    profilePreviewDiv.style.background = val.split('background:')[1];
+                } else {
+                    profilePreviewDiv.className = `p-4 rounded-lg text-center ${val || 'bg-gradient-to-b from-gray-800 to-gray-900'}`;
+                }
+            }
+            
+            // 4. معاينة الخط
+            const nameFontPreview = document.getElementById('nameFontPreview');
+            if (nameFontPreview) {
+                const fontClasses = [
+                    'font-cairo', 'font-tajawal', 'font-amiri', 'font-aref', 'font-rakkas', 'font-lemonada', 'font-changa', 'font-messiri',
+                    'font-almarai', 'font-harmattan', 'font-lalezar', 'font-mada', 'font-reem-kufi', 'font-scheherazade', 'font-lateef',
+                    'font-mirza', 'font-vibes', 'font-katibeh', 'font-kufam', 'font-readex'
+                ];
+                fontClasses.forEach(cls => nameFontPreview.classList.remove(cls));
+                if (profileData.nameFont) nameFontPreview.classList.add(profileData.nameFont);
             }
         }
 
@@ -3951,7 +4183,7 @@
                 bgGrid.appendChild(div);
             });
 
-            // 3. إطارات الصور
+            // 3. إطارات الصور (إزالة العناصر التي تتطلب شراء، ستظهر في مشترياتي)
             const frames = [
                 { id: 'frame-none', name: 'بدون' },
                 { id: 'frame-gold', name: 'ذهبي' },
@@ -3974,30 +4206,18 @@
                 { id: 'frame-golden-rain', name: 'مطر ذهبي 🌧️' },
                 { id: 'frame-matrix-rain', name: 'مصفوفة 📟' },
                 { id: 'frame-fast-emerald', name: 'زمرد سريع 💎' },
-                { id: 'frame-electricity', name: 'كهرباء ⚡' },
-                { id: 'frame-crown-gold', name: 'التاج الذهبي', isPremium: true },
-                { id: 'frame-crown-rainbow', name: 'التاج الملون', isPremium: true },
-                { id: 'frame-blue-fire', name: 'النار الأزرق', isPremium: true },
-                { id: 'frame-orange-fire', name: 'نار برتقالية (XP)', isPremium: true }
+                { id: 'frame-electricity', name: 'كهرباء ⚡' }
             ];
             const frameGrid = document.getElementById('avatarFrameGrid');
             frameGrid.innerHTML = '';
             frames.forEach(frame => {
                 const div = document.createElement('div');
-                const isLocked = frame.isPremium && (!currentUser.ownedItems || !currentUser.ownedItems.includes(frame.id));
-                
-                div.className = `cursor-pointer p-2 rounded hover:bg-gray-700 flex flex-col items-center ${isLocked ? 'opacity-70' : ''}`;
-                
-                if (isLocked) {
-                    div.onclick = () => showNotification('هذا الإطار مقفل. يمكنك شراؤه من المتجر.', 'warning');
-                } else {
-                    div.onclick = (e) => selectFeature('avatarFrame', frame.id === 'frame-none' ? null : frame.id);
-                }
+                div.className = `cursor-pointer p-2 rounded hover:bg-gray-700 flex flex-col items-center transition-all active:scale-95`;
+                div.onclick = (e) => selectFeature('avatarFrame', frame.id === 'frame-none' ? null : frame.id);
                 
                 div.innerHTML = `
                     <div class="w-10 h-10 rounded-full bg-gray-600 ${frame.id}"></div>
                     <span class="text-[10px] mt-1 text-slate-300">${frame.name}</span>
-                    ${isLocked ? '<span class="text-[9px] text-red-400 font-bold mt-0.5">🔒 مقفلة</span>' : ''}
                 `;
                 frameGrid.appendChild(div);
             });
@@ -4220,6 +4440,24 @@
             const overlay = document.getElementById('shopOverlay');
             modal.classList.remove('show');
             overlay.classList.remove('show');
+        }
+
+        function openInventoryModal() {
+            document.getElementById('inventoryModal').classList.add('show');
+            document.getElementById('inventoryOverlay').classList.add('show');
+            // إخفاء نقطة الإشعار عند الفتح
+            const invDot = document.getElementById('inventoryNotificationDot');
+            if (invDot) invDot.classList.add('hidden');
+            
+            // طلب بيانات المستخدم الحالي لتحديث المخزون
+            if (currentUser) {
+                socket.emit('get user profile', { username: currentUser.name, isInventoryRequest: true });
+            }
+        }
+
+        function closeInventoryModal() {
+            document.getElementById('inventoryModal').classList.remove('show');
+            document.getElementById('inventoryOverlay').classList.remove('show');
         }
 
         // --- دوال إرسال النقاط (تم نقلها إلى النطاق العام) ---
@@ -6428,9 +6666,15 @@ function updateOnlineUsersList(users) {
                 if (cardBgValue.startsWith('background-color:')) {
                     userDiv.className = `group flex items-center space-x-3 space-x-reverse p-2 rounded-lg transition-all duration-200 ease-in-out cursor-pointer mb-1 border border-transparent hover:border-white/10`;
                     userDiv.style.backgroundColor = cardBgValue.split(':')[1];
+                    userDiv.style.background = '';
+                } else if (cardBgValue.startsWith('background:')) {
+                    userDiv.className = `group flex items-center space-x-3 space-x-reverse p-2 rounded-lg transition-all duration-200 ease-in-out cursor-pointer mb-1 border border-transparent hover:border-white/10`;
+                    userDiv.style.background = cardBgValue.split('background:')[1];
+                    userDiv.style.backgroundColor = '';
                 } else {
                     userDiv.className = `group flex items-center space-x-3 space-x-reverse p-2 rounded-lg transition-all duration-200 ease-in-out cursor-pointer mb-1 border border-transparent hover:border-white/10 ${cardBgValue}`;
                     userDiv.style.backgroundColor = '';
+                    userDiv.style.background = '';
                 }
                 
                 if (user.nameCardBorder && user.nameCardBorder.startsWith('border-color:')) {
@@ -6722,15 +6966,29 @@ function updateOnlineUsersList(users) {
                 
                 let priceDisplay = `<span>${item.price}</span> <span class="text-yellow-300">⭐</span>`;
                 let buyBtnClass = "bg-teal-600 hover:bg-teal-700";
+                let isOwned = false;
+
+                // التحقق مما إذا كان المستخدم يمتلك العنصر (باستثناء الرتب)
+                if (item.itemType !== 'rank' && currentUser && currentUser.ownedItems) {
+                    isOwned = currentUser.ownedItems.includes(item.itemValue);
+                }
                 
                 if (item.itemValue === 'frame-orange-fire') {
                     priceDisplay = `<span>${item.price}</span> <span class="text-cyan-400 font-bold">XP ⚡</span>`;
                     buyBtnClass = "bg-orange-600 hover:bg-orange-700";
                 }
 
+                let buyBtnContent = priceDisplay;
+                let buyBtnDisabled = "";
+                if (isOwned) {
+                    buyBtnContent = "تم الشراء";
+                    buyBtnClass = "bg-gray-600 cursor-not-allowed";
+                    buyBtnDisabled = "disabled";
+                }
+
                 let buttonsHtml = `
-                    <button onclick="buyItem(${item.id})" class="flex-1 ${buyBtnClass} text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center space-x-2 space-x-reverse transition-colors text-xs">
-                        ${priceDisplay}
+                    <button onclick="buyItem(${item.id})" ${buyBtnDisabled} class="flex-1 ${buyBtnClass} text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center space-x-2 space-x-reverse transition-colors text-xs">
+                        ${buyBtnContent}
                     </button>
                 `;
 
@@ -6794,6 +7052,16 @@ function updateOnlineUsersList(users) {
                 // تحديث واجهة الميزات فوراً لإزالة القفل
                 if (typeof initFeaturesUI === 'function') {
                     initFeaturesUI();
+                }
+            }
+            
+            // إظهار النقطة الحمراء على قسم مشترياتي وتحديث المخزون
+            if (data.showInventoryDot) {
+                const invDot = document.getElementById('inventoryNotificationDot');
+                if (invDot) invDot.classList.remove('hidden');
+                // تحديث المخزون فوراً
+                if (currentUser) {
+                    socket.emit('get user profile', { username: currentUser.name, isInventoryRequest: true });
                 }
             }
             
@@ -6942,6 +7210,92 @@ function updateOnlineUsersList(users) {
 
 
         function showUserProfile(profileData) {
+    // --- تعديل رئيسي: فصل منطق عرض المخزون عن الملف الشخصي ---
+    if (profileData.isInventoryRequest) {
+        // تحديث بيانات المستخدم الحالي لضمان مزامنة العناصر المزودة
+        if (currentUser && profileData.username === currentUser.name) {
+            currentUser.avatarFrame = profileData.avatarFrame;
+            currentUser.nameColor = profileData.nameColor;
+            currentUser.nameBackground = profileData.nameBackground;
+            currentUser.userCardBackground = profileData.userCardBackground;
+            currentUser.profileBackground = profileData.profileBackground;
+            currentUser.nameFont = profileData.nameFont;
+            currentUser.joinMessageBackground = profileData.joinMessageBackground;
+            currentUser.nameCardBorder = profileData.nameCardBorder;
+        }
+
+        const inventoryContainer = document.getElementById('inventoryItemsContainer');
+        if (inventoryContainer) {
+            inventoryContainer.innerHTML = ''; // تفريغ المحتوى القديم
+            const userInventory = profileData.inventory || [];
+            if (userInventory.length === 0) {
+                inventoryContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center p-12 text-slate-500 opacity-60">
+                        <svg class="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                        </svg>
+                        <p class="text-lg font-medium">ليس لديك أي مشتريات لحد الآن</p>
+                        <button onclick="closeInventoryModal(); openShopModal();" class="mt-4 text-blue-400 hover:text-blue-300 text-sm underline">اذهب للمتجر للتسوق</button>
+                    </div>
+                `;
+            } else {
+                const renderedItems = new Set();
+                userInventory.forEach(invItem => {
+                    if (renderedItems.has(invItem.itemId)) return;
+                    renderedItems.add(invItem.itemId);
+
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'bg-gray-800/80 p-4 rounded-2xl border border-gray-700/50 flex items-center justify-between gap-4 mb-3 hover:bg-gray-800 transition-all';
+                    
+                    let isEquipped = false;
+                    if (profileData) {
+                        if (invItem.type === 'avatarFrame' && profileData.avatarFrame === invItem.value) isEquipped = true;
+                        else if (invItem.type === 'nameColor' && profileData.nameColor === invItem.value) isEquipped = true;
+                        else if (invItem.type === 'nameBackground' && profileData.nameBackground === invItem.value) isEquipped = true;
+                        else if (invItem.type === 'userCardBackground' && profileData.userCardBackground === invItem.value) isEquipped = true;
+                        else if (invItem.type === 'profileBackground' && profileData.profileBackground === invItem.value) isEquipped = true;
+                        else if (invItem.type === 'nameFont' && profileData.nameFont === invItem.value) isEquipped = true;
+                        else if (invItem.type === 'joinMessageBackground' && profileData.joinMessageBackground === invItem.value) isEquipped = true;
+                        else if (invItem.type === 'nameCardBorder' && profileData.nameCardBorder === invItem.value) isEquipped = true;
+                    }
+
+                    const btnText = isEquipped ? 'إزالة' : 'تزويد';
+                    const btnClass = isEquipped ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700';
+
+                    itemDiv.innerHTML = `
+                        <div class="flex items-center gap-4 min-w-0">
+                            <div class="w-12 h-12 rounded-xl bg-gray-700/50 flex items-center justify-center text-3xl shadow-inner flex-shrink-0">
+                                ${getInventoryIcon(invItem.type, invItem.value) || '🛍️'}
+                            </div>
+                            <div class="min-w-0">
+                                <h4 class="text-white font-bold truncate">${invItem.name}</h4>
+                                <p class="text-xs text-slate-400 truncate">${invItem.description || ''}</p>
+                            </div>
+                        </div>
+                        <button id="equip-btn-${invItem.id}" 
+                                data-inventory-id="${invItem.id}" 
+                                data-type="${invItem.type}" 
+                                data-equipped="${isEquipped}"
+                                onclick="equipItem(${invItem.id}, ${isEquipped})" 
+                                class="${btnClass} text-white font-bold py-2 px-6 rounded-xl text-sm transition-all shadow-lg active:scale-95 flex-shrink-0">
+                            ${btnText}
+                        </button>
+                    `;
+                    inventoryContainer.appendChild(itemDiv);
+                });
+            }
+        }
+        return; // إنهاء الدالة هنا لمنع فتح نافذة الملف الشخصي الكاملة
+    }
+
+
+            // إذا كان طلباً للمخزون فقط، نتوقف هنا ولا نفتح نافذة الملف الشخصي
+            if (profileData.isInventoryRequest) return;
+
+            // تحديث XP إذا كان موجوداً
+            const xpElem = document.getElementById('profileXP');
+            if (xpElem) xpElem.textContent = profileData.xp || 0;
+
             const modal = document.getElementById('profileModal');
             const avatar = document.getElementById('profileAvatar');
             const usernameElem = document.getElementById('profileUsername');
@@ -7036,10 +7390,14 @@ function updateOnlineUsersList(users) {
 
             // تطبيق لون/خلفية الملف الشخصي
             profileContent.style.backgroundColor = '';
+            profileContent.style.background = '';
             if (profileData.profileBackground) {
                 if (profileData.profileBackground.startsWith('background-color:')) {
                     profileContent.className = 'profile-content custom-scrollbar relative';
                     profileContent.style.backgroundColor = profileData.profileBackground.split(':')[1];
+                } else if (profileData.profileBackground.startsWith('background:')) {
+                    profileContent.className = 'profile-content custom-scrollbar relative';
+                    profileContent.style.background = profileData.profileBackground.split('background:')[1];
                 } else {
                     profileContent.className = `profile-content custom-scrollbar relative ${profileData.profileBackground}`;
                 }
@@ -7263,6 +7621,9 @@ function updateOnlineUsersList(users) {
                 featuresTabButton.classList.remove('hidden');
                 initFeaturesUI(); // تهيئة واجهة الميزات
                 updateNameCardBorderGrid(profileData); // تحديث شبكة إطار البطاقة
+                
+                // تحديث المعاينات في تبويب الميزات بالقيم الحالية
+                updateFeaturesPreviews(profileData);
             } else {
                 featuresTabButton.classList.add('hidden');
             }
@@ -10509,6 +10870,495 @@ socket.on('join error', (error) => {
             showNotification(msg, 'warning');
         });
 
+        // --- Dots and Boxes Game Logic ---
+        let currentDotsAndBoxesGameId = null;
+        let dnbGameData = null;
+        const dnbCanvas = document.getElementById('dotsAndBoxesCanvas');
+        const dnbCtx = dnbCanvas.getContext('2d');
+        let DNB_CELL_SIZE = 60;
+        const DNB_DOT_RADIUS = 5;
+        const DNB_PADDING = 30; // إضافة حشوة لضمان عدم خروج النقاط عن الإطار
+        let dnbHoverLine = null;
+        let isDnbDocked = false;
+        let dnbDragStart = null; // { r, c } - النقطة التي بدأ منها السحب
+        let dnbCurrentPos = null; // { x, y } - الموقع الحالي للماوس/اللمس أثناء السحب
+
+        function toggleDnbDocking() {
+            const modal = document.getElementById('dotsAndBoxesModal');
+            const chatMainContent = document.getElementById('chatMainContent');
+            const dockBtn = document.getElementById('dnbDockBtn');
+            
+            isDnbDocked = !isDnbDocked;
+            
+            if (isDnbDocked) {
+                // نقل النافذة لتصبح جزءاً من محتوى الدردشة
+                chatMainContent.appendChild(modal);
+                modal.classList.add('docked-left');
+                dockBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>';
+                showNotification('تم تثبيت اللعبة في الجانب الأيسر', 'info');
+            } else {
+                // إعادتها لمكانها الأصلي في الـ body
+                document.body.appendChild(modal);
+                modal.classList.remove('docked-left');
+                dockBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7"></path></svg>';
+            }
+        }
+
+        function openDotsAndBoxesGame() {
+            document.getElementById('dotsAndBoxesModal').classList.add('show');
+            resetDotsAndBoxesUI();
+        }
+
+        function closeDotsAndBoxesGame() {
+            if (currentDotsAndBoxesGameId) {
+                socket.emit('leave dots and boxes game', currentDotsAndBoxesGameId);
+            }
+            currentDotsAndBoxesGameId = null;
+            dnbGameData = null;
+            
+            // إنهاء وضع التثبيت إذا كان مفعلاً عند الإغلاق
+            if (isDnbDocked) {
+                toggleDnbDocking();
+            }
+            
+            document.getElementById('dotsAndBoxesModal').classList.remove('show');
+        }
+
+        function resetDotsAndBoxesUI() {
+            document.getElementById('dotsAndBoxesLobby').classList.add('hidden');
+            document.getElementById('dotsAndBoxesGameArea').classList.add('hidden');
+            document.getElementById('dotsAndBoxesCreateOptions').classList.remove('hidden');
+            document.getElementById('startDotsAndBoxesBtn').classList.add('hidden');
+            document.getElementById('dotsAndBoxesWinnerOverlay').classList.add('hidden');
+        }
+
+        function createDotsAndBoxesGame() {
+            const size = document.getElementById('dnbGridSize').value.split('x');
+            const playerCount = parseInt(document.getElementById('dnbPlayerCount').value);
+            const options = { 
+                rows: parseInt(size[0]), 
+                cols: parseInt(size[1]),
+                maxPlayers: playerCount
+            };
+            socket.emit('create dots and boxes game', { currentUser, options });
+            
+            // إخفاء خيارات الإنشاء وإظهار الردهة (بشكل مؤقت حتى يأتي الرد من السيرفر)
+            document.getElementById('dotsAndBoxesCreateOptions').classList.add('hidden');
+            document.getElementById('dotsAndBoxesLobby').classList.remove('hidden');
+        }
+
+        function startDotsAndBoxesGame() {
+            if (currentDotsAndBoxesGameId) {
+                socket.emit('start dots and boxes game', currentDotsAndBoxesGameId);
+            }
+        }
+
+        function joinDotsAndBoxesGame(gameId) {
+            openDotsAndBoxesGame();
+            socket.emit('join dots and boxes game', { gameId, currentUser });
+        }
+
+        socket.on('dots and boxes game created', (data) => {
+            currentDotsAndBoxesGameId = data.gameId;
+        });
+
+        socket.on('dots and boxes error', (msg) => {
+            showNotification(msg, 'error');
+        });
+
+        socket.on('dots and boxes game update', (game) => {
+            if (!game) return;
+            dnbGameData = game;
+            currentDotsAndBoxesGameId = game.id;
+            if (game.status === 'waiting') {
+                renderDotsAndBoxesLobby(game);
+            } else {
+                renderDotsAndBoxesGame(game);
+            }
+        });
+
+        function renderDotsAndBoxesLobby(game) {
+            document.getElementById('dotsAndBoxesLobby').classList.remove('hidden');
+            document.getElementById('dotsAndBoxesGameArea').classList.add('hidden');
+            document.getElementById('dotsAndBoxesCreateOptions').classList.add('hidden');
+
+            const list = document.getElementById('dotsAndBoxesPlayersList');
+            list.innerHTML = game.players.map((p, index) => `
+                <div class="flex flex-col items-center gap-2 animate-in zoom-in duration-300">
+                    <div class="w-16 h-16 rounded-full border-4 shadow-lg" style="border-color: ${p.color};">
+                        <img src="${p.avatar}" class="w-full h-full object-cover rounded-full">
+                    </div>
+                    <span class="font-bold text-white text-sm">${p.username} ${index === 0 ? '👑' : ''}</span>
+                </div>
+            `).join('');
+
+            const lobbyText = document.querySelector('#dotsAndBoxesLobby p');
+            if (lobbyText) {
+                lobbyText.textContent = `بانتظار اللاعبين... (${game.players.length} / ${game.maxPlayers || 4})`;
+            }
+
+            if (game.host === currentUser.name && game.players.length >= 2) {
+                document.getElementById('startDotsAndBoxesBtn').classList.remove('hidden');
+            } else {
+                document.getElementById('startDotsAndBoxesBtn').classList.add('hidden');
+            }
+        }
+
+        function renderDotsAndBoxesGame(game) {
+            document.getElementById('dotsAndBoxesLobby').classList.add('hidden');
+            document.getElementById('dotsAndBoxesGameArea').classList.remove('hidden');
+
+            // تحديث لوحة النتائج بتصميم شبكي
+            const scoreboard = document.getElementById('dotsAndBoxesScoreboard');
+            scoreboard.innerHTML = game.players.map(p => `
+                <div class="flex items-center gap-2 p-2 rounded-lg bg-gray-700/30 border border-white/5 transition-all ${game.currentPlayerIndex === game.players.indexOf(p) ? 'ring-2 ring-yellow-400 scale-105 bg-gray-700/60' : ''}">
+                    <div class="w-3 h-3 rounded-full shadow-[0_0_8px] shadow-current" style="background-color: ${p.color}; color: ${p.color}"></div>
+                    <span class="text-xs truncate max-w-[70px]">${p.username}</span>
+                    <span class="mr-auto font-bold text-blue-400">${p.score}</span>
+                </div>
+            `).join('');
+
+            const turnDiv = document.getElementById('dotsAndBoxesTurn');
+            if (game.status === 'playing') {
+                const currentPlayer = game.players[game.currentPlayerIndex];
+                const isMyTurn = currentPlayer.username === currentUser.name;
+                turnDiv.innerHTML = isMyTurn ? 
+                    `<span class="animate-pulse">👉 دورك الآن!</span>` : 
+                    `<span>انتظر دورك (${currentPlayer.username})</span>`;
+                turnDiv.style.color = currentPlayer.color;
+            } else {
+                turnDiv.textContent = '';
+            }
+
+            drawDotsAndBoxesGrid(game);
+
+            const winnerOverlay = document.getElementById('dotsAndBoxesWinnerOverlay');
+            if (game.status === 'over') {
+                document.getElementById('winnerText').textContent = game.message || `الفائز: ${game.winner}`;
+                winnerOverlay.classList.remove('hidden');
+                
+                if (game.winner === currentUser.name && window.successSound) {
+                    successSound.play().catch(e => {});
+                }
+            } else {
+                winnerOverlay.classList.add('hidden');
+            }
+        }
+
+        function drawDotsAndBoxesGrid(game) {
+            // حل مشكلة التصغير: حساب حجم الخلية بناءً على الأبعاد الفعلية مع الحشوة
+            DNB_CELL_SIZE = (dnbCanvas.width - 2 * DNB_PADDING) / game.cols;
+
+            dnbCtx.clearRect(0, 0, dnbCanvas.width, dnbCanvas.height);
+            const grid = game.grid;
+            const players = game.players;
+
+            // 1. رسم المربعات المكتملة
+            for (let r = 0; r < grid.rows; r++) {
+                for (let c = 0; c < grid.cols; c++) {
+                    if (grid.boxes[r][c] > 0) {
+                        const player = players[grid.boxes[r][c] - 1];
+                        if (player.isRemoved) {
+                            dnbCtx.fillStyle = 'rgba(128, 128, 128, 0.2)';
+                        } else {
+                            dnbCtx.fillStyle = player.color + '33'; // شفافية 20%
+                        }
+                        dnbCtx.fillRect(c * DNB_CELL_SIZE + DNB_PADDING + 2, r * DNB_CELL_SIZE + DNB_PADDING + 2, DNB_CELL_SIZE - 4, DNB_CELL_SIZE - 4);
+                        
+                        // رمز اللاعب
+                        dnbCtx.fillStyle = player.isRemoved ? '#999' : player.color;
+                        dnbCtx.font = `bold ${DNB_CELL_SIZE/3}px Cairo`;
+                        dnbCtx.textAlign = 'center';
+                        dnbCtx.fillText(player.username[0].toUpperCase(), (c + 0.5) * DNB_CELL_SIZE + DNB_PADDING, (r + 0.65) * DNB_CELL_SIZE + DNB_PADDING);
+                    }
+                }
+            }
+
+            // 2. رسم الخطوط الأفقية
+            for (let r = 0; r < grid.hLines.length; r++) {
+                for (let c = 0; c < grid.hLines[r].length; c++) {
+                    if (grid.hLines[r][c] > 0) {
+                        const player = players[grid.hLines[r][c] - 1];
+                        dnbCtx.strokeStyle = player.isRemoved ? '#666' : player.color;
+                        dnbCtx.lineWidth = 6;
+                        dnbCtx.lineCap = 'round';
+                        dnbCtx.beginPath();
+                        dnbCtx.moveTo(c * DNB_CELL_SIZE + DNB_PADDING, r * DNB_CELL_SIZE + DNB_PADDING);
+                        dnbCtx.lineTo((c + 1) * DNB_CELL_SIZE + DNB_PADDING, r * DNB_CELL_SIZE + DNB_PADDING);
+                        dnbCtx.stroke();
+                    }
+                }
+            }
+
+            // 3. رسم الخطوط العمودية
+            for (let r = 0; r < grid.vLines.length; r++) {
+                for (let c = 0; c < grid.vLines[r].length; c++) {
+                    if (grid.vLines[r][c] > 0) {
+                        const player = players[grid.vLines[r][c] - 1];
+                        dnbCtx.strokeStyle = player.isRemoved ? '#666' : player.color;
+                        dnbCtx.lineWidth = 6;
+                        dnbCtx.lineCap = 'round';
+                        dnbCtx.beginPath();
+                        dnbCtx.moveTo(c * DNB_CELL_SIZE + DNB_PADDING, r * DNB_CELL_SIZE + DNB_PADDING);
+                        dnbCtx.lineTo(c * DNB_CELL_SIZE + DNB_PADDING, (r + 1) * DNB_CELL_SIZE + DNB_PADDING);
+                        dnbCtx.stroke();
+                    }
+                }
+            }
+            
+            // 4. رسم خط المعاينة أثناء السحب (Drag and Drop Visuals)
+            if (dnbDragStart && dnbCurrentPos) {
+                const player = players[game.currentPlayerIndex];
+                const startX = dnbDragStart.c * DNB_CELL_SIZE + DNB_PADDING;
+                const startY = dnbDragStart.r * DNB_CELL_SIZE + DNB_PADDING;
+                
+                // إضافة توهج للخط المسحوب
+                dnbCtx.shadowBlur = 10;
+                dnbCtx.shadowColor = player.color;
+                dnbCtx.strokeStyle = player.color;
+                dnbCtx.lineWidth = 5;
+                dnbCtx.lineCap = 'round';
+                
+                dnbCtx.beginPath();
+                dnbCtx.moveTo(startX, startY);
+                dnbCtx.lineTo(dnbCurrentPos.x, dnbCurrentPos.y);
+                dnbCtx.stroke();
+                
+                // رسم رأس الخط (دائرة صغيرة في موقع الماوس)
+                dnbCtx.fillStyle = player.color;
+                dnbCtx.beginPath();
+                dnbCtx.arc(dnbCurrentPos.x, dnbCurrentPos.y, 4, 0, Math.PI * 2);
+                dnbCtx.fill();
+                
+                dnbCtx.shadowBlur = 0; // إعادة ضبط التوهج
+
+                // تمييز النقطة المستهدفة إذا كانت متجاورة وصالحة
+                const targetDot = getDnbDotFromPos(dnbCurrentPos.x, dnbCurrentPos.y);
+                if (targetDot) {
+                    const dr = Math.abs(targetDot.r - dnbDragStart.r);
+                    const dc = Math.abs(targetDot.c - dnbDragStart.c);
+                    
+                    if ((dr === 1 && dc === 0) || (dr === 0 && dc === 1)) {
+                        // نقطة مجاورة صالحة
+                        dnbCtx.fillStyle = player.color;
+                        dnbCtx.beginPath();
+                        dnbCtx.arc(targetDot.c * DNB_CELL_SIZE + DNB_PADDING, targetDot.r * DNB_CELL_SIZE + DNB_PADDING, DNB_DOT_RADIUS * 2, 0, 2 * Math.PI);
+                        dnbCtx.fill();
+                        
+                        // إضافة هالة (Halo) حول النقطة الصالحة
+                        dnbCtx.strokeStyle = player.color;
+                        dnbCtx.lineWidth = 2;
+                        dnbCtx.beginPath();
+                        dnbCtx.arc(targetDot.c * DNB_CELL_SIZE + DNB_PADDING, targetDot.r * DNB_CELL_SIZE + DNB_PADDING, DNB_DOT_RADIUS * 3, 0, 2 * Math.PI);
+                        dnbCtx.stroke();
+                    }
+                }
+            }
+
+            // 5. رسم النقاط
+            for (let r = 0; r < game.rows + 1; r++) {
+                for (let c = 0; c < game.cols + 1; c++) {
+                    const isStartDot = dnbDragStart && dnbDragStart.r === r && dnbDragStart.c === c;
+                    const x = c * DNB_CELL_SIZE + DNB_PADDING;
+                    const y = r * DNB_CELL_SIZE + DNB_PADDING;
+
+                    if (isStartDot) {
+                        const player = players[game.currentPlayerIndex];
+                        // نبضة (Pulse) للنقطة المختارة
+                        const pulseScale = 1 + 0.2 * Math.sin(Date.now() / 150);
+                        dnbCtx.fillStyle = player.color;
+                        dnbCtx.shadowBlur = 15;
+                        dnbCtx.shadowColor = player.color;
+                        dnbCtx.beginPath();
+                        dnbCtx.arc(x, y, DNB_DOT_RADIUS * 1.5 * pulseScale, 0, 2 * Math.PI);
+                        dnbCtx.fill();
+                        dnbCtx.shadowBlur = 0;
+                    } else {
+                        dnbCtx.fillStyle = '#475569'; // لون هادئ للنقاط
+                        dnbCtx.beginPath();
+                        dnbCtx.arc(x, y, DNB_DOT_RADIUS, 0, 2 * Math.PI);
+                        dnbCtx.fill();
+                    }
+                }
+            }
+            
+            // إعادة الطلب للأنيميشن إذا كان هناك سحب نشط
+            if (dnbDragStart) {
+                requestAnimationFrame(() => drawDotsAndBoxesGrid(game));
+            }
+        }
+
+        function getDnbLineFromPos(x, y) {
+            if (!dnbGameData || !dnbGameData.grid) return null;
+
+            const c = (x - DNB_PADDING) / DNB_CELL_SIZE;
+            const r = (y - DNB_PADDING) / DNB_CELL_SIZE;
+
+            const r_int = Math.round(r);
+            const c_int = Math.round(c);
+            
+            const r_dist = Math.abs(r - r_int);
+            const c_dist = Math.abs(c - c_int);
+
+            // عتبة حساسية محسنة (0.45 من حجم الخلية) لتسهيل الضغط على الأطراف
+            const threshold = 0.45; 
+
+            // التحقق من الخطوط الأفقية (يجب أن يكون r قريباً من عدد صحيح و c بين الأعمدة)
+            if (r_dist < threshold && r_int >= 0 && r_int <= dnbGameData.rows) {
+                // السماح بهامش بسيط خارج الشبكة (0.2) لتسهيل الضغط على الخطوط الطرفية
+                if (c >= -0.2 && c <= dnbGameData.cols + 0.2) {
+                    const c_floor = Math.floor(c);
+                    const clamped_c = Math.max(0, Math.min(dnbGameData.cols - 1, c_floor));
+                    
+                    // إذا كنا قريبين جداً من نقطة، نختار الخط بناءً على المسافة الأكبر من المركز (لتجنب القفز بين H و V)
+                    if (r_dist < c_dist || (c < 0 || c > dnbGameData.cols)) {
+                         return { type: 'h', r: r_int, c: clamped_c };
+                    }
+                }
+            }
+
+            // التحقق من الخطوط العمودية (يجب أن يكون c قريباً من عدد صحيح و r بين الصفوف)
+            if (c_dist < threshold && c_int >= 0 && c_int <= dnbGameData.cols) {
+                if (r >= -0.2 && r <= dnbGameData.rows + 0.2) {
+                    const r_floor = Math.floor(r);
+                    const clamped_r = Math.max(0, Math.min(dnbGameData.rows - 1, r_floor));
+                    
+                    if (c_dist < r_dist || (r < 0 || r > dnbGameData.rows)) {
+                        return { type: 'v', r: clamped_r, c: c_int };
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        function getDnbDotFromPos(x, y) {
+            if (!dnbGameData || !dnbGameData.grid) return null;
+            
+            const c = (x - DNB_PADDING) / DNB_CELL_SIZE;
+            const r = (y - DNB_PADDING) / DNB_CELL_SIZE;
+            
+            const r_int = Math.round(r);
+            const c_int = Math.round(c);
+            
+            // زيادة مساحة استهداف النقطة قليلاً (0.3) لتسهيل التحكم باللمس
+            if (Math.abs(r - r_int) < 0.3 && Math.abs(c - c_int) < 0.3) {
+                if (r_int >= 0 && r_int <= dnbGameData.rows && c_int >= 0 && c_int <= dnbGameData.cols) {
+                    return { r: r_int, c: c_int };
+                }
+            }
+            return null;
+        }
+
+        function getCanvasPos(e) {
+            const rect = dnbCanvas.getBoundingClientRect();
+            const scaleX = dnbCanvas.width / rect.width;
+            const scaleY = dnbCanvas.height / rect.height;
+            
+            let clientX, clientY;
+            if (e.touches && e.touches[0]) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            } else if (e.changedTouches && e.changedTouches[0]) {
+                clientX = e.changedTouches[0].clientX;
+                clientY = e.changedTouches[0].clientY;
+            } else {
+                clientX = e.clientX;
+                clientY = e.clientY;
+            }
+            
+            return {
+                x: (clientX - rect.left) * scaleX,
+                y: (clientY - rect.top) * scaleY
+            };
+        }
+
+        function handleDnbDown(x, y) {
+            if (!dnbGameData || dnbGameData.status !== 'playing') return;
+            if (dnbGameData.players[dnbGameData.currentPlayerIndex].username !== currentUser.name) return;
+            
+            const dot = getDnbDotFromPos(x, y);
+            if (dot) {
+                dnbDragStart = dot;
+                dnbCurrentPos = { x, y };
+                // طلب رسم فوري للتأثير البصري
+                drawDotsAndBoxesGrid(dnbGameData);
+            }
+        }
+
+        function handleDnbMove(x, y) {
+            if (dnbDragStart) {
+                dnbCurrentPos = { x, y };
+                dnbHoverLine = null; 
+                drawDotsAndBoxesGrid(dnbGameData);
+            }
+        }
+
+        function handleDnbUp(x, y) {
+            if (!dnbDragStart) return;
+            
+            const dotEnd = getDnbDotFromPos(x, y);
+            if (dotEnd) {
+                const dr = dotEnd.r - dnbDragStart.r;
+                const dc = dotEnd.c - dnbDragStart.c;
+                
+                let line = null;
+                if (Math.abs(dr) === 1 && dc === 0) {
+                    line = { type: 'v', r: Math.min(dnbDragStart.r, dotEnd.r), c: dnbDragStart.c };
+                } else if (Math.abs(dc) === 1 && dr === 0) {
+                    line = { type: 'h', r: dnbDragStart.r, c: Math.min(dnbDragStart.c, dotEnd.c) };
+                }
+                
+                if (line) {
+                    const isDrawn = line.type === 'h' ? 
+                        dnbGameData.grid.hLines[line.r][line.c] > 0 : 
+                        dnbGameData.grid.vLines[line.r][line.c] > 0;
+                        
+                    if (!isDrawn) {
+                        socket.emit('draw dots and boxes line', { gameId: currentDotsAndBoxesGameId, line });
+                    }
+                }
+            }
+            
+            dnbDragStart = null;
+            dnbCurrentPos = null;
+            drawDotsAndBoxesGrid(dnbGameData);
+        }
+
+        dnbCanvas.addEventListener('mousedown', (e) => {
+            const pos = getCanvasPos(e);
+            handleDnbDown(pos.x, pos.y);
+        });
+
+        dnbCanvas.addEventListener('mousemove', (e) => {
+            const pos = getCanvasPos(e);
+            handleDnbMove(pos.x, pos.y);
+        });
+
+        window.addEventListener('mouseup', (e) => {
+            if (!dnbDragStart) return;
+            const pos = getCanvasPos(e);
+            handleDnbUp(pos.x, pos.y);
+        });
+
+        dnbCanvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const pos = getCanvasPos(e);
+            handleDnbDown(pos.x, pos.y);
+        }, { passive: false });
+
+        dnbCanvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const pos = getCanvasPos(e);
+            handleDnbMove(pos.x, pos.y);
+        }, { passive: false });
+
+        dnbCanvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            const pos = getCanvasPos(e);
+            handleDnbUp(pos.x, pos.y);
+        }, { passive: false });
+
         // --- منطق لعبة الثعبان ---
         let currentSnakeGameId = null;
         const snakeCanvas = document.getElementById('snakeCanvas');
@@ -10931,13 +11781,21 @@ socket.on('join error', (error) => {
         }
 
         function resetBattleRoyaleUI() {
-            document.getElementById('battleRoyaleLobby').classList.remove('hidden');
-            document.getElementById('battleRoyaleGameArea').classList.add('hidden');
-            document.getElementById('createBattleRoyaleBtn').classList.remove('hidden');
-            document.getElementById('battleRoyaleReadyBtn').classList.add('hidden');
-            document.getElementById('startBattleRoyaleBtn').classList.add('hidden');
-            document.getElementById('battleRoyalePlayersList').innerHTML = '';
-            document.getElementById('battleRoyaleWinnerOverlay').classList.add('hidden');
+            const lobby = document.getElementById('battleRoyaleLobby');
+            const gameArea = document.getElementById('battleRoyaleGameArea');
+            const createBtn = document.getElementById('createBattleRoyaleBtn');
+            const readyBtn = document.getElementById('battleRoyaleReadyBtn');
+            const startBtn = document.getElementById('startBattleRoyaleBtn');
+            const playersList = document.getElementById('battleRoyalePlayersList');
+            const winnerOverlay = document.getElementById('battleRoyaleWinnerOverlay');
+
+            if (lobby) lobby.classList.remove('hidden');
+            if (gameArea) gameArea.classList.add('hidden');
+            if (createBtn) createBtn.classList.remove('hidden');
+            if (readyBtn) readyBtn.classList.add('hidden');
+            if (startBtn) startBtn.classList.add('hidden');
+            if (playersList) playersList.innerHTML = '';
+            if (winnerOverlay) winnerOverlay.classList.add('hidden');
         }
 
         function createBattleRoyaleGame() {
@@ -10975,13 +11833,19 @@ socket.on('join error', (error) => {
         }
 
         document.addEventListener('keydown', (e) => {
-            if (document.getElementById('battleRoyaleModal').classList.contains('show') && !document.getElementById('battleRoyaleGameArea').classList.contains('hidden')) {
+            const brModal = document.getElementById('battleRoyaleModal');
+            const brGameArea = document.getElementById('battleRoyaleGameArea');
+            if (brModal && brModal.classList.contains('show') && brGameArea && !brGameArea.classList.contains('hidden')) {
+                // منع التمرير عند استخدام الأسهم أو المسافة
+                if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+                    e.preventDefault();
+                }
                 switch(e.key) {
                     case 'w': case 'ArrowUp': sendBattleRoyaleMove('up'); break;
                     case 's': case 'ArrowDown': sendBattleRoyaleMove('down'); break;
                     case 'a': case 'ArrowLeft': sendBattleRoyaleMove('left'); break;
                     case 'd': case 'ArrowRight': sendBattleRoyaleMove('right'); break;
-                    case ' ': sendBattleRoyaleShoot(); e.preventDefault(); break;
+                    case ' ': sendBattleRoyaleShoot(); break;
                 }
             }
         });
@@ -11305,174 +12169,132 @@ socket.on('join error', (error) => {
             });
         });
 
-        // تحديث دالة عرض الملف الشخصي لتشمل XP
-        const originalShowUserProfile = showUserProfile;
-        showUserProfile = function(profileData) {
-            originalShowUserProfile(profileData);
-            const xpElem = document.getElementById('profileXP');
-            if (xpElem) xpElem.textContent = profileData.xp || 0;
-        };
-    </script>
-    <script>
-       
-
-        function openBattleRoyaleGame() {
-            document.getElementById('battleRoyaleModal').classList.add('show');
-            resetBattleRoyaleUI();
+        function getInventoryIcon(type, value) {
+            if (type === 'avatarFrame') return '🖼️';
+            if (type === 'nameColor') return '🎨';
+            if (type === 'nameBackground') return '🖼️';
+            if (type === 'userCardBackground') return '📇';
+            if (type === 'profileBackground') return '👤';
+            if (type === 'nameFont') return '🔤';
+            if (type === 'joinMessageBackground') return '📢';
+            if (type === 'nameCardBorder') return '🔳';
+            if (type === 'name_change_card') return '🆔';
+            return '🛍️';
         }
 
-        function closeBattleRoyaleGame() {
-            if (currentBattleRoyaleGameId) {
-                socket.emit('leave battleRoyale game', currentBattleRoyaleGameId);
-                currentBattleRoyaleGameId = null;
-            }
-            document.getElementById('battleRoyaleModal').classList.remove('show');
-        }
+        function equipItem(inventoryId, isCurrentlyEquipped) {
+            const btn = document.getElementById(`equip-btn-${inventoryId}`);
+            if (!btn) return;
 
-        function resetBattleRoyaleUI() {
-            document.getElementById('battleRoyaleLobby').classList.remove('hidden');
-            document.getElementById('battleRoyaleGameArea').classList.add('hidden');
-            document.getElementById('createBattleRoyaleBtn').classList.remove('hidden');
-            document.getElementById('battleRoyaleReadyBtn').classList.add('hidden');
-            document.getElementById('startBattleRoyaleBtn').classList.add('hidden');
-            document.getElementById('battleRoyalePlayersList').innerHTML = '';
-            document.getElementById('battleRoyaleWinnerOverlay').classList.add('hidden');
-        }
+            const itemType = btn.getAttribute('data-type');
+            const willEquip = !isCurrentlyEquipped;
 
-        function createBattleRoyaleGame() {
-            socket.emit('create battleRoyale game', { currentUser });
-        }
+            // تحديث لحظي للواجهة (Optimistic UI)
+            if (willEquip) {
+                // إذا كنا سنقوم بتزويد العنصر، يجب إلغاء تزويد أي عنصر آخر من نفس النوع في الواجهة
+                document.querySelectorAll(`button[data-type="${itemType}"]`).forEach(otherBtn => {
+                    otherBtn.textContent = 'تزويد';
+                    otherBtn.className = 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl text-sm transition-all shadow-lg active:scale-95 flex-shrink-0';
+                    otherBtn.setAttribute('onclick', `equipItem(${otherBtn.getAttribute('data-inventory-id')}, false)`);
+                    otherBtn.setAttribute('data-equipped', 'false');
+                });
 
-        function joinBattleRoyaleGame(gameId) {
-            openBattleRoyaleGame();
-            socket.emit('join battleRoyale game', { gameId, currentUser });
-            currentBattleRoyaleGameId = gameId;
-        }
-
-        function toggleBattleRoyaleReady() {
-            if (currentBattleRoyaleGameId) {
-                socket.emit('battleRoyale toggle ready', currentBattleRoyaleGameId);
-            }
-        }
-
-        function startBattleRoyaleGame() {
-            if (currentBattleRoyaleGameId) {
-                socket.emit('start battleRoyale game', currentBattleRoyaleGameId);
-            }
-        }
-
-        function sendBattleRoyaleMove(direction) {
-            if (currentBattleRoyaleGameId) {
-                socket.emit('battleRoyale move', { gameId: currentBattleRoyaleGameId, direction });
-            }
-        }
-
-        function sendBattleRoyaleShoot() {
-            if (currentBattleRoyaleGameId) {
-                socket.emit('battleRoyale shoot', currentBattleRoyaleGameId);
-            }
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (document.getElementById('battleRoyaleModal').classList.contains('show') && !document.getElementById('battleRoyaleGameArea').classList.contains('hidden')) {
-                // منع التمرير عند استخدام الأسهم أو المسافة
-                if(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
-                    e.preventDefault();
-                }
-                switch(e.key) {
-                    case 'w': case 'ArrowUp': sendBattleRoyaleMove('up'); break;
-                    case 's': case 'ArrowDown': sendBattleRoyaleMove('down'); break;
-                    case 'a': case 'ArrowLeft': sendBattleRoyaleMove('left'); break;
-                    case 'd': case 'ArrowRight': sendBattleRoyaleMove('right'); break;
-                    case ' ': sendBattleRoyaleShoot(); break;
-                }
-            }
-        });
-
-        socket.on('battleRoyale game created', (data) => {
-            currentBattleRoyaleGameId = data.gameId;
-            document.getElementById('createBattleRoyaleBtn').classList.add('hidden');
-            document.getElementById('battleRoyaleReadyBtn').classList.remove('hidden');
-        });
-
-        socket.on('battleRoyale game update', (game) => {
-            if (!game) return;
-            currentBattleRoyaleGameId = game.id;
-
-            if (game.status === 'waiting') {
-                document.getElementById('battleRoyaleLobby').classList.remove('hidden');
-                document.getElementById('battleRoyaleGameArea').classList.add('hidden');
+                // تزويد العنصر الحالي
+                btn.textContent = 'إزالة';
+                btn.className = 'bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-xl text-sm transition-all shadow-lg active:scale-95 flex-shrink-0';
+                btn.setAttribute('onclick', `equipItem(${inventoryId}, true)`);
+                btn.setAttribute('data-equipped', 'true');
                 
-                const list = document.getElementById('battleRoyalePlayersList');
-                list.innerHTML = game.players.map(p => `
-                    <div class="bg-gray-800 p-3 rounded-xl border-2 ${p.isReady ? 'border-green-500' : 'border-gray-600'} flex flex-col items-center min-w-[100px]">
-                        <img src="${p.avatar}" class="w-10 h-10 rounded-full mb-2 object-cover">
-                        <span class="text-sm font-bold text-white truncate max-w-[80px]">${p.username}</span>
-                        <span class="text-[10px] mt-1 ${p.isReady ? 'text-green-400' : 'text-yellow-400'}">${p.isReady ? 'مستعد' : 'ينتظر'}</span>
-                    </div>
-                `).join('');
+                socket.emit('equip item', { inventoryId, currentUser });
+            } else {
+                // إلغاء تزويد العنصر الحالي
+                btn.textContent = 'تزويد';
+                btn.className = 'bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl text-sm transition-all shadow-lg active:scale-95 flex-shrink-0';
+                btn.setAttribute('onclick', `equipItem(${inventoryId}, false)`);
+                btn.setAttribute('data-equipped', 'false');
 
-                if (game.host === currentUser.name && game.players.length >= 1 && game.players.every(p => p.isReady)) {
-                    document.getElementById('startBattleRoyaleBtn').classList.remove('hidden');
-                } else {
-                    document.getElementById('startBattleRoyaleBtn').classList.add('hidden');
-                }
+                socket.emit('unequip item', { inventoryId, currentUser });
+            }
+        }
+
+        socket.on('equip success', (data) => {
+            showNotification(data.message, 'success');
+            // تحديث البيانات في الخلفية دون إعادة رسم الواجهة بالكامل إذا كانت مفتوحة
+            if (currentUser) {
+                const isInventoryModalOpen = document.getElementById('inventoryModal')?.classList.contains('show');
+                // نطلب البيانات لتحديث الـ currentUser ولكن لا نعيد الرسم إذا كنا قد قمنا بالتحديث اللحظي بنجاح
+                socket.emit('get user profile', { 
+                    username: currentUser.name, 
+                    isInventoryRequest: false // نطلبها كبيانات ملف شخصي لتحديث currentUser
+                });
                 
-                if (game.players.some(p => p.username === currentUser.name)) {
-                    document.getElementById('createBattleRoyaleBtn').classList.add('hidden');
-                    document.getElementById('battleRoyaleReadyBtn').classList.remove('hidden');
+                // إذا كانت الميزة هي خلفية الانضمام، نقوم بتحديثها في currentUser محلياً أيضاً
+                if (data.feature === 'joinMessageBackground') {
+                    currentUser.joinMessageBackground = data.value;
                 }
-            } else if (game.status === 'playing') {
-                document.getElementById('battleRoyaleLobby').classList.add('hidden');
-                document.getElementById('battleRoyaleGameArea').classList.remove('hidden');
-                renderBattleRoyaleGame(game);
-            } else if (game.status === 'over') {
-                renderBattleRoyaleGame(game); // ارسم الحالة النهائية
-                const winnerOverlay = document.getElementById('battleRoyaleWinnerOverlay');
-                winnerOverlay.textContent = `🏆 الفائز: ${game.winner}`;
-                winnerOverlay.classList.remove('hidden');
-                setTimeout(() => {
-                    resetBattleRoyaleUI();
-                }, 5000);
             }
         });
 
-        function renderBattleRoyaleGame(game) {
-            brCtx.fillStyle = '#111827';
-            brCtx.fillRect(0, 0, brCanvas.width, brCanvas.height);
-
-            brCtx.fillStyle = '#4b5563';
-            for (let y = 0; y < game.map.length; y++) {
-                for (let x = 0; x < game.map[y].length; x++) {
-                    if (game.map[y][x] === 1) {
-                        brCtx.fillRect(x * BR_CELL_SIZE, y * BR_CELL_SIZE, BR_CELL_SIZE, BR_CELL_SIZE);
-                    }
-                }
-            }
-
-            game.players.forEach(player => {
-                if (player.health > 0) {
-                    brCtx.fillStyle = player.color;
-                    brCtx.beginPath();
-                    brCtx.arc(player.x * BR_CELL_SIZE + BR_CELL_SIZE / 2, player.y * BR_CELL_SIZE + BR_CELL_SIZE / 2, BR_CELL_SIZE / 2 - 2, 0, 2 * Math.PI);
-                    brCtx.fill();
-
-                    brCtx.fillStyle = '#dc2626';
-                    brCtx.fillRect(player.x * BR_CELL_SIZE, player.y * BR_CELL_SIZE - 7, BR_CELL_SIZE, 4);
-                    brCtx.fillStyle = '#16a34a';
-                    brCtx.fillRect(player.x * BR_CELL_SIZE, player.y * BR_CELL_SIZE - 7, BR_CELL_SIZE * (player.health / player.maxHealth), 4);
-                }
-            });
-
-            brCtx.fillStyle = 'white';
-            game.projectiles.forEach(p => {
-                brCtx.fillRect(p.x * BR_CELL_SIZE + BR_CELL_SIZE/2 - 2, p.y * BR_CELL_SIZE + BR_CELL_SIZE/2 - 2, 4, 4);
-            });
-        }
-
-        socket.on('battleRoyale error', (msg) => {
+        socket.on('equip error', (msg) => {
             showNotification(msg, 'error');
         });
+
+        
+
+        function openGradientModal(feature) {
+            currentGradientFeature = feature;
+            const modal = document.getElementById('gradientCustomizerModal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                modal.firstElementChild.classList.remove('scale-95');
+            }, 10);
+            updateGradientPreview(); // Initialize preview
+        }
+
+        function closeGradientModal() {
+            const modal = document.getElementById('gradientCustomizerModal');
+            modal.classList.add('opacity-0');
+            modal.firstElementChild.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 300);
+        }
+
+        function setGradientType(type) {
+            currentGradientType = type;
+            const horizontalBtn = document.getElementById('gradTypeHorizontal');
+            const verticalBtn = document.getElementById('gradTypeVertical');
+            if (type === 'to right') {
+                horizontalBtn.classList.add('bg-slate-700', 'text-white', 'shadow-lg');
+                horizontalBtn.classList.remove('text-slate-400', 'hover:bg-white/5');
+                verticalBtn.classList.remove('bg-slate-700', 'text-white', 'shadow-lg');
+                verticalBtn.classList.add('text-slate-400', 'hover:bg-white/5');
+            } else {
+                verticalBtn.classList.add('bg-slate-700', 'text-white', 'shadow-lg');
+                verticalBtn.classList.remove('text-slate-400', 'hover:bg-white/5');
+                horizontalBtn.classList.remove('bg-slate-700', 'text-white', 'shadow-lg');
+                horizontalBtn.classList.add('text-slate-400', 'hover:bg-white/5');
+            }
+            updateGradientPreview();
+        }
+
+        function updateGradientPreview() {
+            const color1 = document.getElementById('gradColor1').value;
+            const color2 = document.getElementById('gradColor2').value;
+            const color3 = document.getElementById('gradColor3').value;
+            const previewBox = document.getElementById('gradientPreviewBox');
+            
+            previewBox.style.background = `linear-gradient(${currentGradientType}, ${color1}, ${color2}, ${color3})`;
+        }
+
+        function applyGradientSelection() {
+            if (!currentGradientFeature) return;
+            const gradientString = document.getElementById('gradientPreviewBox').style.background;
+            const valueToSave = `background:${gradientString}`;
+            selectFeature(currentGradientFeature, valueToSave);
+            closeGradientModal();
+        }
     </script>
     <script>
         // --- نظام الإشعارات بالنقطة الحمراء ---

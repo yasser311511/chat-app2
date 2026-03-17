@@ -138,8 +138,6 @@ const UserPoints = sequelize.define('UserPoints', {
   lastDailyClaim: { type: DataTypes.STRING, allowNull: true }, // تاريخ آخر مكافأة يومية
   dailyStreak: { type: DataTypes.INTEGER, defaultValue: 0 }, // سلسلة الأيام المتتالية
   xp: { type: DataTypes.INTEGER, defaultValue: 0 }, // نقاط الخبرة
-  snakeHighScore: { type: DataTypes.INTEGER, defaultValue: 0 }, // أعلى نتيجة في الثعبان (فردي)
-  snakeWins: { type: DataTypes.INTEGER, defaultValue: 0 } // عدد مرات الفوز (جماعي)
 });
 const UserLastSeen = sequelize.define('UserLastSeen', {
   username: { type: DataTypes.STRING, primaryKey: true },
@@ -357,7 +355,7 @@ let postComments = {};
 let chatImages = {};
 let pendingGiftOffers = {}; // تخزين عروض الهدايا المعلقة { recipient: { sender, itemId, rank, price } }
 let drawingHistory = []; // تخزين تاريخ الرسم
-let snakeGames = {}; // تخزين ألعاب الثعبان النشطة
+let dotsAndBoxesGames = {}; // تخزين ألعاب توصيل المربعات النشطة
 
 // --- إعدادات لعبة الاختباء ---
 
@@ -1067,23 +1065,6 @@ async function loadData() {
       }
     }
 
-    // التحقق من أعمدة لعبة الثعبان
-    const hasSnakeScore = await columnExists('UserPoints', 'snakeHighScore');
-    if (!hasSnakeScore) {
-      try {
-        await sequelize.getQueryInterface().addColumn('UserPoints', 'snakeHighScore', { type: DataTypes.INTEGER, defaultValue: 0 });
-        console.log('تم إضافة عمود snakeHighScore بنجاح');
-      } catch (err) { console.error('فشل إضافة عمود snakeHighScore:', err); }
-    }
-
-    const hasSnakeWins = await columnExists('UserPoints', 'snakeWins');
-    if (!hasSnakeWins) {
-      try {
-        await sequelize.getQueryInterface().addColumn('UserPoints', 'snakeWins', { type: DataTypes.INTEGER, defaultValue: 0 });
-        console.log('تم إضافة عمود snakeWins بنجاح');
-      } catch (err) { console.error('فشل إضافة عمود snakeWins:', err); }
-    }
-
     // التحقق من عمود nameFont
     const hasNameFont = await columnExists('Users', 'nameFont');
     if (!hasNameFont) {
@@ -1292,8 +1273,6 @@ async function loadData() {
             showInTop: point.showInTop !== false, 
             interactionScore: point.interactionScore || 0, 
             xp: point.xp || 0,
-            snakeHighScore: point.snakeHighScore || 0,
-            snakeWins: point.snakeWins || 0
         }; 
     });
     lastSeenData.forEach(seen => userLastSeen[seen.username] = parseInt(seen.lastSeen, 10));
@@ -2065,25 +2044,6 @@ setInterval(async () => {
 // --- فحص دوري لتحديث ساعات التواجد للإنجازات ---
 setInterval(async () => {
     const now = Date.now();
-    const processedUsers = new Set();
-    
-    Object.values(onlineUsers).forEach(async (u) => {
-        if (!u || !u.name || processedUsers.has(u.name)) return;
-        processedUsers.add(u.name);
-        
-        const startTime = userConnectionTimes[u.name];
-        if (startTime) {
-            const elapsedMs = now - startTime;
-            if (elapsedMs >= 3600000) { // ساعة واحدة
-                const hoursPassed = Math.floor(elapsedMs / 3600000);
-                if (hoursPassed > 0) {
-                    await updateAchievementProgress(u.name, 'hours', hoursPassed);
-                    // تحديث وقت البداية ليكون الباقي من الساعة
-                    userConnectionTimes[u.name] = now - (elapsedMs % 3600000);
-                }
-            }
-        }
-    });
 }, 60000); // فحص كل دقيقة عن المستخدمين الذين أكملوا ساعة
 
 // --- نظام نقاط الخبرة (XP) ---
@@ -2840,6 +2800,7 @@ socket.on('join room', async (data) => {
       userCardBackground: userFromDB.userCardBackground,
       nameCardBorder: userFromDB.nameCardBorder,
       nameFont: userFromDB.nameFont,
+      joinMessageBackground: userFromDB.joinMessageBackground,
       badges: getUserBadges(user.name),
       status: userFromDB.status,
       country: userFromDB.country,
@@ -2889,6 +2850,7 @@ socket.on('join room', async (data) => {
             userCardBackground: onlineUsers[socket.id].userCardBackground,
             nameCardBorder: onlineUsers[socket.id].nameCardBorder,
             nameFont: onlineUsers[socket.id].nameFont,
+            joinMessageBackground: onlineUsers[socket.id].joinMessageBackground,
             status: onlineUsers[socket.id].status,
             country: onlineUsers[socket.id].country,
             age: onlineUsers[socket.id].age,
@@ -2915,7 +2877,8 @@ socket.on('join room', async (data) => {
       avatar: userAvatars[user.name] || DEFAULT_AVATAR_URL,
       rank: user.rank,
       rankLevel: rankInfo ? rankInfo.level : 0,
-      joinBg: users[user.name]?.joinMessageBackground, // إرسال خلفية الانضمام
+      // استخدم نسخة المستخدم المتصلة إن كانت موجودة (تضمن التغييرات الفورية للمخزون)
+      joinBg: (onlineUsers[socket.id] && onlineUsers[socket.id].joinMessageBackground) || users[user.name]?.joinMessageBackground,
       time: new Date().toLocaleTimeString('en-GB'),
       timestamp: Date.now()
     };
@@ -4413,7 +4376,10 @@ socket.on('leave room', async (data) => {
 
   // أحداث الرسائل الخاصة
   socket.on('get user profile', async (data) => {
-    const { username } = data;
+    const username = typeof data === 'string' ? data : data.username;
+    const isInventoryRequest = typeof data === 'object' ? data.isInventoryRequest : false;
+
+    if (!username) return;
 
     // تحميل البيانات الكبيرة عند الطلب إذا لم تكن موجودة في الذاكرة
     if (users[username] && (users[username].bio === undefined || users[username].profileCover === undefined)) {
@@ -4444,9 +4410,16 @@ socket.on('leave room', async (data) => {
     const onlineUser = Object.values(onlineUsers).find(user => user.name === username);
     const lastSeen = isOnline ? null : userLastSeen[username] || null;
     const userRank = userRanks[username] || (onlineUser ? onlineUser.rank : null);
-    const avatar = userAvatars[username] || DEFAULT_AVATAR_URL;
-    const userData = users[username];
-    
+    let avatar = userAvatars[username] || DEFAULT_AVATAR_URL;
+    // تعديل رئيسي: جلب المستخدم دائمًا من قاعدة البيانات لضمان الحصول على أحدث البيانات
+    const userData = await User.findByPk(username);
+    if (!userData) return; // إيقاف التنفيذ إذا لم يتم العثور على المستخدم
+
+    // مزامنة الكاش المحلي مع قاعدة البيانات لضمان أن إعدادات مثل خلفية الانضمام تتحدث فورياً
+    if (users[username]) {
+        users[username].joinMessageBackground = userData.joinMessageBackground || null;
+    }
+
     const pointsData = userPoints[username] || { points: 0, level: 1 };
 
     // حساب ترتيب XP إذا كان من العشرة الأوائل
@@ -4514,6 +4487,32 @@ socket.on('leave room', async (data) => {
         completedAt: userAchs[ach.id] ? userAchs[ach.id].completedAt : null
     }));
 
+    // جلب المخزون مع تفاصيل العناصر
+    const userInv = userInventories[username] || [];
+    const inventoryWithDetails = userInv.map(inv => {
+        const item = shopItems.find(si => si.id === inv.itemId);
+        let itemType = item ? item.itemType : 'unknown';
+        
+        // تحويل الأنواع إلى camelCase للاتساق مع الواجهة الأمامية
+        if (itemType === 'avatar_frame') itemType = 'avatarFrame';
+        if (itemType === 'join_message_bg') itemType = 'joinMessageBackground';
+        if (itemType === 'name_color') itemType = 'nameColor';
+        if (itemType === 'name_font') itemType = 'nameFont';
+        if (itemType === 'name_background') itemType = 'nameBackground';
+        if (itemType === 'user_card_background') itemType = 'userCardBackground';
+        if (itemType === 'profile_background') itemType = 'profileBackground';
+        if (itemType === 'name_card_border') itemType = 'nameCardBorder';
+
+        return {
+            id: inv.id,
+            itemId: inv.itemId,
+            name: item ? item.name : 'عنصر غير معروف',
+            type: itemType,
+            value: item ? item.itemValue : null,
+            description: item ? item.description : ''
+        };
+    });
+
     socket.emit('user profile data', {
         username,
         isOnline,
@@ -4532,6 +4531,7 @@ socket.on('leave room', async (data) => {
         profileCover: userData ? userData.profileCover : null,
         nameCardBorder: userData ? userData.nameCardBorder : null,
         nameFont: userData ? userData.nameFont : null,
+        joinMessageBackground: userData ? userData.joinMessageBackground : null,
         status: userData ? userData.status : null,
         country: userData ? userData.country : null,
         age: userData ? userData.age : null,
@@ -4543,7 +4543,9 @@ socket.on('leave room', async (data) => {
         interactionRank: interactionRank, // ترتيب التفاعل
         createdAt: userData ? userData.createdAt : null, // تاريخ الانضمام
         friends: friendsDetails,
-        achievements: achievementsList
+        achievements: achievementsList,
+        inventory: inventoryWithDetails,
+        isInventoryRequest
     });
     
   });
@@ -5584,6 +5586,182 @@ socket.on('get private messages', async (data) => {
       console.error('Error updating room background:', error);
     }
   });
+// حدث جديد: تزويد عنصر من المخزون
+  socket.on('equip item', async (data) => {
+    const { inventoryId, currentUser } = data;
+    const username = currentUser.name || currentUser.username;
+
+    if (!username) return;
+
+    const userInv = userInventories[username] || [];
+    const invItem = userInv.find(i => i.id === inventoryId);
+
+    if (!invItem) {
+        return socket.emit('equip error', 'العنصر غير موجود في مخزونك.');
+    }
+
+    const shopItem = shopItems.find(i => i.id === invItem.itemId);
+    if (!shopItem) {
+        return socket.emit('equip error', 'العنصر لم يعد متوفراً في المتجر.');
+    }
+
+    // لا يمكن تزويد الرتب من هنا
+    if (shopItem.itemType === 'rank') {
+        return socket.emit('equip error', 'يتم تفعيل الرتب تلقائياً عند الشراء.');
+    }
+
+    // تطبيق الميزة مع تحويل نوع العنصر لاسم الحقل في قاعدة البيانات إذا لزم الأمر
+    let fieldName = shopItem.itemType;
+    if (fieldName === 'avatar_frame') fieldName = 'avatarFrame';
+    if (fieldName === 'join_message_bg') fieldName = 'joinMessageBackground';
+    if (fieldName === 'name_color') fieldName = 'nameColor';
+    if (fieldName === 'name_font') fieldName = 'nameFont';
+    if (fieldName === 'name_background') fieldName = 'nameBackground';
+    if (fieldName === 'user_card_background') fieldName = 'userCardBackground';
+    if (fieldName === 'profile_background') fieldName = 'profileBackground';
+    if (fieldName === 'name_card_border') fieldName = 'nameCardBorder';
+
+    try {
+        await User.update({ [fieldName]: shopItem.itemValue }, { where: { username } });
+        if (!users[username]) users[username] = {};
+        users[username][fieldName] = shopItem.itemValue;
+
+        // تحديث المستخدمين المتصلين في الذاكرة (onlineUsers و rooms)
+        Object.keys(onlineUsers).forEach(socketId => {
+          if (onlineUsers[socketId].name === username) {
+            onlineUsers[socketId][fieldName] = shopItem.itemValue;
+          }
+        });
+
+        rooms.forEach(r => {
+          r.users.forEach(u => {
+            if (u.name === username) u[fieldName] = shopItem.itemValue;
+          });
+        });
+
+        broadcastRoomsUpdate();
+        
+        // تحديث الغرفة الحالية
+        const userRoom = rooms.find(r => r.users.some(u => u.name === username));
+        if (userRoom) io.to(userRoom.id).emit('users update', userRoom.users);
+
+        socket.emit('equip success', { 
+            message: `تم تزويد "${shopItem.name}" بنجاح!`, 
+            feature: fieldName, 
+            value: shopItem.itemValue 
+        });
+    } catch (error) {
+        console.error('Error equipping item:', error);
+        socket.emit('equip error', 'حدث خطأ أثناء تزويد العنصر.');
+    }
+  });
+
+  // حدث جديد: إزالة تزويد عنصر
+  socket.on('unequip item', async (data) => {
+    const { inventoryId, currentUser } = data;
+    const username = currentUser.name || currentUser.username;
+
+    if (!username) return;
+
+    const userInv = userInventories[username] || [];
+    const invItem = userInv.find(i => i.id === inventoryId);
+
+    if (!invItem) {
+        return socket.emit('equip error', 'العنصر غير موجود في مخزونك.');
+    }
+
+    const shopItem = shopItems.find(i => i.id === invItem.itemId);
+    if (!shopItem) {
+        return socket.emit('equip error', 'العنصر غير معروف.');
+    }
+
+    let fieldName = shopItem.itemType;
+    if (fieldName === 'avatar_frame') fieldName = 'avatarFrame';
+    if (fieldName === 'join_message_bg') fieldName = 'joinMessageBackground';
+    if (fieldName === 'name_color') fieldName = 'nameColor';
+    if (fieldName === 'name_font') fieldName = 'nameFont';
+    if (fieldName === 'name_background') fieldName = 'nameBackground';
+    if (fieldName === 'user_card_background') fieldName = 'userCardBackground';
+    if (fieldName === 'profile_background') fieldName = 'profileBackground';
+    if (fieldName === 'name_card_border') fieldName = 'nameCardBorder';
+
+    try {
+        await User.update({ [fieldName]: null }, { where: { username } });
+        if (!users[username]) users[username] = {};
+        users[username][fieldName] = null;
+
+        // تحديث في الذاكرة
+        Object.keys(onlineUsers).forEach(socketId => {
+          if (onlineUsers[socketId].name === username) {
+            onlineUsers[socketId][fieldName] = null;
+          }
+        });
+
+        rooms.forEach(r => {
+          r.users.forEach(u => {
+            if (u.name === username) u[fieldName] = null;
+          });
+        });
+
+        broadcastRoomsUpdate();
+        
+        const userRoom = rooms.find(r => r.users.some(u => u.name === username));
+        if (userRoom) io.to(userRoom.id).emit('users update', userRoom.users);
+
+        socket.emit('equip success', { 
+            message: `تمت إزالة "${shopItem.name}" بنجاح!`, 
+            feature: fieldName, 
+            value: null 
+        });
+    } catch (error) {
+        console.error('Error unequipping item:', error);
+        socket.emit('equip error', 'حدث خطأ أثناء إزالة تزويد العنصر.');
+    }
+  });
+
+  // حدث حذف عنصر من المخزون
+  socket.on('delete inventory item', async (data) => {
+    const { inventoryId, currentUser } = data;
+    const username = currentUser.name;
+
+    const userInv = userInventories[username] || [];
+    const invItemIndex = userInv.findIndex(i => i.id === inventoryId);
+
+    if (invItemIndex === -1) {
+        socket.emit('delete inventory error', 'العنصر غير موجود في مخزونك.');
+        return;
+    }
+
+    const invItem = userInv[invItemIndex];
+    const shopItem = shopItems.find(i => i.id === invItem.itemId);
+    if (!shopItem) {
+        socket.emit('delete inventory error', 'العنصر غير معروف.');
+        return;
+    }
+
+    try {
+        // حذف من قاعدة البيانات
+        await UserInventory.destroy({ where: { id: inventoryId } });
+
+        // حذف من الكاش
+        userInv.splice(invItemIndex, 1);
+
+        // إعادة حساب ownedItems
+        const ownedItems = getOwnedItems(username);
+
+        socket.emit('delete inventory success', {
+            message: `تم حذف "${shopItem.name}" من مخزونك بنجاح.`,
+            ownedItems: ownedItems
+        });
+
+        // تحديث بيانات المستخدم الحالي
+        if (currentUser) currentUser.ownedItems = ownedItems;
+
+    } catch (error) {
+        console.error('Error deleting inventory item:', error);
+        socket.emit('delete inventory error', 'حدث خطأ أثناء حذف العنصر.');
+    }
+  });
 
   socket.on('delete message', async (data) => {
     const { messageId, roomId, currentUser } = data;
@@ -5829,29 +6007,6 @@ socket.on('get private messages', async (data) => {
   // في حدث disconnect - البحث عن هذا الجزء واستبداله
 socket.on('disconnect', async (reason) => {
     const user = onlineUsers[socket.id];
-    
-    // --- تنظيف ألعاب الثعبان عند الانقطاع ---
-    // البحث عن اللاعب في جميع الألعاب النشطة وإخراجه
-    Object.keys(snakeGames).forEach(gameId => {
-        const game = snakeGames[gameId];
-        const playerIndex = game.players.findIndex(p => p.id === socket.id);
-        if (playerIndex !== -1) {
-            game.players.splice(playerIndex, 1);
-            // إذا فرغت اللعبة، قم بإنهائها فوراً
-            if (game.players.length === 0) {
-                if (game.timeout) clearTimeout(game.timeout);
-                if (game.interval) clearInterval(game.interval);
-                delete snakeGames[gameId];
-            } else {
-                // نقل المضيف إذا كان هو من خرج
-                if (game.host === user?.name && game.players.length > 0) {
-                    game.host = game.players[0].username;
-                }
-                io.to(gameId).emit('snake game update', getSanitizedGame(game));
-            }
-        }
-    });
-
     if (user) {
       const roomId = user.roomId;
       const room = rooms.find(r => r.id === roomId);
@@ -5870,6 +6025,48 @@ socket.on('disconnect', async (reason) => {
       const lastSeenTime = Date.now();
       userLastSeen[user.name] = lastSeenTime;
       await saveUserLastSeen(user.name, lastSeenTime);
+
+      // التحقق من ألعاب التوصيل (Dots and Boxes) والمغادرة منها
+      for (const gameId in dotsAndBoxesGames) {
+          const game = dotsAndBoxesGames[gameId];
+          const isInGame = game.players.some(p => p.username === user.name);
+          if (isInGame) {
+              // استدعاء منطق المغادرة يدوياً بدلاً من الانبعاث لتجنب المشاكل
+              const playerIndex = game.players.findIndex(p => p.username === user.name);
+              const leavingPlayer = game.players[playerIndex];
+              
+              if (game.status === 'playing') {
+                  if (game.players.length === 2) {
+                      game.status = 'over';
+                      const winner = game.players.find(p => p.username !== user.name);
+                      game.winner = winner ? winner.username : 'لا أحد';
+                      game.message = `انسحب الخصم ${user.name}، أنت الفائز!`;
+                      io.to(gameId).emit('dots and boxes game update', game);
+                      setTimeout(() => delete dotsAndBoxesGames[gameId], 10000);
+                  } else {
+                      leavingPlayer.isRemoved = true;
+                      if (game.currentPlayerIndex === playerIndex) {
+                          game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
+                          let checkCount = 0;
+                          while (game.players[game.currentPlayerIndex].isRemoved && checkCount < game.players.length) {
+                              game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
+                              checkCount++;
+                          }
+                      }
+                      io.to(gameId).emit('dots and boxes game update', game);
+                  }
+              } else {
+                  game.players = game.players.filter(p => p.username !== user.name);
+                  if (game.players.length === 0) {
+                      delete dotsAndBoxesGames[gameId];
+                  } else {
+                      if (game.host === user.name) game.host = game.players[0].username;
+                      io.to(gameId).emit('dots and boxes game update', game);
+                  }
+              }
+          }
+      }
+
       delete onlineUsers[socket.id];
     }
     
@@ -6009,6 +6206,16 @@ socket.on('disconnect', async (reason) => {
       return;
     }
 
+    // التحقق مما إذا كان المستخدم يمتلك العنصر بالفعل (باستثناء الرتب)
+    if (item.itemType !== 'rank') {
+        const userInventory = userInventories[username] || [];
+        const alreadyOwned = userInventory.some(inv => inv.itemId === itemId);
+        if (alreadyOwned) {
+            socket.emit('buy item error', 'أنت تمتلك هذا العنصر بالفعل.');
+            return;
+        }
+    }
+
     // التحقق من النقاط فقط إذا لم يكن المستخدم خاصًا
     if (!SPECIAL_USERS_CONFIG[username]) {
         const userPointsData = userPoints[username] || { points: 0, xp: 0, isInfinite: false };
@@ -6067,30 +6274,26 @@ socket.on('disconnect', async (reason) => {
               if (u.name === username) u.rank = newRank;
           }));
           broadcastRoomsUpdate();
-      } else if (item.itemType === 'avatar_frame' || item.itemType === 'join_message_bg') {
-          // معالجة شراء العناصر التي تضاف للمخزون (إطارات، خلفيات)
+      } else {
+          // معالجة شراء العناصر الأخرى التي تضاف للمخزون (إطارات، ألوان، خطوط، بطاقات، إلخ)
           await saveUserInventory(username, item.id);
           
-          // تفعيل خلفية الانضمام تلقائياً إذا كانت هي العنصر المشترى
-          if (item.itemType === 'join_message_bg') {
-               await User.update({ joinMessageBackground: item.itemValue }, { where: { username } });
-               if (users[username]) users[username].joinMessageBackground = item.itemValue;
-          }
-
           socket.emit('buy item success', {
-              message: `🎉 تهانينا! لقد اشتريت "${item.name}" بنجاح.`,
+              message: `🎉 تهانينا! لقد اشتريت "${item.name}" بنجاح. ستجد العنصر في مخزونك.`,
               reload: false,
               newPoints: newPoints,
               newXP: newXP,
-              ownedItems: getOwnedItems(username)
+              ownedItems: getOwnedItems(username),
+              showInventoryDot: true // علم لإظهار النقطة الحمراء
           });
           return;
       }
+      // 3. إرسال إشعار نجاح
 
-      // 3. إرسال إشعار نجاح وطلب تحديث الصفحة
       socket.emit('buy item success', {
-        message: `🎉 تهانينا! لقد اشتريت "${item.name}" بنجاح. سيتم تحديث الصفحة.`,
-        reload: true
+        message: `🎉 تهانينا! لقد اشتريت "${item.name}" بنجاح.`,
+        reload: true, // اطلب من العميل تحديث الصفحة لإظهار الرتبة الجديدة
+        showInventoryDot: true // إظهار نقطة حمراء على مشترياتي
       });
 
     } catch (error) {
@@ -6104,11 +6307,6 @@ socket.on('disconnect', async (reason) => {
       const { itemId, targetUsername, currentUser } = data;
       const senderName = currentUser.name;
 
-      if (senderName === targetUsername) {
-          socket.emit('gift item error', 'لا يمكنك إهداء نفسك. استخدم زر الشراء.');
-          return;
-      }
-      
       if (pendingGiftOffers[targetUsername]) {
           socket.emit('gift item error', 'المستخدم لديه طلب إهداء معلق بالفعل. يرجى الانتظار حتى يقوم بالرد.');
           return;
@@ -6118,11 +6316,6 @@ socket.on('disconnect', async (reason) => {
       if (!item) {
           socket.emit('gift item error', 'هذا العنصر غير متوفر.');
           return;
-      }
-
-      if (item.itemType !== 'rank') {
-           socket.emit('gift item error', 'يمكن إهداء الرتب فقط حالياً.');
-           return;
       }
 
       const targetUser = users[targetUsername];
@@ -6152,7 +6345,8 @@ socket.on('disconnect', async (reason) => {
           sender: senderName,
           itemId: item.id,
           rank: item.itemValue,
-          price: item.price,
+          price: item.price, // حفظ السعر للتحقق لاحقاً
+          itemType: item.itemType,
           itemName: item.name
       };
 
@@ -6161,7 +6355,8 @@ socket.on('disconnect', async (reason) => {
       io.to(targetUsername).emit('gift rank offer', {
           sender: senderName,
           rankName: item.name,
-          rank: item.itemValue
+          rank: item.itemValue,
+          itemType: item.itemType
       });
 
       socket.emit('gift item success', {
@@ -6211,27 +6406,36 @@ socket.on('disconnect', async (reason) => {
               }
           }
 
-          // 2. منح الرتبة للمستلم
-          const newRank = offer.rank;
-          let expiresAt = null;
-          if (newRank !== 'صاحب الموقع') {
-               expiresAt = new Date();
-               expiresAt.setDate(expiresAt.getDate() + 30); // 30 يوم
+          // 2. منح العنصر للمستلم
+          if (offer.itemType === 'rank') {
+              const newRank = offer.rank;
+              let expiresAt = null;
+              if (newRank !== 'صاحب الموقع') {
+                   expiresAt = new Date();
+                   expiresAt.setDate(expiresAt.getDate() + 30); // 30 يوم
+              }
+
+              userRanks[recipientName] = newRank;
+              if (expiresAt) userRankExpiry[recipientName] = expiresAt;
+              else delete userRankExpiry[recipientName];
+              await saveUserRank(recipientName, newRank, expiresAt);
+
+              // تحديث المستخدمين المتصلين والغرف
+              Object.keys(onlineUsers).forEach(socketId => {
+                  if (onlineUsers[socketId].name === recipientName) onlineUsers[socketId].rank = newRank;
+              });
+              rooms.forEach(r => r.users.forEach(u => {
+                  if (u.name === recipientName) u.rank = newRank;
+              }));
+              broadcastRoomsUpdate();
+              
+              // تحديث الصفحة للمستلم
+              socket.emit('force reload');
+
+          } else {
+              // إضافة العنصر إلى مخزون المستلم
+              await saveUserInventory(recipientName, offer.itemId);
           }
-
-          userRanks[recipientName] = newRank;
-          if (expiresAt) userRankExpiry[recipientName] = expiresAt;
-          else delete userRankExpiry[recipientName];
-          await saveUserRank(recipientName, newRank, expiresAt);
-
-          // تحديث المستخدمين المتصلين والغرف
-          Object.keys(onlineUsers).forEach(socketId => {
-              if (onlineUsers[socketId].name === recipientName) onlineUsers[socketId].rank = newRank;
-          });
-          rooms.forEach(r => r.users.forEach(u => {
-              if (u.name === recipientName) u.rank = newRank;
-          }));
-          broadcastRoomsUpdate();
 
           // 3. إشعارات النجاح
           if (senderSocketId) {
@@ -6244,6 +6448,7 @@ socket.on('disconnect', async (reason) => {
               message: `🎉 مبروك! لقد حصلت على رتبة "${offer.itemName}" من ${senderName}.`
           });
 
+
           // إشعار للمستلم في القائمة
           await saveNotification(recipientName, senderName, 'gift_rank', null);
           
@@ -6254,16 +6459,13 @@ socket.on('disconnect', async (reason) => {
               postId: null
           });
 
-          // تحديث الصفحة للمستلم
-          socket.emit('force reload');
-          
           // إشعار عام
           const notificationMessage = {
             type: 'system',
             systemStatus: 'positive',
             user: 'نظام الهدايا',
             avatar: BOT_AVATAR_URL,
-            content: `🎁 قام <strong class="text-white">${senderName}</strong> بإهداء رتبة <strong class="text-yellow-300">${newRank}</strong> للمستخدم <strong class="text-white">${recipientName}</strong>!`,
+            content: `🎁 قام <strong class="text-white">${senderName}</strong> بإهداء <strong class="text-yellow-300">${offer.itemName}</strong> للمستخدم <strong class="text-white">${recipientName}</strong>!`,
             time: new Date().toLocaleTimeString('ar-SA')
           };
           
@@ -6955,456 +7157,212 @@ socket.on('disconnect', async (reason) => {
     }
   });
 
-  // --- أحداث لعبة الثعبان (Snake Game) ---
-  
-  const SNAKE_COLORS = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b']; // أحمر، أزرق، أخضر، أصفر
-  const GRID_SIZE = 20; // حجم الشبكة
-  
-  // دالة مساعدة لتنظيف كائن اللعبة من البيانات الداخلية قبل الإرسال
-  function getSanitizedGame(game) {
-      if (!game) return null;
-      const { timeout, interval, ...sanitized } = game;
-      return sanitized;
-  }
+  // --- Dots and Boxes Game Events ---
 
-  socket.on('create snake game', (data) => {
-      const { currentUser } = data;
-      const gameId = 'snake_' + Date.now();
-      
-      snakeGames[gameId] = {
-          id: gameId,
-          host: currentUser.name,
-          players: [{
-              id: socket.id,
-              username: currentUser.name,
-              color: SNAKE_COLORS[0],
-              snake: [{x: 2, y: 2}],
-              direction: {x: 1, y: 0},
-              alive: true,
-              score: 0,
-              isReady: false // حالة الاستعداد
-          }],
-          status: 'waiting', // waiting, playing
-          food: {x: 10, y: 10},
-          interval: null
-      };
+    const DNB_PLAYER_COLORS = ['#3b82f6', '#ef4444', '#22c55e', '#eab308']; // Blue, Red, Green, Yellow
 
-      socket.join(gameId);
-      socket.emit('snake game created', { gameId });
-      socket.emit('snake game update', getSanitizedGame(snakeGames[gameId]));
+    socket.on('create dots and boxes game', (data) => {
+        const { currentUser, options } = data;
+        const gameId = 'dnb_' + Date.now();
 
-      // إرسال إشعار للغرف العامة
-      const notificationMessage = {
-          type: 'system',
-          user: 'نظام الألعاب',
-          avatar: BOT_AVATAR_URL,
-          content: `🐍 بدأ <strong class="text-white">${currentUser.name}</strong> لعبة الثعبان! <button onclick="joinSnakeGame('${gameId}')" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-bold transition-colors mx-1">اضغط هنا للانضمام</button>`,
-          time: new Date().toLocaleTimeString('ar-SA')
-      };
-      
-      // إرسال للغرف العامة فقط
-      rooms.forEach(r => {
-          if (!r.protected) {
-              io.to(r.id).emit('new message', notificationMessage);
-              if (messages[r.id]) messages[r.id].push(notificationMessage);
-          }
-      });
-  });
+        const rows = parseInt(options.rows) || 5;
+        const cols = parseInt(options.cols) || 5;
+        const maxPlayers = parseInt(options.maxPlayers) || 4;
 
-  socket.on('join snake game', (data) => {
-      const { gameId, currentUser } = data;
-      const game = snakeGames[gameId];
+        dotsAndBoxesGames[gameId] = {
+            id: gameId,
+            host: currentUser.name,
+            rows: Math.min(10, Math.max(3, rows)),
+            cols: Math.min(10, Math.max(3, cols)),
+            maxPlayers: Math.min(4, Math.max(2, maxPlayers)),
+            players: [{
+                id: socket.id,
+                username: currentUser.name,
+                color: DNB_PLAYER_COLORS[0],
+                score: 0,
+                avatar: userAvatars[currentUser.name] || DEFAULT_AVATAR_URL
+            }],
+            status: 'waiting',
+            grid: null,
+            currentPlayerIndex: 0,
+            winner: null,
+        };
 
-      if (!game) {
-          socket.emit('snake error', 'اللعبة غير موجودة أو انتهت.');
-          return;
-      }
-      if (game.status === 'playing') {
-          socket.emit('snake error', 'اللعبة بدأت بالفعل.');
-          return;
-      }
-      if (game.players.length >= 4) {
-          socket.emit('snake error', 'اللعبة ممتلئة (الحد الأقصى 4).');
-          return;
-      }
-      if (game.players.some(p => p.username === currentUser.name)) {
-           // المستخدم موجود بالفعل، فقط قم بتحديث الواجهة
-           socket.emit('snake game update', getSanitizedGame(game));
-           return;
-      }
+        socket.join(gameId);
+        socket.emit('dots and boxes game created', { gameId });
+        io.to(gameId).emit('dots and boxes game update', dotsAndBoxesGames[gameId]);
 
-      const playerIndex = game.players.length;
-      // تحديد موقع بداية مختلف لكل لاعب
-      const startPositions = [{x:2, y:2}, {x:27, y:2}, {x:2, y:17}, {x:27, y:17}];
-      
-      game.players.push({
-          id: socket.id,
-          username: currentUser.name,
-          color: SNAKE_COLORS[playerIndex],
-          snake: [startPositions[playerIndex]],
-          direction: {x: 0, y: 0}, // يبدأ ثابت حتى يضغط زر
-          alive: true,
-          score: 0,
-          isReady: false // حالة الاستعداد
-      });
-
-      socket.join(gameId);
-      io.to(gameId).emit('snake game update', getSanitizedGame(game));
-  });
-
-  socket.on('start snake game', (gameId) => {
-    const game = snakeGames[gameId];
-    if (!game || game.status !== 'waiting' || game.host !== onlineUsers[socket.id]?.name) return;
-
-    // التحقق من عدد اللاعبين
-    if (game.players.length < 2) {
-        socket.emit('snake error', 'لا يمكن بدء اللعبة، يجب وجود لاعبين اثنين على الأقل.');
-        return;
-    }
-
-    // التحقق من أن جميع اللاعبين مستعدون
-    const allReady = game.players.every(p => p.isReady);
-    if (!allReady) {
-        socket.emit('snake error', 'يجب أن يكون جميع اللاعبين مستعدين (Ready) لبدء اللعبة.');
-        return;
-    }
-
-    // تهيئة اتجاهات اللاعبين ومواقعهم قبل بدء العد التنازلي ليتم رسمهم
-    game.players.forEach((p, i) => {
-        if (i === 0) p.direction = {x: 1, y: 0};
-        else if (i === 1) p.direction = {x: -1, y: 0};
-        else if (i === 2) p.direction = {x: 1, y: 0};
-        else if (i === 3) p.direction = {x: -1, y: 0};
+        // Announce game to public rooms
+        const notificationMessage = {
+            type: 'system',
+            user: 'نظام الألعاب',
+            avatar: BOT_AVATAR_URL,
+            content: `🎲 بدأ ${currentUser.name} لعبة توصيل المربعات! <button onclick="joinDotsAndBoxesGame('${gameId}')" class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs font-bold transition-colors mx-1">انضم الآن</button>`,
+            time: new Date().toLocaleTimeString('ar-SA')
+        };
+        rooms.forEach(r => {
+            if (!r.protected) {
+                io.to(r.id).emit('new message', notificationMessage);
+                if (messages[r.id]) messages[r.id].push(notificationMessage);
+            }
+        });
     });
 
-    game.status = 'countdown';
-    io.to(gameId).emit('snake game update', getSanitizedGame(game)); // تحديث الواجهة لرسم الثعابين ثابتة
+    socket.on('join dots and boxes game', (data) => {
+        const { gameId, currentUser } = data;
+        const game = dotsAndBoxesGames[gameId];
 
-    let countdown = 3;
-    io.to(gameId).emit('snake countdown', countdown); // إرسال الرقم 3 فوراً
-
-    const countdownInterval = setInterval(() => {
-        countdown--;
-        io.to(gameId).emit('snake countdown', countdown);
-
-        if (countdown <= 0) {
-            clearInterval(countdownInterval);
-
-            game.status = 'playing';
-            game.frameCount = 0;
-
-            io.to(gameId).emit('snake game started');
-
-            game.interval = setInterval(() => {
-                updateSnakeGame(gameId);
-            }, 100);
+        if (!game) return socket.emit('dots and boxes error', 'اللعبة غير موجودة.');
+        if (game.status !== 'waiting') return socket.emit('dots and boxes error', 'اللعبة بدأت بالفعل.');
+        if (game.players.length >= game.maxPlayers) return socket.emit('dots and boxes error', `الغرفة ممتلئة (${game.maxPlayers} لاعبين كحد أقصى).`);
+        if (game.players.some(p => p.username === currentUser.name)) {
+            socket.join(gameId);
+            io.to(gameId).emit('dots and boxes game update', game);
+            return;
         }
-    }, 1000);
-  });
 
-  // تغيير لون الثعبان
-  socket.on('snake update color', (data) => {
-      const { gameId, color } = data;
-      const game = snakeGames[gameId];
-      if (game && game.status === 'waiting') {
-          const player = game.players.find(p => p.id === socket.id);
-          if (player) {
-              player.color = color;
-              io.to(gameId).emit('snake game update', getSanitizedGame(game));
-          }
-      }
-  });
+        game.players.push({
+            id: socket.id,
+            username: currentUser.name,
+            color: DNB_PLAYER_COLORS[game.players.length],
+            score: 0,
+            avatar: userAvatars[currentUser.name] || DEFAULT_AVATAR_URL
+        });
 
-  // تبديل حالة الاستعداد
-  socket.on('snake toggle ready', (gameId) => {
-      const game = snakeGames[gameId];
-      if (game && game.status === 'waiting') {
-          const player = game.players.find(p => p.id === socket.id);
-          if (player) {
-              player.isReady = !player.isReady;
-              io.to(gameId).emit('snake game update', getSanitizedGame(game));
-          }
-      }
-  });
+        socket.join(gameId);
+        io.to(gameId).emit('dots and boxes game update', game);
+    });
 
-  socket.on('snake input', (data) => {
-      const { gameId, direction } = data;
-      const game = snakeGames[gameId];
-      if (!game || game.status !== 'playing') return;
+    socket.on('start dots and boxes game', (gameId) => {
+        const game = dotsAndBoxesGames[gameId];
+        if (!game || game.host !== onlineUsers[socket.id]?.name || game.status !== 'waiting') return;
+        if (game.players.length < 2) return socket.emit('dots and boxes error', 'تحتاج لاعبين اثنين على الأقل لبدء اللعبة.');
 
-      const player = game.players.find(p => p.id === socket.id);
-      if (player && player.alive) {
-          // منع العودة للخلف مباشرة
-          if (player.direction.x + direction.x === 0 && player.direction.y + direction.y === 0) return;
-          player.nextDirection = direction; // تخزين الاتجاه للدورة القادمة
-      }
-  });
+        game.status = 'playing';
+        game.grid = {
+            rows: game.rows,
+            cols: game.cols,
+            hLines: Array(game.rows + 1).fill(0).map(() => Array(game.cols).fill(0)),
+            vLines: Array(game.rows).fill(0).map(() => Array(game.cols + 1).fill(0)),
+            boxes: Array(game.rows).fill(0).map(() => Array(game.cols).fill(0)),
+        };
+        game.currentPlayerIndex = 0;
 
-  socket.on('leave snake game', (gameId) => {
-      const game = snakeGames[gameId];
-      if (game) {
-          game.players = game.players.filter(p => p.id !== socket.id);
-          socket.leave(gameId);
-          
-          if (game.players.length === 0) {
-              if (game.timeout) clearTimeout(game.timeout);
-              if (game.interval) clearInterval(game.interval);
-              delete snakeGames[gameId];
-          } else {
-              if (game.host === onlineUsers[socket.id]?.name) {
-                  game.host = game.players[0].username; // نقل المضيف
-              }
-              io.to(gameId).emit('snake game update', getSanitizedGame(game));
-          }
-      }
-  });
+        io.to(gameId).emit('dots and boxes game update', game);
+    });
 
-  // دالة تشغيل حلقة اللعبة بسرعة متغيرة
-  function runSnakeGameLoop(gameId) {
-      const game = snakeGames[gameId];
-      if (!game) return;
+    socket.on('draw dots and boxes line', (data) => {
+        const { gameId, line } = data;
+        const game = dotsAndBoxesGames[gameId];
+        const player = onlineUsers[socket.id];
 
-      updateSnakeGame(gameId);
+        if (!game || game.status !== 'playing' || !player) return;
+        if (game.players[game.currentPlayerIndex].username !== player.name) return;
 
-      // التحقق من وجود اللعبة بعد التحديث (قد تكون انتهت وحذفت)
-      if (!snakeGames[gameId]) return;
+        const { type, r, c } = line;
+        let boxesCompleted = 0;
 
-      // حساب السرعة: تبدأ بـ 200ms وتقل (تسرع) كلما زاد الوقت
-      // تقل بمقدار 5ms كل 50 إطار (حوالي كل 10 ثواني)
-      let delay = 200;
-      
-      // بداية بطيئة لأول 3 ثواني (حوالي 6 إطارات)
-      if (game.frameCount <= 6) {
-          delay = 500; 
-      } else if (game.frameCount) {
-          const speedIncrease = Math.floor((game.frameCount - 6) / 50) * 5;
-          delay = Math.max(80, 200 - speedIncrease); // الحد الأقصى للسرعة 80ms
-      }
+        if (type === 'h' && game.grid.hLines[r][c] === 0) {
+            game.grid.hLines[r][c] = game.currentPlayerIndex + 1;
+            if (r > 0 && game.grid.hLines[r-1][c] && game.grid.vLines[r-1][c] && game.grid.vLines[r-1][c+1]) {
+                game.grid.boxes[r-1][c] = game.currentPlayerIndex + 1;
+                boxesCompleted++;
+            }
+            if (r < game.rows && game.grid.hLines[r+1][c] && game.grid.vLines[r][c] && game.grid.vLines[r][c+1]) {
+                game.grid.boxes[r][c] = game.currentPlayerIndex + 1;
+                boxesCompleted++;
+            }
+        } else if (type === 'v' && game.grid.vLines[r][c] === 0) {
+            game.grid.vLines[r][c] = game.currentPlayerIndex + 1;
+            if (c > 0 && game.grid.vLines[r][c-1] && game.grid.hLines[r][c-1] && game.grid.hLines[r+1][c-1]) {
+                game.grid.boxes[r][c-1] = game.currentPlayerIndex + 1;
+                boxesCompleted++;
+            }
+            if (c < game.cols && game.grid.vLines[r][c+1] && game.grid.hLines[r][c] && game.grid.hLines[r+1][c]) {
+                game.grid.boxes[r][c] = game.currentPlayerIndex + 1;
+                boxesCompleted++;
+            }
+        } else {
+            return; // Invalid move
+        }
 
-      game.timeout = setTimeout(() => {
-          runSnakeGameLoop(gameId);
-      }, delay);
-  }
+        if (boxesCompleted > 0) {
+            game.players[game.currentPlayerIndex].score += boxesCompleted;
+        } else {
+            game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
+        }
 
-  function updateSnakeGame(gameId) {
-      const game = snakeGames[gameId];
-      if (!game) return;
+        const totalBoxes = game.rows * game.cols;
+        const filledBoxes = game.grid.boxes.flat().filter(b => b > 0).length;
+        if (filledBoxes === totalBoxes) {
+            game.status = 'over';
+            // Find winner(s)
+            const maxScore = Math.max(...game.players.map(p => p.score));
+            const winners = game.players.filter(p => p.score === maxScore);
 
-      const isMultiplayer = game.players.length > 1;
-      game.frameCount = (game.frameCount || 0) + 1;
-      
-      // في اللعب الجماعي: إخفاء الطعام
-      if (isMultiplayer) {
-          game.food = { x: -10, y: -10 }; 
-      }
+            if (winners.length === 1) {
+                game.winner = winners[0].username;
+            } else if (winners.length > 1) {
+                game.winner = winners.map(p => p.username).join(' و ');
+            } else { // Should not happen if there are players
+                game.winner = 'تعادل';
+            }
+        }
 
-      // النمو التلقائي كل 5 ثواني تقريباً (33 إطار * 150مللي ثانية = 4.95 ثانية)
-      const shouldGrowMultiplayer = isMultiplayer && (game.frameCount % 50 === 0); // تعديل المعدل ليتناسب مع السرعة الجديدة (100ms)
+        io.to(gameId).emit('dots and boxes game update', game);
+    });
 
-      // 1. حساب المواقع القادمة للرؤوس
-      const nextHeads = {};
+    socket.on('leave dots and boxes game', (gameId) => {
+        const game = dotsAndBoxesGames[gameId];
+        if (!game) return;
+        const player = onlineUsers[socket.id];
+        if (!player) return;
 
-      game.players.forEach(p => {
-          if (!p.alive) return;
+        const playerIndex = game.players.findIndex(p => p.username === player.name);
+        if (playerIndex === -1) return;
 
-          if (p.nextDirection) {
-              p.direction = p.nextDirection;
-              delete p.nextDirection;
-          }
+        const leavingPlayer = game.players[playerIndex];
 
-          const head = { ...p.snake[0] };
-          head.x += p.direction.x;
-          head.y += p.direction.y;
-          nextHeads[p.id] = head;
-      });
-
-      // 2. التحقق من التصادمات وتحديد الخاسرين
-      const playersToKill = new Set();
-
-      game.players.forEach(p => {
-          if (!p.alive) return;
-          const head = nextHeads[p.id];
-
-          // تصادم بالجدار
-          if (head.x < 0 || head.x >= 30 || head.y < 0 || head.y >= 20) { // 30x20 grid
-              playersToKill.add(p.id);
-              return;
-          }
-
-          // تصادم بالنفس
-          if (p.snake.some(s => s.x === head.x && s.y === head.y)) {
-               playersToKill.add(p.id);
-               return;
-          }
-
-          if (isMultiplayer) {
-              game.players.forEach(other => {
-                  if (p.id === other.id || !other.alive) return;
-
-                  // تصادم رأس برأس (كلاهما يخسر)
-                  const otherHead = nextHeads[other.id];
-                  if (otherHead && head.x === otherHead.x && head.y === otherHead.y) {
-                      playersToKill.add(p.id);
-                      playersToKill.add(other.id);
-                  }
-
-                  // تصادم رأس بجسم ثعبان آخر (الذي اصطدم يخسر)
-                  if (other.snake.some(s => s.x === head.x && s.y === head.y)) {
-                      playersToKill.add(p.id);
-                  }
-              });
-          }
-      });
-
-      // 3. تطبيق التحديثات
-      game.players.forEach(p => {
-          if (!p.alive) return;
-
-          if (playersToKill.has(p.id)) {
-              p.alive = false;
-              return;
-          }
-
-          const head = nextHeads[p.id];
-          p.snake.unshift(head);
-
-          if (isMultiplayer) {
-              // في اللعب الجماعي: نمو تلقائي فقط
-              if (!shouldGrowMultiplayer) {
-                  p.snake.pop();
-              }
-          } else {
-              // في اللعب الفردي: أكل الطعام
-              if (head.x === game.food.x && head.y === game.food.y) {
-                  p.score += 1; // زيادة 1
-                  // توليد طعام جديد
-                  let validFood = false;
-                  let attempts = 0;
-                  // حماية من الحلقة اللانهائية (بحد أقصى 100 محاولة)
-                  while (!validFood && attempts < 100) {
-                      game.food = {
-                          x: Math.floor(Math.random() * 30),
-                          y: Math.floor(Math.random() * 20)
-                      };
-                      // eslint-disable-next-line no-loop-func
-                      validFood = !p.snake.some(s => s.x === game.food.x && s.y === game.food.y);
-                      attempts++;
-                  }
-              } else {
-                  p.snake.pop();
-              }
-          }
-      });
-
-      io.to(gameId).emit('snake game update', getSanitizedGame(game));
-
-      // 4. شروط انتهاء اللعبة
-      const alivePlayers = game.players.filter(p => p.alive);
-
-      if (isMultiplayer) {
-          if (alivePlayers.length === 0) {
-              // الجميع ماتوا (تعادل)
-              if (game.timeout) clearTimeout(game.timeout);
-              io.to(gameId).emit('snake game over', { winner: "تعادل!", isMultiplayer: true });
-              delete snakeGames[gameId];
-          } else if (alivePlayers.length === 1) {
-              // فائز واحد
-              if (game.timeout) clearTimeout(game.timeout);
-              const winnerName = alivePlayers[0].username;
-              io.to(gameId).emit('snake game over', { winner: winnerName, isMultiplayer: true });
-              delete snakeGames[gameId];
-
-              // التأكد من وجود سجل نقاط للمستخدم ثم تحديثه
-              UserPoints.findOrCreate({
-                  where: { username: winnerName },
-                  defaults: { points: 0, level: 1, snakeHighScore: 0, snakeWins: 0 }
-              }).then(([point, created]) => {
-                  if (created) {
-                      userPoints[winnerName] = point.get({ plain: true });
-                  }
-                  const newWins = (userPoints[winnerName]?.snakeWins || 0) + 1;
-                  userPoints[winnerName].snakeWins = newWins;
-
-                  // حفظ في قاعدة البيانات
-                  point.update({ snakeWins: newWins }).catch(err => console.error('Error saving snake wins:', err));
-
-                  // إرسال إشعار للفائز
-                  const winnerSocket = Object.values(onlineUsers).find(u => u.name === winnerName);
-                  if (winnerSocket) io.to(winnerSocket.id).emit('snake win update', newWins);
-              }).catch(err => console.error('Error finding/creating user points for snake winner:', err));
-          }
-      } else {
-          // لاعب واحد
-          if (alivePlayers.length === 0) {
-              if (game.timeout) clearTimeout(game.timeout);
-              const finalScore = game.players[0].score;
-              const playerName = game.players[0].username;
-              
-              io.to(gameId).emit('snake game over', { winner: `انتهت اللعبة (النتيجة: ${finalScore})`, isMultiplayer: false });
-              delete snakeGames[gameId];
-
-              // التأكد من وجود سجل نقاط للمستخدم ثم تحديثه
-              UserPoints.findOrCreate({
-                  where: { username: playerName },
-                  defaults: { points: 0, level: 1, snakeHighScore: 0, snakeWins: 0 }
-              }).then(([point, created]) => {
-                  if (created) {
-                      userPoints[playerName] = point.get({ plain: true });
-                  }
-                  if (finalScore > (userPoints[playerName]?.snakeHighScore || 0)) {
-                      userPoints[playerName].snakeHighScore = finalScore;
-                      point.update({ snakeHighScore: finalScore }).catch(err => console.error('Error saving snake high score:', err));
-                  }
-              }).catch(err => console.error('Error finding/creating user points for snake score:', err));
-          }
-      }
-  }
-
-  // --- لوحة ملوك الثعبان ---
-  socket.on('get snake leaderboard', async () => {
-      try {
-          // جلب أفضل 10 في الفردي (النقاط)
-          const topSingle = await UserPoints.findAll({
-              where: { snakeHighScore: { [Sequelize.Op.gt]: 0 } },
-              order: [['snakeHighScore', 'DESC']],
-              limit: 10,
-              attributes: ['username', 'snakeHighScore']
-          });
-
-          // جلب أفضل 10 في الجماعي (الكؤوس)
-          const topMulti = await UserPoints.findAll({
-              where: { snakeWins: { [Sequelize.Op.gt]: 0 } },
-              order: [['snakeWins', 'DESC']],
-              limit: 10,
-              attributes: ['username', 'snakeWins']
-          });
-
-          const formatList = (list, type) => list.map(u => ({
-              username: u.username,
-              value: type === 'single' ? u.snakeHighScore : u.snakeWins,
-              avatar: userAvatars[u.username] || DEFAULT_AVATAR_URL
-          }));
-
-          socket.emit('snake leaderboard data', {
-              single: formatList(topSingle, 'single'),
-              multi: formatList(topMulti, 'multi')
-          });
-      } catch (error) {
-          console.error('Error fetching snake leaderboard:', error);
-      }
-  });
-
-  // تسجيل نتيجة اللعب الفردي (Client-side)
-  socket.on('record snake score', async (score) => {
-      const user = onlineUsers[socket.id];
-      if (!user) return;
-      
-      // تحديث أعلى نتيجة إذا كانت النتيجة الحالية أكبر
-      if (userPoints[user.name] && score > (userPoints[user.name].snakeHighScore || 0)) {
-          userPoints[user.name].snakeHighScore = score;
-          await UserPoints.update({ snakeHighScore: score }, { where: { username: user.name } });
-      }
-  });
+        // إذا كانت اللعبة قد بدأت
+        if (game.status === 'playing') {
+            if (game.players.length === 2) {
+                // لاعبين فقط -> الفوز للآخر
+                game.status = 'over';
+                const winner = game.players.find(p => p.username !== player.name);
+                game.winner = winner ? winner.username : 'لا أحد';
+                game.message = `انسحب الخصم ${player.name}، أنت الفائز!`;
+                io.to(gameId).emit('dots and boxes game update', game);
+                setTimeout(() => delete dotsAndBoxesGames[gameId], 10000);
+            } else {
+                // أكثر من لاعبين -> حذف اللاعب وجعل مربعاته رمادية
+                leavingPlayer.isRemoved = true;
+                // نحتفظ به في القائمة لتمييز مربعاته بالرمادي ولكن لا نعده في الأدوار
+                
+                // إذا كان الدور عليه، ننتقل للدور التالي
+                if (game.currentPlayerIndex === playerIndex) {
+                    game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
+                    // تأكد أننا لا ننتقل للاعب محذوف آخر (حلقة حتى نجد لاعباً موجوداً)
+                    let checkCount = 0;
+                    while (game.players[game.currentPlayerIndex].isRemoved && checkCount < game.players.length) {
+                        game.currentPlayerIndex = (game.currentPlayerIndex + 1) % game.players.length;
+                        checkCount++;
+                    }
+                }
+                
+                io.to(gameId).emit('dots and boxes game update', game);
+            }
+        } else {
+            // اللعبة لم تبدأ بعد -> مجرد حذف
+            game.players = game.players.filter(p => p.username !== player.name);
+            if (game.players.length === 0) {
+                delete dotsAndBoxesGames[gameId];
+            } else {
+                if (game.host === player.name) game.host = game.players[0].username;
+                io.to(gameId).emit('dots and boxes game update', game);
+            }
+        }
+        socket.leave(gameId);
+    });
 
   // --- أحداث إدارة المسابقات ---
   socket.on('get quiz questions', async (data) => {
