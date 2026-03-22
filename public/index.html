@@ -91,14 +91,18 @@
             .chat-header-buttons { flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem; }
         }
         .rank-badge {
-            background: linear-gradient(45deg, #3B82F6, #8B5CF6);
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: bold;
+            background: rgba(0, 0, 0, 0.4);
+            color: #FFD700;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
             display: inline-flex;
             align-items: center;
             margin-left: 5px;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.1);
+            text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
         }
         .achievement-badge {
             width: 20px;
@@ -1015,6 +1019,22 @@
     box-shadow: 0 0 15px rgba(255, 69, 0, 0.6);
     color: #fff !important;
 }
+
+.blue-fire-join-bg {
+    background: linear-gradient(-45deg, #000033, #0000ff, #00d2ff, #ffffff, #00d2ff, #0000ff, #000033);
+    background-size: 400% 400%;
+    animation: blueFireShimmer 2s ease-in-out infinite;
+    border: 2px solid #00e5ff;
+    box-shadow: 0 0 20px rgba(0, 191, 255, 0.8), inset 0 0 10px rgba(0, 0, 255, 0.5);
+    color: #fff !important;
+    text-shadow: 0 0 8px #00bfff;
+}
+
+@keyframes blueFireShimmer {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
 @keyframes fireShimmer {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
@@ -1108,6 +1128,107 @@
 @keyframes crown-spin-3d {
     0% { transform: translateX(-50%) rotateY(0deg); }
     100% { transform: translateX(-50%) rotateY(360deg); }
+}
+
+/* إطار النار المشتعلة الأسطوري */
+.frame-burning-fire {
+    border: 3px solid #ff4500;
+    position: relative;
+    overflow: visible !important;
+    box-shadow: 0 0 15px #ff4500, inset 0 0 10px #ff0000;
+    animation: burning-border 1.5s infinite alternate;
+}
+
+.frame-burning-fire::before, .frame-burning-fire::after {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: #ffcc00;
+    border-radius: 50%;
+    filter: blur(1px);
+    z-index: 5;
+    opacity: 0;
+}
+
+.frame-burning-fire::before {
+    animation: ember-rise-1 2s infinite linear;
+}
+
+.frame-burning-fire::after {
+    animation: ember-rise-2 2.5s infinite linear 0.5s;
+}
+
+@keyframes burning-border {
+    0% { border-color: #ff4500; box-shadow: 0 0 10px #ff4500, inset 0 0 5px #ff0000; }
+    50% { border-color: #ff8c00; box-shadow: 0 0 20px #ff8c00, inset 0 0 10px #ff4500; }
+    100% { border-color: #ffcc00; box-shadow: 0 0 15px #ffcc00, inset 0 0 15px #ff8c00; }
+}
+
+@keyframes ember-rise-1 {
+    0% { transform: translate(10px, 20px) scale(1); opacity: 1; background: #ffcc00; }
+    50% { transform: translate(25px, -10px) scale(1.2); opacity: 0.8; background: #ff4500; }
+    100% { transform: translate(15px, -40px) scale(0.5); opacity: 0; }
+}
+
+@keyframes ember-rise-2 {
+    0% { transform: translate(-10px, 25px) scale(1); opacity: 1; background: #ffff00; }
+    50% { transform: translate(-30px, 0px) scale(1.3); opacity: 0.7; background: #ff8c00; }
+    100% { transform: translate(-20px, -35px) scale(0.4); opacity: 0; }
+}
+
+/* إطار رعد مشتعل الأسطوري */
+.frame-burning-thunder {
+    border: 3px solid #00bfff;
+    position: relative;
+    overflow: visible !important;
+    box-shadow: 0 0 15px #1e90ff, inset 0 0 10px #0000ff;
+    animation: thunder-border 0.8s infinite alternate;
+}
+
+.frame-burning-thunder::before, .frame-burning-thunder::after {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 12px;
+    background: #ffffff;
+    border-radius: 2px;
+    filter: blur(0.5px);
+    z-index: 5;
+    opacity: 0;
+    box-shadow: 0 0 8px #00ffff;
+}
+
+.frame-burning-thunder::before {
+    animation: lightning-strike-1 1.2s infinite linear;
+}
+
+.frame-burning-thunder::after {
+    animation: lightning-strike-2 1.5s infinite linear 0.3s;
+}
+
+@keyframes thunder-border {
+    0% { border-color: #00bfff; box-shadow: 0 0 10px #00bfff, inset 0 0 5px #0000ff; }
+    50% { border-color: #ffffff; box-shadow: 0 0 25px #ffffff, inset 0 0 15px #00bfff; }
+    100% { border-color: #1e90ff; box-shadow: 0 0 15px #1e90ff, inset 0 0 15px #0000ff; }
+}
+
+@keyframes lightning-strike-1 {
+    0% { transform: translate(15px, 20px) rotate(15deg) scale(0); opacity: 0; }
+    10% { transform: translate(15px, 20px) rotate(15deg) scale(1.5); opacity: 1; background: #fff; }
+    20% { transform: translate(25px, -5px) rotate(-10deg) scale(1); opacity: 0.8; background: #00ffff; }
+    40% { transform: translate(20px, -30px) rotate(20deg) scale(1.2); opacity: 1; background: #fff; }
+    60% { transform: translate(30px, -50px) rotate(-5deg) scale(0.5); opacity: 0; }
+    100% { transform: translate(30px, -50px) rotate(-5deg) scale(0); opacity: 0; }
+}
+
+@keyframes lightning-strike-2 {
+    0% { transform: translate(-15px, 25px) rotate(-20deg) scale(0); opacity: 0; }
+    15% { transform: translate(-15px, 25px) rotate(-20deg) scale(1.8); opacity: 1; background: #fff; }
+    30% { transform: translate(-30px, 0px) rotate(10deg) scale(1); opacity: 0.9; background: #1e90ff; }
+    50% { transform: translate(-25px, -25px) rotate(-15deg) scale(1.4); opacity: 1; background: #fff; }
+    70% { transform: translate(-35px, -45px) rotate(5deg) scale(0.6); opacity: 0; }
+    100% { transform: translate(-35px, -45px) rotate(5deg) scale(0); opacity: 0; }
 }
 
 /* إطار النار البرتقالي (XP) */
@@ -1566,6 +1687,166 @@
                 width: 85% !important; /* ليس كامل الشاشة ليبقى جزء مظلم */
             }
         }
+
+        /* تنسيقات غرفة التحكم الجديدة */
+        .control-panel-container {
+            display: flex;
+            height: 100%;
+            overflow: hidden;
+        }
+        .control-panel-sidebar {
+            width: 280px;
+            background: rgba(15, 23, 42, 0.95);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem 1rem;
+            gap: 0.75rem;
+            flex-shrink: 0;
+            height: 100%;
+        }
+        .control-panel-btn {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border-radius: 1rem;
+            color: #94a3b8;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 700;
+            font-size: 1.1rem;
+            text-align: right;
+            width: 100%;
+        }
+        .control-panel-btn:hover {
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+            transform: translateX(-5px);
+        }
+        .control-panel-btn.active {
+            background: linear-gradient(to left, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.05));
+            color: #3b82f6;
+            border-right: 4px solid #3b82f6;
+            box-shadow: -5px 0 20px rgba(59, 130, 246, 0.1);
+        }
+        .control-panel-content {
+            flex: 1;
+            padding: 2.5rem;
+            background: #020617;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        .control-section {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .control-section.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 768px) {
+            .control-panel-container {
+                flex-direction: column;
+            }
+            .control-panel-sidebar {
+                width: 100%;
+                flex-direction: row;
+                overflow-x: auto;
+                border-left: none;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+                padding: 0.5rem;
+            }
+            .control-panel-btn {
+                white-space: nowrap;
+                padding: 0.5rem 0.75rem;
+            }
+        }
+
+        /* نمط غرفة الإدارة - عرض كامل */
+        #chatPage.admin-room-active .chat-header-mobile {
+            display: none !important;
+        }
+        #chatPage.admin-room-active #messagesContainer,
+        #chatPage.admin-room-active #onlineUsersPanel,
+        #chatPage.admin-room-active .users-overlay {
+            display: none !important;
+        }
+        #chatPage.admin-room-active #chatMainContent {
+            height: 100vh !important;
+            width: 100vw !important;
+        }
+        #chatPage.admin-room-active #messageArea {
+            position: fixed !important;
+            inset: 0 !important;
+            height: 100vh !important;
+            width: 100vw !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-start !important;
+            align-items: center !important;
+            padding: 1.5rem !important;
+            overflow-y: auto !important;
+            background: #0f172a !important; /* لون داكن صلب لغرفة التحكم */
+            z-index: 9999 !important;
+        }
+        #chatPage.admin-room-active #rankManagementPanel,
+        #chatPage.admin-room-active #userManagementPanel {
+            width: 100% !important;
+            max-width: 98% !important;
+            margin-bottom: 2rem !important;
+            border: 2px solid rgba(255, 255, 255, 0.15) !important;
+            background: rgba(30, 41, 59, 0.8) !important;
+            padding: 3rem !important;
+            border-radius: 2rem !important;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7) !important;
+            flex-shrink: 0 !important;
+        }
+        #chatPage.admin-room-active #rankManagementPanel h3,
+        #chatPage.admin-room-active #userManagementPanel h3 {
+            font-size: 2rem !important;
+            margin-bottom: 2rem !important;
+        }
+        #chatPage.admin-room-active input, 
+        #chatPage.admin-room-active select {
+            height: 3.5rem !important;
+            font-size: 1.1rem !important;
+            border-radius: 1rem !important;
+        }
+        #chatPage.admin-room-active button {
+            height: 3.5rem !important;
+            font-size: 1.1rem !important;
+            border-radius: 1rem !important;
+            padding-left: 2rem !important;
+            padding-right: 2rem !important;
+        }
+        #chatPage.admin-room-active #messageInputContainer {
+            width: 100% !important;
+            max-width: 98% !important;
+            margin-top: auto !important;
+            background: rgba(15, 23, 42, 0.9) !important;
+            padding: 1rem !important;
+            border-radius: 1rem !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            margin-bottom: 0.5rem !important;
+        }
+        /* إضافة زر خروج خاص لغرفة التحكم بما أننا أخفينا الرأس */
+        #chatPage.admin-room-active .admin-exit-btn {
+            display: block !important;
+            position: sticky;
+            top: 0;
+            right: 0;
+            width: 100% !important;
+            max-width: 98% !important;
+            margin-bottom: 2rem !important;
+            z-index: 10000;
+            height: 4rem !important;
+            font-size: 1.5rem !important;
+            border-radius: 1.5rem !important;
+            background: linear-gradient(to right, #dc2626, #991b1b) !important;
+        }
     </style>
 </head>
 <body class="bg-black text-white min-h-screen">
@@ -2012,6 +2293,10 @@
 
                 <!-- منطقة إرسال الرسائل -->
                 <div id="messageArea" class="bg-gray-900/95 backdrop-blur-xl border-t border-gray-700 p-2 shrink-0 w-full z-10">
+                    <!-- زر خروج خاص لغرفة التحكم -->
+                    <button onclick="goBack()" class="admin-exit-btn hidden bg-red-600 hover:bg-red-700 text-white px-10 py-3 rounded-xl font-bold shadow-2xl transition-all transform hover:scale-105 mx-auto">
+                        خروج من غرفة التحكم
+                    </button>
                     <div class="w-full">
                         <!-- لوحة إدارة الرتب -->
                         <div id="rankManagementPanel" class="hidden mb-4 bg-gradient-to-r from-purple-900/30 to-blue-900/30 rounded-xl p-4 border border-purple-500/50">
@@ -3191,20 +3476,55 @@
 
 <!-- نافذة غرفة التحكم (Control Panel) -->
 <div id="controlPanelModal" class="profile-modal">
-    <div class="profile-content custom-scrollbar" style="width: 95%; max-width: 800px; height: 95vh;">
+    <div class="profile-content custom-scrollbar" style="width: 100%; max-width: none; height: 100vh; margin: 0; border-radius: 0; border: none;">
         <!-- رأس النافذة -->
-        <div class="relative bg-gray-800 p-6 text-center border-b border-gray-700 flex-shrink-0">
-            <button onclick="closeControlPanel()" class="absolute top-4 right-4 text-slate-300 hover:text-red-500 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        <div class="relative bg-gray-900 p-8 text-center border-b border-gray-700 flex-shrink-0">
+            <button onclick="closeControlPanel()" class="absolute top-6 right-8 text-slate-300 hover:text-red-500 transition-all transform hover:scale-125">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-            <h2 class="text-2xl font-bold text-white">⚙️ غرفة التحكم</h2>
-            <p class="text-slate-400 text-sm">لوحة إدارة الموقع الشاملة</p>
+            <h2 class="text-4xl font-black text-white tracking-wider mb-2">⚙️ لوحة التحكم الإدارية</h2>
+            <p class="text-blue-400 font-bold text-lg uppercase tracking-widest">WalChat Management System</p>
         </div>
         
         <!-- محتوى النافذة -->
-        <div class="flex-1 p-6 space-y-8 overflow-y-auto custom-scrollbar">
-            <!-- قسم الإحصائيات -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
+            <!-- القائمة الجانبية اليمنى -->
+            <div class="control-panel-sidebar custom-scrollbar">
+                <button onclick="switchControlPanelSection('stats')" class="control-panel-btn active" id="btn-control-stats">
+                    <span class="text-xl">📊</span>
+                    <span>الإحصائيات</span>
+                </button>
+                <button onclick="switchControlPanelSection('ads')" class="control-panel-btn" id="btn-control-ads">
+                    <span class="text-xl">📢</span>
+                    <span>الإعلانات</span>
+                </button>
+                <button onclick="switchControlPanelSection('ranks')" class="control-panel-btn" id="btn-control-ranks">
+                    <span class="text-xl">🌟</span>
+                    <span>الرتب</span>
+                </button>
+                <button onclick="switchControlPanelSection('roomManagers')" class="control-panel-btn" id="btn-control-roomManagers">
+                    <span class="text-xl">👮</span>
+                    <span>مديرو الغرف</span>
+                </button>
+                <button onclick="switchControlPanelSection('rooms')" class="control-panel-btn" id="btn-control-rooms">
+                    <span class="text-xl">🚪</span>
+                    <span>الغرف</span>
+                </button>
+                <button onclick="switchControlPanelSection('quiz')" class="control-panel-btn" id="btn-control-quiz">
+                    <span class="text-xl">🎮</span>
+                    <span>المسابقات</span>
+                </button>
+                <button onclick="switchControlPanelSection('users')" class="control-panel-btn" id="btn-control-users">
+                    <span class="text-xl">👥</span>
+                    <span>المستخدمون</span>
+                </button>
+            </div>
+
+            <!-- منطقة المحتوى اليسرى -->
+            <div class="control-panel-content custom-scrollbar flex-1">
+                <!-- قسم الإحصائيات -->
+                <div id="controlSection-stats" class="control-section active space-y-6">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-gray-700/50 p-4 rounded-xl text-center border border-gray-600">
                     <div class="text-3xl mb-2">👥</div>
                     <div class="text-2xl font-bold text-white" id="statsTotalUsers">0</div>
@@ -3226,8 +3546,10 @@
                     <div class="text-xs text-slate-400">الإناث</div>
                 </div>
             </div>
+            </div>
 
             <!-- قسم الإعلان الهام -->
+            <div id="controlSection-ads" class="control-section space-y-6">
             <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
                 <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
                     <span>📢</span> إدارة الإعلانات والتنبيهات
@@ -3249,8 +3571,10 @@
                     </div>
                 </div>
             </div>
+            </div>
 
             <!-- قسم إدارة الرتب -->
+            <div id="controlSection-ranks" class="control-section space-y-6">
             <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
                 <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
                     <span>🌟</span> إدارة الرتب والصلاحيات
@@ -3309,8 +3633,10 @@
                     </table>
                 </div>
             </div>
+            </div>
 
             <!-- قسم إدارة مديري الغرف -->
+            <div id="controlSection-roomManagers" class="control-section space-y-6">
             <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
                 <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
                     <span>👮</span> إدارة مديري الغرف
@@ -3340,8 +3666,10 @@
                     <div id="noManagersMsg" class="text-center text-slate-400 text-sm py-6">لا توجد غرف بها مديرون حالياً</div>
                 </div>
             </div>
+            </div>
 
             <!-- قسم إدارة الغرف -->
+            <div id="controlSection-rooms" class="control-section space-y-6">
             <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
                 <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
                     <span>🚪</span> إدارة الغرف
@@ -3379,8 +3707,10 @@
                     </table>
                 </div>
             </div>
+            </div>
 
             <!-- قسم إدارة المسابقات -->
+            <div id="controlSection-quiz" class="control-section space-y-6">
             <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
                 <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
                     <span>🎮</span> إدارة المسابقات (QuizBot)
@@ -3414,8 +3744,10 @@
                     </table>
                 </div>
             </div>
+            </div>
 
             <!-- قسم قائمة المستخدمين الشاملة -->
+            <div id="controlSection-users" class="control-section space-y-6">
             <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
                 <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
                     <h3 class="text-xl font-bold text-white flex items-center gap-2">
@@ -3444,6 +3776,7 @@
                     </table>
                 </div>
                 <div class="mt-2 text-xs text-slate-500 text-center">يتم عرض المتصلين أولاً، ثم الترتيب حسب النقاط</div>
+            </div>
             </div>
         </div>
     </div>
@@ -3476,26 +3809,6 @@
                 <label class="text-white text-sm font-semibold">الحجم:</label>
                 <input type="range" id="drawingWidth" min="1" max="20" value="3" class="w-32 accent-blue-500">
              </div>
-        </div>
-    </div>
-</div>
-
-<!-- نافذة قبول الهدية (تم النقل للنهاية لضمان الظهور) -->
-<div id="giftOfferModal" class="profile-modal" style="z-index: 100000;">
-    <div class="profile-content" style="width: 95%; max-width: 400px;">
-        <div class="relative bg-gray-800 p-6 text-center border-b border-gray-700">
-            <h2 class="text-2xl font-bold text-white mb-2">🎁 هدية جديدة!</h2>
-            <p class="text-slate-300 text-sm">لديك عرض هدية معلق</p>
-        </div>
-        <div class="p-6 text-center space-y-6">
-            <div class="text-lg text-white">
-                قام <strong id="giftSenderName" class="text-blue-400"></strong> بإهدائك رتبة <strong id="giftRankName" class="text-yellow-400"></strong>.
-                <br>هل تقبل الهدية؟
-            </div>
-            <div class="flex gap-4 justify-center">
-                <button onclick="respondToGift(true)" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold transition-colors">قبول ✅</button>
-                <button onclick="respondToGift(false)" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-bold transition-colors">رفض ❌</button>
-            </div>
         </div>
     </div>
 </div>
@@ -4312,14 +4625,14 @@
         let shopItems = [];
         // تعريف الرتب الافتراضية (سيتم تحديثها من السيرفر)
         let ranks = {
-            'صاحب الموقع': { color: 'from-red-600 to-orange-400', icon: '🏆', level: 6 },
-            'رئيس': { color: 'from-yellow-400 to-yellow-500', icon: '🎩', level: 5 },
-            'رئيسة': { color: 'from-yellow-400 to-yellow-500', icon: '🎩', level: 5 },
-            'منشئ': { color: 'from-yellow-400 to-orange-500', icon: '👑', level: 4 },
-            'سوبر ادمن': { color: 'from-red-500 to-pink-600', icon: '⭐', level: 3 },
-            'ادمن': { color: 'from-purple-500 to-indigo-600', icon: '🛡️', level: 2 },
-            'بريميوم': { color: 'from-green-500 to-emerald-600', icon: '💎', level: 2 },
-            'جيد': { color: 'from-blue-500 to-cyan-600', icon: '❇️', level: 1 }
+            'صاحب الموقع': { color: 'from-red-600 to-orange-400', icon: 'rank-dragon', level: 100 },
+            'رئيس': { color: 'from-yellow-400 to-yellow-500', icon: 'rank-hat', level: 5 },
+            'رئيسة': { color: 'from-yellow-400 to-yellow-500', icon: 'rank-hat', level: 5 },
+            'منشئ': { color: 'from-yellow-400 to-orange-500', icon: 'rank-crown', level: 4 },
+            'سوبر ادمن': { color: 'from-red-500 to-pink-600', icon: 'rank-star', level: 3 },
+            'ادمن': { color: 'from-purple-500 to-indigo-600', icon: 'rank-shield', level: 2 },
+            'بريميوم': { color: 'from-green-500 to-emerald-600', icon: 'rank-diamond', level: 2 },
+            'جيد': { color: 'from-blue-500 to-cyan-600', icon: 'rank-sparkle', level: 1 }
         };
         // تعريف الأجنحة وتكوينها
         let wingsConfig = {
@@ -4402,8 +4715,30 @@
         }
 
         function getRankIconHtml(icon, className = "text-xl") {
-            // تم إضافة transform: translateY(2px) لإنزال الصورة قليلاً لتكون في نفس مستوى النص
-            if (icon && (icon.startsWith('data:image') || icon.startsWith('http'))) return `<img src="${icon}" class="${className} inline-block object-contain" style="width: 1.5em; height: 1.5em; vertical-align: middle; transform: translateY(-3px);">`;
+            if (!icon) return '';
+            
+            // تحقق من الصور (Data URI أو URL)
+            if (icon.startsWith('data:image') || icon.startsWith('http')) {
+                return `<img src="${icon}" class="${className} inline-block object-contain" style="width: 1.5em; height: 1.5em; vertical-align: middle; transform: translateY(-3px);">`;
+            }
+
+            // خريطة الأيقونات الثابتة (SVG) لضمان ثبات الشكل عبر جميع الأجهزة
+            const svgIcons = {
+                'rank-trophy': `<svg class="inline-block" style="width:1.2em; height:1.2em; vertical-align:middle; transform:translateY(-2px);" viewBox="0 0 24 24" fill="#FFD700"><path d="M18 2H6v2H2v7c0 2.21 1.79 4 4 4h2c.9 1.84 2.43 3.32 4.29 3.82L11 22h2l-1.29-3.18C13.57 18.32 15.1 16.84 16 15h2c2.21 0 4-1.79 4-4V4h-4V2zM6 13c-1.1 0-2-.9-2-2V6h2v7zm14-2c0 1.1-.9 2-2 2h-2V6h2v5z"/></svg>`,
+                'rank-dragon': `<svg class="inline-block" style="width:1.2em; height:1.2em; vertical-align:middle; transform:translateY(-2px);" viewBox="0 0 24 24" fill="#FFD700"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6zM12 22C6.48 22 2 17.52 2 12S6.48 2 12 2s10 4.48 10 10-4.48 10-10 10zm-1-7h2v2h-2v-2zm0-8h2v6h-2V7z M20.5 11h-4.22l2.18-2.18L17 7.41 13.59 10.82 12 9.23 10.41 10.82 7 7.41 5.59 8.82 7.72 11H3.5v2h4.22l-2.18 2.18L7 16.59l3.41-3.41 1.59 1.59 1.59-1.59 3.41 3.41 1.41-1.41-2.18-2.18h4.22v-2z"/></svg>`,
+                'rank-crown': `<svg class="inline-block" style="width:1.2em; height:1.2em; vertical-align:middle; transform:translateY(-2px);" viewBox="0 0 24 24" fill="#FFD700"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>`,
+                'rank-star': `<svg class="inline-block" style="width:1.2em; height:1.2em; vertical-align:middle; transform:translateY(-2px);" viewBox="0 0 24 24" fill="#FFD700"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>`,
+                'rank-shield': `<svg class="inline-block" style="width:1.2em; height:1.2em; vertical-align:middle; transform:translateY(-2px);" viewBox="0 0 24 24" fill="#FFD700"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>`,
+                'rank-diamond': `<svg class="inline-block" style="width:1.2em; height:1.2em; vertical-align:middle; transform:translateY(-2px);" viewBox="0 0 24 24" fill="#FFD700"><path d="M12.14 2.14L3.03 11.25c-.14.14-.14.37 0 .51l9.11 9.11c.14.14.37.14.51 0l9.11-9.11c.14-.14.14-.37 0-.51l-9.11-9.11a.36.36 0 00-.51 0z"/></svg>`,
+                'rank-sparkle': `<svg class="inline-block" style="width:1.2em; height:1.2em; vertical-align:middle; transform:translateY(-2px);" viewBox="0 0 24 24" fill="#FFD700"><path d="M11.5 6.42L9.13 1.59 6.76 6.42 1.93 8.79l4.83 2.37 2.37 4.83 2.37-4.83 4.83-2.37-4.83-2.37zM18.5 14.63l-1.25-2.54-1.25 2.54-2.54 1.25 2.54 1.25 1.25 2.54 1.25 2.54 2.54-1.25-2.54-1.25z"/></svg>`,
+                'rank-user': `<svg class="inline-block" style="width:1.2em; height:1.2em; vertical-align:middle; transform:translateY(-2px);" viewBox="0 0 24 24" fill="#FFD700"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`,
+                'rank-hat': `<svg class="inline-block" style="width:1.2em; height:1.2em; vertical-align:middle; transform:translateY(-2px);" viewBox="0 0 24 24" fill="#FFD700"><path d="M21 16.5c0 .38-.21.71-.53.88l-7.97 4.42c-.31.17-.69.17-1 0l-7.97-4.42c-.32-.17-.53-.5-.53-.88V9.26c0-.38.21-.71.53-.88l7.97-4.42c.31-.17.69-.17 1 0l7.97 4.42c.32.17.53.5.53.88v7.24z"/></svg>`
+            };
+
+            if (svgIcons[icon]) {
+                return `<span class="${className} flex items-center justify-center">${svgIcons[icon]}</span>`;
+            }
+
             return `<span class="${className}">${icon || ''}</span>`;
         }
 
@@ -5905,10 +6240,12 @@ socket.on('private messages history', (messages) => {
                 rankPanel.classList.remove('hidden');
                 userPanel.classList.remove('hidden');
                 messageInputContainer.classList.remove('hidden');
+                document.getElementById('chatPage').classList.add('admin-room-active');
             } else {
                 rankPanel.classList.add('hidden');
                 userPanel.classList.add('hidden');
                 messageInputContainer.classList.remove('hidden');
+                document.getElementById('chatPage').classList.remove('admin-room-active');
             }
             
             // الانضمام للغرفة في الخلفية
@@ -5937,6 +6274,7 @@ socket.on('private messages history', (messages) => {
         localStorage.removeItem('currentRoom');
     }
     document.getElementById('chatPage').classList.add('hidden');
+    document.getElementById('chatPage').classList.remove('admin-room-active');
     document.getElementById('mainPage').classList.remove('hidden');
     document.getElementById('messagesContainer').innerHTML = '';
 
@@ -6952,15 +7290,19 @@ function updateOnlineUsersList(users) {
                     document.body.removeChild(tempDiv);
                     iconHtml = `<div class="w-12 h-12 rounded-full border-2 border-slate-600" style="background-color: ${cssColor || '#ffffff'};"></div>`;
                 } else if (item.itemType === 'join_message_bg') {
-                    iconHtml = '<div class="text-4xl">🔥</div>';
+                    if (item.itemValue === 'blue-fire-join-bg') {
+                        iconHtml = '<div class="text-4xl drop-shadow-[0_0_8px_rgba(0,191,255,0.8)]" style="color: #00bfff;">🔥</div>';
+                    } else {
+                        iconHtml = '<div class="text-4xl">🔥</div>';
+                    }
                 } else if (item.itemType === 'avatar_frame') {
                     iconHtml = `<div class="w-12 h-12 rounded-full bg-gray-600 ${item.itemValue}"></div>`;
                 } else {
                     const rIcon = ranks[item.itemValue]?.icon;
-                    if (rIcon && (rIcon.startsWith('data:image') || rIcon.startsWith('http'))) {
-                        iconHtml = `<div class="w-12 h-12"><img src="${rIcon}" class="w-full h-full object-contain"></div>`;
+                    if (rIcon) {
+                        iconHtml = `<div class="w-12 h-12 flex items-center justify-center">${getRankIconHtml(rIcon, "text-4xl")}</div>`;
                     } else {
-                        iconHtml = `<div class="text-4xl">${rIcon || '🛍️'}</div>`;
+                        iconHtml = `<div class="text-4xl">🛍️</div>`;
                     }
                 }
                 
@@ -6986,24 +7328,17 @@ function updateOnlineUsersList(users) {
                     buyBtnDisabled = "disabled";
                 }
 
-                let buttonsHtml = `
-                    <button onclick="buyItem(${item.id})" ${buyBtnDisabled} class="flex-1 ${buyBtnClass} text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center space-x-2 space-x-reverse transition-colors text-xs">
-                        ${buyBtnContent}
-                    </button>
+                // إظهار زر الشراء وزر الإهداء لجميع العناصر
+                buttonsHtml = `
+                    <div class="flex gap-2 w-full">
+                        <button onclick="buyItem(${item.id})" ${buyBtnDisabled} class="flex-1 ${buyBtnClass} text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center space-x-2 space-x-reverse transition-colors text-xs">
+                            ${buyBtnContent}
+                        </button>
+                        <button onclick="giftItem(${item.id}, '${item.name}')" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-3 rounded-lg flex items-center justify-center transition-colors text-xs" title="إهداء لصديق">
+                            🎁
+                        </button>
+                    </div>
                 `;
-
-                if (item.itemType === 'rank') {
-                    buttonsHtml = `
-                        <div class="flex gap-2 w-full">
-                            ${buttonsHtml}
-                            <button onclick="giftItem(${item.id}, '${item.name}')" class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-3 rounded-lg flex items-center justify-center transition-colors text-xs" title="إهداء لصديق">
-                                🎁
-                            </button>
-                        </div>
-                    `;
-                } else {
-                     buttonsHtml = `<div class="w-full">${buttonsHtml}</div>`;
-                }
 
                 itemDiv.innerHTML = `
                     ${iconHtml}
@@ -7028,7 +7363,7 @@ function updateOnlineUsersList(users) {
         function giftItem(itemId, itemName) {
             const targetUsername = prompt(`لمن تريد إهداء "${itemName}"؟\nأدخل اسم المستخدم:`);
             if (targetUsername && targetUsername.trim() !== '') {
-                if (confirm(`هل أنت متأكد من إهداء "${itemName}" للمستخدم "${targetUsername}"؟ سيتم خصم النقاط من رصيدك عند قبول المستخدم للهدية.`)) {
+                if (confirm(`هل أنت متأكد من إهداء "${itemName}" للمستخدم "${targetUsername}"؟ سيتم خصم النقاط من رصيدك فوراً.`)) {
                     socket.emit('gift item', { itemId, targetUsername: targetUsername.trim(), currentUser });
                 }
             }
@@ -7078,21 +7413,6 @@ function updateOnlineUsersList(users) {
         });
 
         // استقبال عرض الهدية
-        socket.on('gift rank offer', (data) => {
-            const modal = document.getElementById('giftOfferModal');
-            console.log('Gift offer received:', data); // للتأكد من وصول الحدث
-            if (modal) {
-                document.getElementById('giftSenderName').textContent = data.sender;
-                document.getElementById('giftRankName').textContent = data.rankName;
-                modal.classList.add('show');
-            }
-        });
-
-        function respondToGift(accepted) {
-            socket.emit('respond to gift', { accepted, currentUser });
-            document.getElementById('giftOfferModal').classList.remove('show');
-        }
-
         socket.on('points update', (data) => {
             if (currentUser) currentUser.points = data.points;
             const pointsDisplay = document.getElementById('profilePoints');
@@ -7239,16 +7559,14 @@ function updateOnlineUsersList(users) {
                     </div>
                 `;
             } else {
-                const renderedItems = new Set();
                 userInventory.forEach(invItem => {
-                    if (renderedItems.has(invItem.itemId)) return;
-                    renderedItems.add(invItem.itemId);
-
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'bg-gray-800/80 p-4 rounded-2xl border border-gray-700/50 flex items-center justify-between gap-4 mb-3 hover:bg-gray-800 transition-all';
                     
                     let isEquipped = false;
-                    if (profileData) {
+                    let isRank = invItem.type === 'rank';
+
+                    if (!isRank && profileData) {
                         if (invItem.type === 'avatarFrame' && profileData.avatarFrame === invItem.value) isEquipped = true;
                         else if (invItem.type === 'nameColor' && profileData.nameColor === invItem.value) isEquipped = true;
                         else if (invItem.type === 'nameBackground' && profileData.nameBackground === invItem.value) isEquipped = true;
@@ -7259,8 +7577,13 @@ function updateOnlineUsersList(users) {
                         else if (invItem.type === 'nameCardBorder' && profileData.nameCardBorder === invItem.value) isEquipped = true;
                     }
 
-                    const btnText = isEquipped ? 'إزالة' : 'تزويد';
-                    const btnClass = isEquipped ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700';
+                    let btnText = isEquipped ? 'إزالة' : 'تزويد';
+                    let btnClass = isEquipped ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700';
+
+                    if (isRank) {
+                        btnText = 'تفعيل';
+                        btnClass = 'bg-yellow-600 hover:bg-yellow-700';
+                    }
 
                     itemDiv.innerHTML = `
                         <div class="flex items-center gap-4 min-w-0">
@@ -8758,7 +9081,7 @@ socket.on('notifications list', (notifications) => {
         notifDiv.className = `p-2 text-sm rounded-md hover:bg-white/10 cursor-pointer ${!notif.read ? 'bg-blue-500/20' : ''}`;
         
         if (notif.type === 'gift_rank') {
-            notifDiv.setAttribute('onclick', `showUserProfileModal('${currentUser.name}')`);
+            notifDiv.setAttribute('onclick', `openInventoryModal()`);
         } else {
             notifDiv.setAttribute('onclick', `goToPost(${notif.postId})`);
         }
@@ -8773,7 +9096,7 @@ socket.on('notifications list', (notifications) => {
         } else if (notif.type === 'new_post') {
             text = `✍️ نشر <strong class="text-white">${notif.senderUsername}</strong> منشوراً جديداً.`;
         } else if (notif.type === 'gift_rank') {
-            text = `🎁 أهداك <strong class="text-white">${notif.senderUsername}</strong> رتبة جديدة!`;
+            text = `🎁 أرسل لك <strong class="text-white">${notif.senderUsername}</strong> هدية جديدة!`;
         }
 
         notifDiv.innerHTML = `<p class="text-slate-300">${text}</p>`;
@@ -9706,9 +10029,31 @@ openPrivateChat = function(username) {
 };
 
 // --- دوال غرفة التحكم (Control Panel) ---
+function switchControlPanelSection(sectionId) {
+    // إخفاء جميع الأقسام
+    document.querySelectorAll('.control-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    
+    // إلغاء تفعيل جميع الأزرار
+    document.querySelectorAll('.control-panel-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // إظهار القسم المطلوب وتفعيل الزر الخاص به
+    const activeSection = document.getElementById(`controlSection-${sectionId}`);
+    const activeBtn = document.getElementById(`btn-control-${sectionId}`);
+    
+    if (activeSection) activeSection.classList.add('active');
+    if (activeBtn) activeBtn.classList.add('active');
+}
+
 function openControlPanel() {
     const modal = document.getElementById('controlPanelModal');
     modal.classList.add('show');
+    
+    // العودة إلى قسم الإحصائيات عند الفتح
+    switchControlPanelSection('stats');
     
     // طلب الإحصائيات
     socket.emit('get control stats', { currentUser });
@@ -12170,6 +12515,10 @@ socket.on('join error', (error) => {
         });
 
         function getInventoryIcon(type, value) {
+            if (type === 'rank') {
+                const rankInfo = ranks[value];
+                return rankInfo ? getRankIconHtml(rankInfo.icon, "text-2xl") : '🏆';
+            }
             if (type === 'avatarFrame') return '🖼️';
             if (type === 'nameColor') return '🎨';
             if (type === 'nameBackground') return '🖼️';
@@ -12187,6 +12536,14 @@ socket.on('join error', (error) => {
             if (!btn) return;
 
             const itemType = btn.getAttribute('data-type');
+            
+            // معالجة الرتب (تفعيل لمرة واحدة)
+            if (itemType === 'rank') {
+                showLoading('جاري تفعيل الرتبة...');
+                socket.emit('equip item', { inventoryId, currentUser });
+                return;
+            }
+
             const willEquip = !isCurrentlyEquipped;
 
             // تحديث لحظي للواجهة (Optimistic UI)
@@ -12219,6 +12576,13 @@ socket.on('join error', (error) => {
 
         socket.on('equip success', (data) => {
             showNotification(data.message, 'success');
+            
+            // إذا طلبت الاستجابة إعادة تحميل الصفحة (مثل حالة تفعيل الرتب)
+            if (data.reload) {
+                setTimeout(() => location.reload(), 1500);
+                return;
+            }
+
             // تحديث البيانات في الخلفية دون إعادة رسم الواجهة بالكامل إذا كانت مفتوحة
             if (currentUser) {
                 const isInventoryModalOpen = document.getElementById('inventoryModal')?.classList.contains('show');
