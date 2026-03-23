@@ -2757,8 +2757,6 @@ socket.on('send private image', async (data) => {
     gender: userData.gender,
     socketId: socket.id,
     sessionId: sessionId,
-    email: email || null,
-    emailVerified: false,
     nameColor: null,
     nameBackground: null,
     avatarFrame: null,
@@ -4622,8 +4620,6 @@ socket.on('leave room', async (data) => {
         status: userData ? userData.status : null,
         country: userData ? userData.country : null,
         age: userData ? userData.age : null,
-        email: userData ? userData.email : null,
-        emailVerified: userData ? userData.emailVerified : false,
         rankExpiry: userRankExpiry[username] || null, // إرسال تاريخ انتهاء الرتبة
         interactionScore: pointsData.interactionScore || 0, // درجة التفاعل
         xp: pointsData.xp || 0, // نقاط الخبرة
