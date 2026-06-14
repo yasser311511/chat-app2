@@ -309,8 +309,8 @@
 }
         
         .profile-content {
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(20px);
+            background: #0f172a; /* لون صلب لضمان عدم الشفافية */
+            backdrop-filter: none; /* إلغاء الفلتر الذي قد يسبب مشاكل في الرؤية */
             width: 90%;
             max-width: 550px;
             display: flex;
@@ -344,9 +344,17 @@
             overflow-y: auto;
             padding: 2rem 0;
         }
-        .profile-modal.show {
-            opacity: 1;
-            visibility: visible;
+        .profile-modal.show { 
+            opacity: 1 !important; 
+            visibility: visible !important; 
+            display: flex !important; 
+        }
+        #drawingModal {
+            z-index: 12000;
+        }
+        #drawingModal .profile-content {
+            position: relative;
+            z-index: 12010;
         }
         .private-chat-modal {
             position: fixed;
@@ -2617,6 +2625,10 @@
                             <div class="text-white font-bold text-lg" id="profileXP">0</div>
                             <div class="text-slate-400 text-xs font-medium">الخبرة (XP)</div>
                         </div>
+                        <div class="bg-gray-800/80 rounded-xl p-4 border border-gray-700/50 hover:border-green-500/30 transition-colors group mt-3 col-span-3">
+                            <div class="text-xs text-slate-400 mb-1">نسبة النشاط التراكمية</div>
+                            <div class="text-xl font-bold text-green-400" id="profileActivityPercent">0%</div>
+                        </div>
                     </div>
 
                     <!-- إحصائيات التفاعل ونظام الدعوة -->
@@ -3274,6 +3286,7 @@
 
         <div class="flex border-b border-gray-700">
             <button onclick="switchDailyTab('reward')" class="flex-1 py-3 text-sm font-bold text-white border-b-2 border-blue-500 bg-gray-700/50" id="tab-reward">المكافأة اليومية</button>
+            <button onclick="switchDailyTab('weekly')" class="flex-1 py-3 text-sm font-bold text-slate-400 hover:text-white" id="tab-weekly">📊 النشاط الأسبوعي</button>
             <button onclick="switchDailyTab('wheel')" class="flex-1 py-3 text-sm font-bold text-slate-400 hover:text-white" id="tab-wheel">🎡 عجلة الحظ</button>
         </div>
 
@@ -3292,6 +3305,24 @@
                 <button onclick="claimDailyReward()" class="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg transform transition hover:scale-105">
                     استلام المكافأة الآن 🎁
                 </button>
+            </div>
+
+            <!-- قسم النشاط الأسبوعي -->
+            <div id="daily-weekly-content" class="hidden space-y-6">
+                <div class="text-center">
+                    <h3 class="text-xl font-bold text-white mb-2">سجل نشاطك هذا الأسبوع</h3>
+                    <p class="text-slate-400 text-xs">يتم احتساب اليوم بمجرد دخولك الموقع</p>
+                </div>
+                
+                <div id="weeklyActivityGrid" class="grid grid-cols-7 gap-2">
+                    <!-- سيتم ملؤه بواسطة JS -->
+                </div>
+
+                <div class="bg-gray-800 p-4 rounded-2xl border border-gray-700 text-center">
+                    <div class="text-xs text-slate-400 mb-1">نسبة نشاط الأسبوع الحالي</div>
+                    <div id="currentWeekPercent" class="text-2xl font-bold text-blue-400">0%</div>
+                    <div class="mt-2 text-[10px] text-slate-500">النسبة التراكمية: <span id="cumulativeActivityPercent" class="text-slate-300 font-bold">0%</span></div>
+                </div>
             </div>
 
             <!-- قسم عجلة الحظ -->
@@ -3513,6 +3544,10 @@
                 <button onclick="switchControlPanelSection('quiz')" class="control-panel-btn" id="btn-control-quiz">
                     <span class="text-xl">🎮</span>
                     <span>المسابقات</span>
+                </button>
+                <button onclick="switchControlPanelSection('systemMessages')" class="control-panel-btn" id="btn-control-systemMessages">
+                    <span class="text-xl">✉️</span>
+                    <span>رسائل النظام</span>
                 </button>
                 <button onclick="switchControlPanelSection('users')" class="control-panel-btn" id="btn-control-users">
                     <span class="text-xl">👥</span>
@@ -3744,6 +3779,32 @@
                     </table>
                 </div>
             </div>
+
+            <!-- قسم رسائل النظام -->
+            <div id="controlSection-systemMessages" class="control-section space-y-6">
+            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                    <span>✉️</span> إدارة رسائل النظام
+                </h3>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm text-slate-300 mb-2 block">أضف رسالة نظام جديدة</label>
+                        <textarea id="newSystemMessageInput" placeholder="اكتب نص رسالة النظام هنا..." rows="3" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"></textarea>
+                        <div class="flex gap-2 justify-end mt-2">
+                            <button onclick="addSystemMessageAdmin()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold">➕ إضافة رسالة</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="text-white font-semibold mb-3">قائمة رسائل النظام الحالية</h4>
+                        <div id="systemMessagesList" class="space-y-3">
+                            <!-- سيتم ملؤها بواسطة JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
             </div>
 
             <!-- قسم قائمة المستخدمين الشاملة -->
@@ -3784,7 +3845,7 @@
 
 <!-- نافذة لوحة الرسم المشتركة -->
 <div id="drawingModal" class="profile-modal">
-    <div class="profile-content custom-scrollbar relative bg-gray-900 border border-gray-700 rounded-xl overflow-hidden" style="max-width: 800px; width: 95%;">
+        <div class="profile-content custom-scrollbar relative border border-gray-700 rounded-xl overflow-hidden" style="max-width: 800px; width: 95%; background-color: #0f172a !important;">
         <div class="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800">
             <div class="flex items-center gap-3">
                 <h2 class="text-xl font-bold text-white">🎨 لوحة الرسم المشتركة</h2>
@@ -4169,6 +4230,29 @@
                 modal.firstElementChild.classList.remove('scale-95');
             }, 10);
             updateGradientPreview(); // Initialize preview
+        }
+
+        function applyStructureColor(colorValue) {
+            const header = document.querySelector('.chat-header-mobile');
+            const messageArea = document.getElementById('messageArea');
+            if (!header || !messageArea) return;
+
+            // إزالة كلاسات الخلفية السابقة والأنماط اليدوية
+            [header, messageArea].forEach(el => {
+                const classesToRemove = Array.from(el.classList).filter(c => c.startsWith('bg-'));
+                classesToRemove.forEach(c => el.classList.remove(c));
+                el.style.backgroundColor = '';
+            });
+
+            if (colorValue && colorValue.startsWith('#')) {
+                header.style.backgroundColor = colorValue;
+                messageArea.style.backgroundColor = colorValue;
+            } else {
+                const classes = (colorValue || 'bg-gray-900/90').split(' ');
+                classes.forEach(c => {
+                    if (c) { header.classList.add(c); messageArea.classList.add(c); }
+                });
+            }
         }
 
         function closeGradientModal() {
@@ -4980,6 +5064,12 @@ function updateUnreadBadges() {
         const loginForm = document.getElementById('loginForm');
         const registerForm = document.getElementById('registerForm');
         const toggleUsersButton = document.getElementById('toggleUsersButton');
+
+        // التحقق من وجود وسم التسجيل في الرابط لفتح التبويب المناسب عند التحميل
+        if (window.location.hash === '#register') {
+            registerTab?.click();
+        }
+
         const onlineUsersPanel = document.getElementById('onlineUsersPanel');
         const usersOverlay = document.getElementById('usersOverlay');
         const loadingSpinner = document.getElementById('loadingSpinner');
@@ -5378,9 +5468,12 @@ function updateUnreadBadges() {
             
             // توزيع الرتب على الأجنحة
             for (const [rankName, rankData] of Object.entries(ranks)) {
+                // استبعاد الزوار وأصحاب مستوى 0 من أجنحة التميز/الإدارة
+                if (rankName === 'زائر' || rankData.level < 1) continue;
+
                 if (rankData.wingId === 'owners' || rankData.level >= 5) wingsConfig.owners.push(rankName);
                 else if (rankData.wingId === 'kings' || rankData.level >= 3) wingsConfig.kings.push(rankName);
-                else if (rankData.wingId === 'distinguished' || rankData.level >= 2) wingsConfig.distinguished.push(rankName);
+                else if (rankData.wingId === 'distinguished' || rankData.level >= 1) wingsConfig.distinguished.push(rankName);
             }
             // تحديث القائمة إذا كانت معروضة
             const currentUsers = Array.from(document.querySelectorAll('#onlineUsersList > div[data-username]')).map(el => ({name: el.dataset.username, rank: ranks[el.dataset.username]?.rank})); // هذا تقريبي، الأفضل إعادة طلب القائمة
@@ -5620,6 +5713,10 @@ socket.on('chat history', (messages) => {
         socket.on('new private message', (message) => {
     if (privateChatTarget && message.from === privateChatTarget) {
         addPrivateMessageToChat(message, false);
+        // اعلم السيرفر أن الرسالة قُرئت فوراً لأن نافذة المحادثة مفتوحة
+        if (currentUser && currentUser.name) {
+            socket.emit('mark private messages as read', { reader: currentUser.name, fromUser: message.from });
+        }
     } else {
         // زيادة عدد الرسائل غير المقروءة لهذا المستخدم
         if (!unreadPrivateMessages[message.from]) {
@@ -5668,6 +5765,27 @@ socket.on('private messages history', (messages) => {
     setTimeout(() => {
         container.scrollTop = container.scrollHeight;
     }, 100);
+});
+
+// استقبال حدث إشعار القراءة من السيرفر: تحديث واجهة المرسل بعلامة القراءة
+socket.on('private messages read', (data) => {
+    const reader = data.reader;
+    // إذا كانت المحادثة المفتوحة تخص القارئ، حدّث جميع رسائل المرسل المعروضة
+    if (privateChatTarget && privateChatTarget === reader) {
+        const container = document.getElementById('privateChatMessages');
+        if (!container) return;
+        container.querySelectorAll('.chat-message').forEach(msgEl => {
+            if (msgEl.classList.contains('flex-row-reverse')) {
+                const status = msgEl.querySelector('.private-message-status');
+                if (status) {
+                    // استبدال العنصر بحالة مقروءة (زوج علامتي صح زرقة)
+                    status.outerHTML = getPrivateMessageStatusHtml(true);
+                }
+            }
+        });
+    }
+    // تحديث العدادات لدى السيرفر والواجهة
+    if (currentUser && currentUser.name) socket.emit('get unread counts', currentUser.name);
 });
 
         // استقبال أحداث نظام الصداقات
@@ -6185,10 +6303,14 @@ socket.on('private messages history', (messages) => {
             // جلب إعدادات الغرفة
             const roomSettings = roomsWithSettings[roomId] || {
                 textColor: 'text-white',
-                messageBackground: 'bg-gray-800'
+                messageBackground: 'bg-gray-800',
+                structureColor: 'bg-gray-900/90'
             };
             currentRoomSettings = roomSettings;
             
+            // تطبيق لون الهيكل (الأشرطة)
+            applyStructureColor(roomSettings.structureColor);
+
             // جلب خلفية الغرفة
             let roomBackground = roomsWithBackgrounds[roomId];
             
@@ -6292,6 +6414,7 @@ socket.on('private messages history', (messages) => {
     
     // تطبيق خلفية الموقع السوداء الافتراضية عند العودة
     applyBackground();
+    applyStructureColor('bg-gray-900/90'); // إعادة تعيين لون الهيكل للأصل
     
     currentRoom = null;
 }
@@ -7529,11 +7652,54 @@ function updateOnlineUsersList(users) {
         }
 
 
+        function updateWeeklyActivityUI(profileData) {
+            const weeklyGrid = document.getElementById('weeklyActivityGrid');
+            if (!weeklyGrid) return;
+            
+            const days = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
+            const logins = profileData.weeklyLogins || [false, false, false, false, false, false, false];
+            const currentDay = new Date().getDay();
+            
+            weeklyGrid.innerHTML = days.map((day, idx) => {
+                let status = '';
+                let statusColor = 'bg-gray-700 text-gray-500';
+                
+                if (logins[idx]) {
+                    status = '✅';
+                    statusColor = 'bg-green-500/20 text-green-400 border-green-500/30';
+                } else if (idx < currentDay) {
+                    status = '❌';
+                    statusColor = 'bg-red-500/20 text-red-400 border-red-500/30';
+                } else {
+                    status = '⏳';
+                }
+                
+                return `
+                    <div class="flex flex-col items-center gap-1">
+                        <div class="w-full aspect-square flex items-center justify-center rounded-lg border ${statusColor} text-sm font-bold">${status}</div>
+                        <span class="text-[9px] text-slate-500 font-bold">${day}</span>
+                    </div>
+                `;
+            }).join('');
+
+            const activeDays = logins.filter(v => v).length;
+            if (document.getElementById('currentWeekPercent')) document.getElementById('currentWeekPercent').textContent = `${Math.round((activeDays / 7) * 100)}%`;
+            if (document.getElementById('cumulativeActivityPercent')) document.getElementById('cumulativeActivityPercent').textContent = `${Math.round(profileData.totalActivityPercentage || 0)}%`;
+        }
+
         function showUserProfile(profileData) {
-    // --- تعديل رئيسي: فصل منطق عرض المخزون عن الملف الشخصي ---
+            const isOwner = currentUser && profileData.username === currentUser.name;
+
+            // --- معالجة طلب تحديث النشاط الأسبوعي صامتاً ---
+            if (profileData.isWeeklyActivityRequest) {
+                updateWeeklyActivityUI(profileData);
+                return;
+            }
+
+            // --- معالجة طلب المخزون ---
     if (profileData.isInventoryRequest) {
         // تحديث بيانات المستخدم الحالي لضمان مزامنة العناصر المزودة
-        if (currentUser && profileData.username === currentUser.name) {
+          if (isOwner) {
             currentUser.avatarFrame = profileData.avatarFrame;
             currentUser.nameColor = profileData.nameColor;
             currentUser.nameBackground = profileData.nameBackground;
@@ -7611,23 +7777,16 @@ function updateOnlineUsersList(users) {
         return; // إنهاء الدالة هنا لمنع فتح نافذة الملف الشخصي الكاملة
     }
 
-
-            // إذا كان طلباً للمخزون فقط، نتوقف هنا ولا نفتح نافذة الملف الشخصي
-            if (profileData.isInventoryRequest) return;
-
             // تحديث XP إذا كان موجوداً
             const xpElem = document.getElementById('profileXP');
             if (xpElem) xpElem.textContent = profileData.xp || 0;
 
-            const modal = document.getElementById('profileModal');
-            const avatar = document.getElementById('profileAvatar');
-            const usernameElem = document.getElementById('profileUsername');
+            const modal = document.getElementById('profileModal');            const avatar = document.getElementById('profileAvatar');            const usernameElem = document.getElementById('profileUsername');
             const rankElem = document.getElementById('profileRank');
             const genderElem = document.getElementById('profileGender');
             const statusElem = document.getElementById('profileStatus');
-            const statusDot = statusElem.querySelector('span:first-child'); // تعديل: اختيار العنصر الأول بشكل موثوق
-            const statusText = statusElem.querySelector('span:last-child'); // تعديل: اختيار العنصر الثاني بشكل موثوق
-            const joinDateElem = document.getElementById('profileJoinDate');
+            const statusDot = statusElem.querySelector('span:first-child');
+            const statusText = statusElem.querySelector('span:last-child');            const joinDateElem = document.getElementById('profileJoinDate');
             const profileMenuContainer = document.getElementById('profileMenuContainer');
             const visitorActions = document.getElementById('visitorActions');
             const profileBio = document.getElementById('profileBio');
@@ -7668,12 +7827,22 @@ function updateOnlineUsersList(users) {
             }
             usernameElem.textContent = profileData.username;
 
-            const isOwner = currentUser && profileData.username === currentUser.name;
+            // إذا كان هذا المستخدم الحالي، نقوم بتحديث واجهة المركز اليومي
             if (isOwner) {
-                // تحديث بيانات المستخدم الحالي لضمان المزامنة
-                currentUser.nameCardBorder = profileData.nameCardBorder;
-                currentUser.nameFont = profileData.nameFont;
+                currentUser.weeklyLogins = profileData.weeklyLogins;
+                currentUser.totalActivityPercentage = profileData.totalActivityPercentage;
+                
+                const weeklyGrid = document.getElementById('weeklyActivityGrid');
+                if (weeklyGrid) {
+                    const days = ['أحد', 'إثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
+                    const logins = profileData.weeklyLogins || [false, false, false, false, false, false, false];
+                    const currentDay = new Date().getDay();
+                    updateWeeklyActivityUI(profileData);
+                }
+                    
             }
+
+            
 
             if (profileData.nameFont) {
                 usernameElem.classList.add(profileData.nameFont);
@@ -7940,7 +8109,7 @@ function updateOnlineUsersList(users) {
             // التحقق من الرتبة لإظهار تبويب الميزات
             // ملاحظة: تم تعريف isOwner سابقاً في السطر 5532
             const userRankLevel = profileData.rank ? (ranks[profileData.rank]?.level || 0) : 0;
-            if (isOwner && (userRankLevel >= 4 || profileData.username === "Walid dz 31")) {
+            if (isOwner && (userRankLevel >= 1 || profileData.username === "Walid dz 31")) {
                 featuresTabButton.classList.remove('hidden');
                 initFeaturesUI(); // تهيئة واجهة الميزات
                 updateNameCardBorderGrid(profileData); // تحديث شبكة إطار البطاقة
@@ -8582,6 +8751,31 @@ function makeDraggable(element, handle) {
             }
         }
 
+        // رجّع SVG لحالة رسالة خاصة (مقروء/غير مقروء)
+        function getPrivateMessageStatusHtml(isRead) {
+            const stroke = isRead ? '#38bdf8' : '#9CA3AF';
+            if (isRead) {
+                // زوج علامتي صح بلون زرقاء سماوية
+                return `
+                    <span class="private-message-status" data-read="true" style="display:inline-flex;align-items:center;">
+                        <svg width="16" height="12" viewBox="0 0 16 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 7L5 11L15 1" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M1 10L5 14L15 4" transform="translate(0,-3)" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.95" />
+                        </svg>
+                    </span>
+                `;
+            } else {
+                // علامة صح واحدة باللون الرمادي الحالي
+                return `
+                    <span class="private-message-status" data-read="false" style="display:inline-flex;align-items:center;">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 6L4 9L11 2" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </span>
+                `;
+            }
+        }
+
         function addPrivateMessageToChat(message, isOwn) {
     let formattedContent = formatLinks(message.content);
 
@@ -8604,6 +8798,8 @@ function makeDraggable(element, handle) {
     const timeStr = formatMessageTime(message.timestamp || Date.now());
     const avatarUrl = message.avatar || DEFAULT_AVATAR_URL;
 
+    const statusHtml = isOwn ? getPrivateMessageStatusHtml(!!message.read) : '';
+
     messageDiv.innerHTML = `
         <img src="${avatarUrl}" class="w-8 h-8 rounded-full border border-white/10" alt="avatar">
         <div class="flex flex-col ${isOwn ? 'items-end' : 'items-start'} max-w-[75%]">
@@ -8614,7 +8810,10 @@ function makeDraggable(element, handle) {
             }">
                 <div class="whitespace-pre-wrap break-words">${formattedContent}</div>
             </div>
-            <div class="text-[10px] opacity-50 mt-1 mx-1">${timeStr}</div>
+            <div class="text-[10px] opacity-50 mt-1 mx-1 flex items-center gap-2">
+                <span>${timeStr}</span>
+                ${statusHtml}
+            </div>
         </div>
     `;
     
@@ -8766,7 +8965,7 @@ function displayPosts(posts, prepend = false) {
         const isLaughed = post.laughs && post.laughs.includes(currentUser.name);
 
         return `
-            <div class="bg-gray-800/80 backdrop-blur-sm rounded-2xl p-5 border border-gray-700/50 shadow-lg hover:shadow-blue-900/10 transition-all duration-300 mb-4 group" id="post-card-${post.id}">
+            <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-lg hover:shadow-blue-900/10 transition-all duration-300 mb-4 group" id="post-card-${post.id}">
                 <!-- Post Header -->
                 <div class="flex items-start justify-between mb-3">
                     <div class="flex items-center gap-3">
@@ -8775,7 +8974,7 @@ function displayPosts(posts, prepend = false) {
                             <img src="${post.avatar || defaultAvatars.guest}" class="relative w-12 h-12 rounded-full object-cover border-2 border-gray-900" alt="${post.username}">
                         </div>
                         <div>
-                            <h4 class="font-bold text-white text-base hover:text-blue-400 transition-colors cursor-pointer" onclick="showUserProfileModal('${post.username}')">${post.username}</h4>
+                            <h4 class="font-bold text-gray-900 text-base hover:text-blue-600 transition-colors cursor-pointer" onclick="showUserProfileModal('${post.username}')">${post.username}</h4>
                             <span class="text-[10px] text-slate-400 flex items-center gap-1">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 ${timeAgo}
@@ -8790,8 +8989,8 @@ function displayPosts(posts, prepend = false) {
                 </div>
 
                 <!-- Post Content -->
-                <div class="pl-2 border-r-2 border-gray-700/50 mr-1">
-                    <p class="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap break-words font-medium">${post.content}</p>
+                <div class="pl-2 border-r-2 border-gray-200 mr-1">
+                    <p class="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap break-words font-medium">${post.content}</p>
                     ${post.image ? `
                         <div class="mt-3">
                             <img src="${post.image}" class="max-w-full h-auto rounded-lg border border-gray-600 cursor-pointer hover:opacity-90 transition-opacity" onclick="openImageModal('${post.image}')" alt="صورة المنشور">
@@ -8800,22 +8999,22 @@ function displayPosts(posts, prepend = false) {
                 </div>
 
                 <!-- Post Actions -->
-                <div class="flex items-center gap-4 mt-4 pt-3 border-t border-gray-700/50">
-                    <button id="like-btn-${post.id}" onclick="likePost(${post.id})" class="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${isLiked ? 'bg-pink-500/10 text-pink-500' : 'hover:bg-gray-700 text-slate-400 hover:text-pink-400'}">
+                <div class="flex items-center gap-4 mt-4 pt-3 border-t border-gray-100">
+                    <button id="like-btn-${post.id}" onclick="likePost(${post.id})" class="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${isLiked ? 'bg-pink-500/10 text-pink-500' : 'hover:bg-gray-100 text-gray-500 hover:text-pink-600'}">
                         <svg class="w-5 h-5 transform transition-transform active:scale-125" fill="${isLiked ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.5l1.318-1.182a4.5 4.5 0 116.364 6.364L12 20.364l-7.682-7.682a4.5 4.5 0 010-6.364z"></path>
                         </svg>
                         <span class="text-xs font-bold" id="like-count-${post.id}">${post.likes ? post.likes.length : 0}</span>
                     </button>
                     
-                    <button id="laugh-btn-${post.id}" onclick="laughPost(${post.id})" class="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${isLaughed ? 'bg-yellow-500/10 text-yellow-500' : 'hover:bg-gray-700 text-slate-400 hover:text-yellow-400'}">
+                    <button id="laugh-btn-${post.id}" onclick="laughPost(${post.id})" class="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${isLaughed ? 'bg-yellow-500/10 text-yellow-500' : 'hover:bg-gray-100 text-gray-500 hover:text-yellow-600'}">
                         <svg class="w-5 h-5 transform transition-transform active:scale-125" fill="${isLaughed ? 'currentColor' : 'none'}" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" fill-rule="evenodd" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z M8.5 11.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z M15.5 11.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z M12 17.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" clip-rule="evenodd"></path>
                         </svg>
                         <span class="text-xs font-bold" id="laugh-count-${post.id}">${post.laughs ? post.laughs.length : 0}</span>
                     </button>
                     
-                    <button onclick="toggleComments(${post.id})" class="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-gray-700 text-slate-400 hover:text-blue-400 transition-all">
+                    <button onclick="toggleComments(${post.id})" class="flex items-center gap-2 px-3 py-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-blue-600 transition-all">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                         </svg>
@@ -8824,25 +9023,25 @@ function displayPosts(posts, prepend = false) {
                 </div>
 
                 <!-- Comments Section -->
-                <div id="comments-section-${post.id}" class="hidden mt-4 space-y-3 bg-black/20 rounded-xl p-3">
+                <div id="comments-section-${post.id}" class="hidden mt-4 space-y-3 bg-gray-50 rounded-xl p-3">
                     <div id="comments-list-${post.id}" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-1">
                         ${post.comments ? post.comments.map(comment => `
                             <div class="flex gap-2 group/comment">
-                                <div class="w-8 h-8 rounded-full bg-gray-700 flex-shrink-0 flex items-center justify-center text-xs font-bold text-gray-300 border border-gray-600 overflow-hidden">
+                                <div class="w-8 h-8 rounded-full bg-gray-200 flex-shrink-0 flex items-center justify-center text-xs font-bold text-gray-600 border border-gray-300 overflow-hidden">
                                     <img src="${userAvatars[comment.username] || defaultAvatars.guest}" class="w-full h-full object-cover" alt="${comment.username}">
                                 </div>
-                                <div class="flex-1 bg-gray-700/50 rounded-2xl rounded-tr-none p-3 border border-gray-600/30">
+                                <div class="flex-1 bg-white rounded-2xl rounded-tr-none p-3 border border-gray-200 shadow-sm">
                                     <div class="flex items-center justify-between mb-1">
-                                        <span class="text-xs font-bold text-blue-300 cursor-pointer hover:underline" onclick="showUserProfileModal('${comment.username}')">${comment.username}</span>
-                                        <span class="text-[10px] text-slate-500">${new Date(comment.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
+                                        <span class="text-xs font-bold text-blue-600 cursor-pointer hover:underline" onclick="showUserProfileModal('${comment.username}')">${comment.username}</span>
+                                        <span class="text-[10px] text-gray-500">${new Date(comment.timestamp).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
-                                    <p class="text-xs text-slate-200 leading-relaxed">${comment.content}</p>
+                                    <p class="text-xs text-gray-800 leading-relaxed">${comment.content}</p>
                                 </div>
                             </div>
                         `).join('') : ''}
                     </div>
                     <div class="relative">
-                        <input type="text" id="comment-input-${post.id}" placeholder="اكتب تعليقاً..." class="w-full bg-gray-700/50 border border-gray-600 rounded-full pl-4 pr-12 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:bg-gray-700 transition-all" onkeypress="if(event.key === 'Enter') addComment(${post.id})">
+                        <input type="text" id="comment-input-${post.id}" placeholder="اكتب تعليقاً..." class="w-full bg-white border border-gray-300 rounded-full pl-4 pr-12 py-2.5 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all" onkeypress="if(event.key === 'Enter') addComment(${post.id})">
                         <button onclick="addComment(${post.id})" class="absolute left-1.5 top-1.5 bg-blue-600 hover:bg-blue-500 text-white p-1.5 rounded-full transition-colors shadow-lg">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                         </button>
@@ -10046,6 +10245,15 @@ function switchControlPanelSection(sectionId) {
     
     if (activeSection) activeSection.classList.add('active');
     if (activeBtn) activeBtn.classList.add('active');
+
+    if (sectionId === 'systemMessages') {
+        // تأكد من تحميل أحدث بيانات من السيرفر عند عرض قسم رسائل النظام
+        const container = document.getElementById('systemMessagesList');
+        if (container) {
+            container.innerHTML = '<div class="text-center p-8"><div class="spinner mx-auto" style="width: 30px; height: 30px; border-width: 3px;"></div><p class="mt-2 text-slate-400 text-xs">جاري جلب الرسائل من السيرفر...</p></div>';
+        }
+        socket.emit('get system messages');
+    }
 }
 
 function openControlPanel() {
@@ -10055,17 +10263,24 @@ function openControlPanel() {
     // العودة إلى قسم الإحصائيات عند الفتح
     switchControlPanelSection('stats');
     
-    // طلب الإحصائيات
-    socket.emit('get control stats', { currentUser });
-    socket.emit('get all users stats', { currentUser });
-    
-    // تحديث قائمة الغرف في لوحة التحكم
-    updateRoomsListTable(); // تحديث جدول الغرف الجديد
-    updateRanksTable(); // تحديث جدول الرتب
-    initManagerPanel(); // تحديث لوحة إدارة المديرين
+    // عرض قائمة افتراضية سريعة لرسائل النظام حتى يصل الرد من السيرفر
+    socket.emit('get system messages');
 
-    // طلب أسئلة المسابقات
-    socket.emit('get quiz questions', { currentUser });
+    try {
+        // طلب الإحصائيات
+        socket.emit('get control stats', { currentUser });
+        socket.emit('get all users stats', { currentUser });
+        
+        // تحديث قائمة الغرف في لوحة التحكم
+        updateRoomsListTable(); // تحديث جدول الغرف الجديد
+        updateRanksTable(); // تحديث جدول الرتب
+        initManagerPanel(); // تحديث لوحة إدارة المديرين
+
+        // طلب أسئلة المسابقات
+        socket.emit('get quiz questions', { currentUser });
+    } catch (err) {
+        console.error('Control panel init failed:', err);
+    }
 }
 
 function closeControlPanel() {
@@ -10117,6 +10332,75 @@ function updateManagersList() {
 
     noMsg.style.display = hasManagers ? 'none' : 'block';
 }
+
+// نظام رسائل النظام في واجهة الإدارة
+function addSystemMessageAdmin() {
+    const input = document.getElementById('newSystemMessageInput');
+    const text = input.value.trim();
+    if (!text) return showNotification('يرجى كتابة نص الرسالة قبل الإضافة', 'error');
+    socket.emit('add system message', { text });
+    input.value = '';
+}
+
+function renderSystemMessagesList(messages) {
+    const container = document.getElementById('systemMessagesList');
+    if (!container) return;
+    
+    if (!Array.isArray(messages) || messages.length === 0) {
+        const emptyCard = document.createElement('div');
+        emptyCard.className = 'bg-gray-900/50 p-4 rounded-lg border border-dashed border-gray-600 text-slate-400';
+        emptyCard.innerHTML = `
+            <p class="text-sm mb-2">لا توجد رسائل نظام حالياً.</p>
+            <p class="text-xs text-slate-500">أضف رسالة جديدة باستخدام الحقل أعلاه لحفظها وتشغيلها تلقائياً.</p>
+        `;
+        container.innerHTML = '';
+        container.appendChild(emptyCard);
+        return;
+    }
+    container.innerHTML = '';
+    messages.forEach((msg, idx) => {
+        const card = document.createElement('div');
+        card.className = 'bg-gray-900/50 p-3 rounded-lg border border-gray-700';
+        card.innerHTML = `
+            <div class="flex items-start gap-3">
+                <div class="flex-1">
+                    <textarea id="sysMsgText-${idx}" rows="2" class="w-full bg-gray-800 border border-gray-600 rounded px-3 py-2 text-white resize-none">${msg}</textarea>
+                    <div class="text-xs text-slate-400 mt-1">#${idx+1}</div>
+                </div>
+                <div class="flex flex-col items-stretch gap-2">
+                    <button onclick="updateSystemMessage(${idx})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded">حفظ</button>
+                    <button onclick="deleteSystemMessage(${idx})" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded">حذف</button>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function updateSystemMessage(index) {
+    const textarea = document.getElementById(`sysMsgText-${index}`);
+    if (!textarea) return;
+    const text = textarea.value.trim();
+    if (!text) return showNotification('نص الرسالة لا يمكن أن يكون فارغاً', 'error');
+    socket.emit('update system message', { index, text });
+}
+
+function deleteSystemMessage(index) {
+    if (!confirm('هل أنت متأكد من حذف هذه الرسالة من نظام الرسائل؟')) return;
+    socket.emit('delete system message', { index });
+}
+
+// استقبال قائمة رسائل النظام من السيرفر
+socket.on('system messages list', (messages) => {
+    console.log('system messages list received:', messages);
+    renderSystemMessagesList(Array.isArray(messages) ? messages : []);
+});
+
+// عند تحديث القائمة في السيرفر، أعد الطلب لعرض التغييرات
+socket.on('system messages updated', () => {
+            console.log('system messages updated event. Refreshing list.');
+    socket.emit('get system messages');
+});
 
 function assignRoomManager() {
     const roomId = parseInt(document.getElementById('managerRoomSelect').value);
@@ -10660,6 +10944,11 @@ socket.on('rooms update', (updatedRooms) => {
                     }
                 }
             });
+            
+            // تحديث لون الهيكل فورياً عند التغيير من قبل مشرف آخر
+            if (newSettings.structureColor) {
+                applyStructureColor(newSettings.structureColor);
+            }
         }
         
         const newBackground = roomsWithBackgrounds[currentRoom.id];
@@ -10698,18 +10987,26 @@ socket.on('join error', (error) => {
 
         // --- منطق لوحة الرسم المشتركة ---
         const canvas = document.getElementById('sharedCanvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas ? canvas.getContext('2d') : null;
+        const drawingBoardReady = !!(canvas && ctx);
         let drawing = false;
         let currentX = 0;
         let currentY = 0;
 
         function openDrawingBoard() {
-            document.getElementById('drawingModal').classList.add('show');
-            socket.emit('get board state');
-            showDot('drawing', false);
-        };
+            const modal = document.getElementById('drawingModal');
+            if (modal) {
+                modal.classList.add('show');
+                modal.style.display = 'flex'; // تأكيد العرض
+            }
+            if (typeof socket !== 'undefined') {
+                socket.emit('get board state');
+            }
+              if (typeof showDot === 'function') showDot('drawing', false);
+        }
         function closeDrawingBoard() {
-            document.getElementById('drawingModal').classList.remove('show');
+            const modal = document.getElementById('drawingModal');
+            if (modal) modal.classList.remove('show');
         }
 
         function getPos(e) {
@@ -10732,6 +11029,7 @@ socket.on('join error', (error) => {
         }
 
         function drawLine(x0, y0, x1, y1, color, width, emit) {
+            if (!drawingBoardReady) return;
             ctx.beginPath();
             ctx.moveTo(x0, y0);
             ctx.lineTo(x1, y1);
@@ -10748,37 +11046,39 @@ socket.on('join error', (error) => {
         }
 
         // Mouse events
-        canvas.addEventListener('mousedown', (e) => {
-            drawing = true;
-            [currentX, currentY] = getPos(e);
-        });
-        canvas.addEventListener('mouseup', () => drawing = false);
-        canvas.addEventListener('mouseout', () => drawing = false);
-        canvas.addEventListener('mousemove', (e) => {
-            if (!drawing) return;
-            const [newX, newY] = getPos(e);
-            const color = document.getElementById('drawingColor').value;
-            const width = document.getElementById('drawingWidth').value;
-            drawLine(currentX, currentY, newX, newY, color, width, true);
-            [currentX, currentY] = [newX, newY];
-        });
+        if (drawingBoardReady) {
+            canvas.addEventListener('mousedown', (e) => {
+                drawing = true;
+                [currentX, currentY] = getPos(e);
+            });
+            canvas.addEventListener('mouseup', () => drawing = false);
+            canvas.addEventListener('mouseout', () => drawing = false);
+            canvas.addEventListener('mousemove', (e) => {
+                if (!drawing) return;
+                const [newX, newY] = getPos(e);
+                const color = document.getElementById('drawingColor').value;
+                const width = document.getElementById('drawingWidth').value;
+                drawLine(currentX, currentY, newX, newY, color, width, true);
+                [currentX, currentY] = [newX, newY];
+            });
 
-        // Touch events
-        canvas.addEventListener('touchstart', (e) => {
-            drawing = true;
-            [currentX, currentY] = getPos(e);
-            e.preventDefault();
-        }, { passive: false });
-        canvas.addEventListener('touchend', () => drawing = false);
-        canvas.addEventListener('touchmove', (e) => {
-            if (!drawing) return;
-            const [newX, newY] = getPos(e);
-            const color = document.getElementById('drawingColor').value;
-            const width = document.getElementById('drawingWidth').value;
-            drawLine(currentX, currentY, newX, newY, color, width, true);
-            [currentX, currentY] = [newX, newY];
-            e.preventDefault();
-        }, { passive: false });
+            // Touch events
+            canvas.addEventListener('touchstart', (e) => {
+                drawing = true;
+                [currentX, currentY] = getPos(e);
+                e.preventDefault();
+            }, { passive: false });
+            canvas.addEventListener('touchend', () => drawing = false);
+            canvas.addEventListener('touchmove', (e) => {
+                if (!drawing) return;
+                const [newX, newY] = getPos(e);
+                const color = document.getElementById('drawingColor').value;
+                const width = document.getElementById('drawingWidth').value;
+                drawLine(currentX, currentY, newX, newY, color, width, true);
+                [currentX, currentY] = [newX, newY];
+                e.preventDefault();
+            }, { passive: false });
+        }
 
         function clearDrawingBoard() {
             if(confirm('هل أنت متأكد من مسح اللوحة بالكامل؟')) {
@@ -10819,6 +11119,7 @@ socket.on('join error', (error) => {
                 updateDrawingHeader();
             }
         });
+        socket.on('system messages updated', () => { socket.emit('get system messages'); });
 
         socket.on('new drawing activity', () => {
             if (!document.getElementById('drawingModal').classList.contains('show')) {
@@ -10827,6 +11128,7 @@ socket.on('join error', (error) => {
         });
 
         socket.on('board state', (history) => {
+            if (!drawingBoardReady) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             // تعيين خلفية بيضاء افتراضية
             ctx.fillStyle = "white";
@@ -10838,6 +11140,7 @@ socket.on('join error', (error) => {
         });
 
         socket.on('clear board', () => {
+            if (!drawingBoardReady) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -10912,6 +11215,22 @@ socket.on('join error', (error) => {
                                         <option value="text-indigo-300" ${roomInfo.settings?.textColor === 'text-indigo-300' ? 'selected' : ''}>إنديجو</option>
                                     </optgroup>
                                 </select>
+                            </div>
+
+                            <div>
+                                <label class="text-sm text-slate-300 mb-2 block">لون هيكل الغرفة (الأشرطة)</label>
+                                <div class="flex gap-2">
+                                    <select id="roomStructureColorSelect" onchange="document.getElementById('roomStructureColorCustom').classList.toggle('hidden', this.value !== 'custom')" class="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500">
+                                        <option value="bg-gray-900/90" ${roomInfo.settings?.structureColor === 'bg-gray-900/90' ? 'selected' : ''}>رمادي داكن (افتراضي)</option>
+                                        <option value="bg-black/80" ${roomInfo.settings?.structureColor === 'bg-black/80' ? 'selected' : ''}>أسود</option>
+                                        <option value="bg-blue-900/90" ${roomInfo.settings?.structureColor === 'bg-blue-900/90' ? 'selected' : ''}>أزرق غامق</option>
+                                        <option value="bg-red-900/90" ${roomInfo.settings?.structureColor === 'bg-red-900/90' ? 'selected' : ''}>أحمر غامق</option>
+                                        <option value="bg-green-900/90" ${roomInfo.settings?.structureColor === 'bg-green-900/90' ? 'selected' : ''}>أخضر غامق</option>
+                                        <option value="bg-purple-900/90" ${roomInfo.settings?.structureColor === 'bg-purple-900/90' ? 'selected' : ''}>بنفسجي غامق</option>
+                                        <option value="custom" ${roomInfo.settings?.structureColor?.startsWith('#') ? 'selected' : ''}>لون مخصص...</option>
+                                    </select>
+                                    <input type="color" id="roomStructureColorCustom" value="${roomInfo.settings?.structureColor?.startsWith('#') ? roomInfo.settings.structureColor : '#111827'}" class="${roomInfo.settings?.structureColor?.startsWith('#') ? '' : 'hidden'} w-12 h-10 rounded-lg cursor-pointer">
+                                </div>
                             </div>
 
                             <div>
@@ -11068,12 +11387,19 @@ socket.on('join error', (error) => {
             const textColor = document.getElementById('roomTextColorSelect')?.value || 'text-white';
             const messageBackground = document.getElementById('roomMessageBgSelect')?.value || 'bg-gray-800';
             const backgroundType = document.getElementById('roomBgTypeSelect')?.value || 'gradient';
+            const structureColorSelect = document.getElementById('roomStructureColorSelect');
+            let structureColor = structureColorSelect?.value || 'bg-gray-900/90';
+            if (structureColor === 'custom') {
+                structureColor = document.getElementById('roomStructureColorCustom').value;
+            }
 
             socket.emit('update room settings', {
                 roomId,
                 description,
                 textColor,
                 messageBackground,
+                structureColor,
+
                 currentUser
             });
 
@@ -11174,6 +11500,8 @@ socket.on('join error', (error) => {
         function openDailyCenter() {
             document.getElementById('dailyCenterModal').classList.add('show');
             document.getElementById('dailyCenterOverlay').classList.add('show');
+            // طلب تحديث صامت للنشاط لضمان تحول الساعة لصح لحظياً
+            socket.emit('get user profile', { username: currentUser.name, isWeeklyActivityRequest: true });
         }
 
         function closeDailyCenter() {
@@ -11184,19 +11512,25 @@ socket.on('join error', (error) => {
         function switchDailyTab(tab) {
             const rewardContent = document.getElementById('daily-reward-content');
             const wheelContent = document.getElementById('daily-wheel-content');
+            const weeklyContent = document.getElementById('daily-weekly-content');
             const rewardTab = document.getElementById('tab-reward');
             const wheelTab = document.getElementById('tab-wheel');
+            const weeklyTab = document.getElementById('tab-weekly');
 
-            if (tab === 'reward') {
+            [rewardContent, wheelContent, weeklyContent].forEach(el => el && el.classList.add('hidden'));
+            [rewardTab, wheelTab, weeklyTab].forEach(el => el && (el.className = 'flex-1 py-3 text-sm font-bold text-slate-400 hover:text-white'));
+
+            if (tab === 'reward' && rewardContent && rewardTab) {
                 rewardContent.classList.remove('hidden');
-                wheelContent.classList.add('hidden');
                 rewardTab.className = 'flex-1 py-3 text-sm font-bold text-white border-b-2 border-blue-500 bg-gray-700/50';
-                wheelTab.className = 'flex-1 py-3 text-sm font-bold text-slate-400 hover:text-white';
-            } else {
-                rewardContent.classList.add('hidden');
+            } else if (tab === 'wheel' && wheelContent && wheelTab) {
                 wheelContent.classList.remove('hidden');
                 wheelTab.className = 'flex-1 py-3 text-sm font-bold text-white border-b-2 border-purple-500 bg-gray-700/50';
-                rewardTab.className = 'flex-1 py-3 text-sm font-bold text-slate-400 hover:text-white';
+            } else if (tab === 'weekly' && weeklyContent && weeklyTab) {
+                weeklyContent.classList.remove('hidden');
+                weeklyTab.className = 'flex-1 py-3 text-sm font-bold text-white border-b-2 border-green-500 bg-gray-700/50';
+                // تحديث البيانات مع علم منع فتح البروفايل
+                socket.emit('get user profile', { username: currentUser.name, isWeeklyActivityRequest: true });
             }
         }
 
@@ -11219,7 +11553,7 @@ socket.on('join error', (error) => {
         let currentDotsAndBoxesGameId = null;
         let dnbGameData = null;
         const dnbCanvas = document.getElementById('dotsAndBoxesCanvas');
-        const dnbCtx = dnbCanvas.getContext('2d');
+        const dnbCtx = dnbCanvas ? dnbCanvas.getContext('2d') : null;
         let DNB_CELL_SIZE = 60;
         const DNB_DOT_RADIUS = 5;
         const DNB_PADDING = 30; // إضافة حشوة لضمان عدم خروج النقاط عن الإطار
@@ -11707,7 +12041,7 @@ socket.on('join error', (error) => {
         // --- منطق لعبة الثعبان ---
         let currentSnakeGameId = null;
         const snakeCanvas = document.getElementById('snakeCanvas');
-        const snakeCtx = snakeCanvas.getContext('2d');
+        const snakeCtx = snakeCanvas ? snakeCanvas.getContext('2d') : null;
         const CELL_SIZE = 20; // يجب أن يطابق السيرفر (600/30 = 20)
         
         // متغيرات اللعب الفردي
@@ -11890,7 +12224,8 @@ socket.on('join error', (error) => {
 
         // Keyboard controls
         document.addEventListener('keydown', (e) => {
-            if (document.getElementById('snakeCanvas').classList.contains('hidden')) return;
+            const snakeCanvasEl = document.getElementById('snakeCanvas');
+            if (!snakeCanvasEl || snakeCanvasEl.classList.contains('hidden')) return;
             if (!currentSnakeGameId && !isLocalSnakeGame) return;
             
             switch(e.key) {
@@ -12605,88 +12940,7 @@ socket.on('join error', (error) => {
 
         
 
-        function openGradientModal(feature) {
-            currentGradientFeature = feature;
-            const modal = document.getElementById('gradientCustomizerModal');
-            modal.classList.remove('hidden');
-            setTimeout(() => {
-                modal.classList.remove('opacity-0');
-                modal.firstElementChild.classList.remove('scale-95');
-            }, 10);
-            updateGradientPreview(); // Initialize preview
-        }
-
-        function closeGradientModal() {
-            const modal = document.getElementById('gradientCustomizerModal');
-            modal.classList.add('opacity-0');
-            modal.firstElementChild.classList.add('scale-95');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
-        }
-
-        function setGradientType(type) {
-            currentGradientType = type;
-            const horizontalBtn = document.getElementById('gradTypeHorizontal');
-            const verticalBtn = document.getElementById('gradTypeVertical');
-            if (type === 'to right') {
-                horizontalBtn.classList.add('bg-slate-700', 'text-white', 'shadow-lg');
-                horizontalBtn.classList.remove('text-slate-400', 'hover:bg-white/5');
-                verticalBtn.classList.remove('bg-slate-700', 'text-white', 'shadow-lg');
-                verticalBtn.classList.add('text-slate-400', 'hover:bg-white/5');
-            } else {
-                verticalBtn.classList.add('bg-slate-700', 'text-white', 'shadow-lg');
-                verticalBtn.classList.remove('text-slate-400', 'hover:bg-white/5');
-                horizontalBtn.classList.remove('bg-slate-700', 'text-white', 'shadow-lg');
-                horizontalBtn.classList.add('text-slate-400', 'hover:bg-white/5');
-            }
-            updateGradientPreview();
-        }
-
-        function updateGradientPreview() {
-            const color1 = document.getElementById('gradColor1').value;
-            const color2 = document.getElementById('gradColor2').value;
-            const color3 = document.getElementById('gradColor3').value;
-            const previewBox = document.getElementById('gradientPreviewBox');
-            
-            previewBox.style.background = `linear-gradient(${currentGradientType}, ${color1}, ${color2}, ${color3})`;
-        }
-
-        function applyGradientSelection() {
-            if (!currentGradientFeature) return;
-            const gradientString = document.getElementById('gradientPreviewBox').style.background;
-            const valueToSave = `background:${gradientString}`;
-            selectFeature(currentGradientFeature, valueToSave);
-            closeGradientModal();
-        }
-    </script>
-    <script>
-        // --- نظام الإشعارات بالنقطة الحمراء ---
-        function showDot(type, show) {
-            const dot = document.getElementById(`${type}NotificationDot`);
-            if (dot) {
-                dot.classList.toggle('hidden', !show);
-            }
-            updateMasterDot();
-        }
-
-        function updateMasterDot() {
-            const masterDot = document.getElementById('masterNotificationDot');
-            if (!masterDot) return;
-
-            const drawingDot = !document.getElementById('drawingNotificationDot')?.classList.contains('hidden');
-            const postsDot = !document.getElementById('postsNotificationDot')?.classList.contains('hidden');
-            const friendsDot = !document.getElementById('friendsNotificationDot')?.classList.contains('hidden');
-            // تم إزالة messagesDot من الشرط كما طلبت
-            
-            const anyDotVisible = drawingDot || postsDot || friendsDot;
-            masterDot.classList.toggle('hidden', !anyDotVisible);
-        }
-
-        // عند تحميل الصفحة، تحقق من الإشعارات المحفوظة
-        document.addEventListener('DOMContentLoaded', () => {
-            if (localStorage.getItem('hasNewPosts') === 'true') showDot('posts', true);
-        });
+        
     </script>
 </body>
 </html>

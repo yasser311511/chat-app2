@@ -138,6 +138,11 @@ const UserPoints = sequelize.define('UserPoints', {
   lastDailyClaim: { type: DataTypes.STRING, allowNull: true }, // تاريخ آخر مكافأة يومية
   dailyStreak: { type: DataTypes.INTEGER, defaultValue: 0 }, // سلسلة الأيام المتتالية
   xp: { type: DataTypes.INTEGER, defaultValue: 0 }, // نقاط الخبرة
+  weeklyLogins: { type: DataTypes.JSON, defaultValue: [false, false, false, false, false, false, false] }, // نشاط الأسبوع [الأحد، الاثنين، ...]
+  totalActivityPercentage: { type: DataTypes.FLOAT, defaultValue: 0 }, // نسبة النشاط التراكمية
+  activityWeeksCount: { type: DataTypes.INTEGER, defaultValue: 0 }, // عدد الأسابيع المسجلة
+  lastActivityDate: { type: DataTypes.STRING, allowNull: true }, // تاريخ آخر تسجيل نشاط
+  lastWeeklyReset: { type: DataTypes.STRING, allowNull: true } // تاريخ آخر تصفير أسبوعي
 });
 const UserLastSeen = sequelize.define('UserLastSeen', {
   username: { type: DataTypes.STRING, primaryKey: true },
@@ -199,6 +204,7 @@ const RoomSettings = sequelize.define('RoomSettings', {
   description: { type: DataTypes.TEXT, allowNull: true },
   textColor: { type: DataTypes.STRING, allowNull: true, defaultValue: 'text-white' },
   messageBackground: { type: DataTypes.STRING, allowNull: true, defaultValue: 'bg-gray-800' },
+  structureColor: { type: DataTypes.STRING, allowNull: true, defaultValue: 'bg-gray-900/90' },
   updatedBy: { type: DataTypes.STRING, allowNull: false }
 });
 
@@ -211,6 +217,12 @@ const Room = sequelize.define('Room', {
   order: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
   createdBy: { type: DataTypes.STRING, allowNull: false },
   createdAt: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW }
+});
+
+const RoomUser = sequelize.define('RoomUser', {
+  roomId: { type: DataTypes.INTEGER, primaryKey: true },
+  username: { type: DataTypes.STRING, primaryKey: true },
+  lastJoinedAt: { type: DataTypes.DATE, defaultValue: Sequelize.NOW }
 });
 
 const Achievement = sequelize.define('Achievement', {
@@ -324,6 +336,22 @@ const PostComment = sequelize.define('PostComment', {
     timestamp: { type: DataTypes.BIGINT, allowNull: false }
 });
 
+const PostAngry = sequelize.define('PostAngry', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    postId: { type: DataTypes.INTEGER, allowNull: false },
+    username: { type: DataTypes.STRING, allowNull: false },
+    timestamp: { type: DataTypes.BIGINT, allowNull: false }
+});
+
+const PostSad = sequelize.define('PostSad', {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    postId: { type: DataTypes.INTEGER, allowNull: false },
+    username: { type: DataTypes.STRING, allowNull: false },
+    timestamp: { type: DataTypes.BIGINT, allowNull: false }
+});
+
+
+
 // تخزين البيانات في الذاكرة
 let users = {};
 let userRanks = {};
@@ -351,6 +379,8 @@ let roomSettings = {}; // لتخزين إعدادات الغرف { roomId: { des
 let posts = {};
 let postLikes = {};
 let postLaughs = {};
+let postAngry = {}; // New in-memory store for Angry reactions
+let postSad = {};   // New in-memory store for Sad reactions
 let postComments = {};
 let chatImages = {};
 let pendingGiftOffers = {}; // تخزين عروض الهدايا المعلقة { recipient: { sender, itemId, rank, price } }
@@ -360,13 +390,15 @@ let dotsAndBoxesGames = {}; // تخزين ألعاب توصيل المربعات
 // --- إعدادات لعبة الاختباء ---
 
 // --- رسائل النظام التلقائية ---
-const automatedMessages = [
-    "اللهم صّلِ وسَلّمْ عَلۓِ نَبِيْنَامُحَمد ﷺ",
-    "اهـلا وسهــلا بكم في موقع وال✨شـــــــات",
-    "كن إيجابيًا للحفاظ علي جهودك انت والجميع وبلغ الإدارة عن الأعضاء المخالفة التي تقوم بعمل فلود وتكرار لكسب نقاط بطرق غير شرعية",
-    "للعب لعبة الاختباء اكتب @رسائل النظام لعبة الاختباء",
-    "للعب لعبة تخمين الرقم اكتب @رسائل النظام لعبة تخمين الرقم",
-    "لاستدعاء الذكاء الاصطناعي اكتب @الذكاء الاصطناعي"
+let automatedMessages = [
+  "اللهم صّلِ وسَلّمْ عَلۓِ نَبِيْنَامُحَمد ﷺ",
+  "اهـلا وسهــلا بكم في موقع وال✨شـــــــات",
+  "كن إيجابيًا للحفاظ علي جهودك انت والجميع وبلغ الإدارة عن الأعضاء المخالفة التي تقوم بعمل فلود وتكرار لكسب نقاط بطرق غير شرعية",
+  "للعب لعبة الاختباء اكتب @رسائل النظام لعبة الاختباء",
+  "للعب لعبة تخمين الدولة اكتب @رسائل النظام لعبة تخمين الدولة",
+  "للعب لعبة تخمين الرقم اكتب @رسائل النظام لعبة تخمين الرقم",
+  "لاستدعاء الذكاء الاصطناعي اكتب @الذكاء الاصطناعي",
+  "إذا كنت حاليًا زائر غير مُسجل، بإمكانك إنشاء حساب مجانآ، من أجل الحصول على المزيد من المميزات بكل سهولة..! [ <a href='/#register' onclick='window.location.hash=\"register\"; logout(); return false;' class='text-blue-400 underline font-bold'>↵ أضغط هنا </a> ]"
 ];
 let automatedMessageIndex = 0;
 
@@ -557,13 +589,23 @@ function finalizeHideAndSeekRound() {
 
 function startAutomatedMessages() {
     setInterval(() => {
-        // لا ترسل رسائل إذا لم يكن هناك أي مستخدمين على الإطلاق
+        // لا ترسل رسائل إذا لم يكن هناك أي مستخدمين أو إذا كانت القائمة فارغة
         const totalOnlineUsers = Object.keys(onlineUsers).length;
-        if (totalOnlineUsers === 0) {
+        if (totalOnlineUsers === 0 || !Array.isArray(automatedMessages) || automatedMessages.length === 0) {
+            automatedMessageIndex = 0;
             return;
         }
 
+        // تأكد من أن المؤشر صالح بعد أي تحديثات على القائمة
+        if (automatedMessageIndex < 0 || automatedMessageIndex >= automatedMessages.length) {
+            automatedMessageIndex = 0;
+        }
+
         const messageContent = automatedMessages[automatedMessageIndex];
+        if (!messageContent || typeof messageContent !== 'string') {
+            automatedMessageIndex = (automatedMessageIndex + 1) % automatedMessages.length;
+            return;
+        }
 
         rooms.forEach(room => {
             if (room.users && room.users.length > 0) {
@@ -574,6 +616,37 @@ function startAutomatedMessages() {
         automatedMessageIndex = (automatedMessageIndex + 1) % automatedMessages.length;
     }, 15 * 60 * 1000); // 15 minutes
 }
+
+// مساعد لحفظ قائمة رسائل النظام في قاعدة البيانات
+async function saveAutomatedMessagesToDb() {
+  try {
+    const key = 'automatedMessages';
+    const value = JSON.stringify(automatedMessages);
+    await SystemSettings.upsert({ key, value });
+    // Broadcast update to connected clients (admins) so they can refresh
+    io.emit('system messages updated');
+  } catch (err) {
+    console.error('خطأ عند حفظ رسائل النظام:', err);
+  }
+}
+
+// عند بدء التشغيل، حاول تحميل الرسائل من قاعدة البيانات لتبديلها
+async function loadAutomatedMessagesFromDb() {
+  try {
+    const record = await SystemSettings.findOne({ where: { key: 'automatedMessages' } });
+    if (record && record.value) {
+      const parsed = JSON.parse(record.value);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        automatedMessages = parsed;
+      }
+    }
+  } catch (err) {
+    console.error('خطأ عند تحميل رسائل النظام من DB:', err);
+  }
+}
+
+// إزالة الاستدعاء المباشر لأنه سيتم تحميلها داخل loadData بعد مزامنة قاعدة البيانات
+// loadAutomatedMessagesFromDb();
 
 // --- إعدادات QuizBot ---
 let quizState = {
@@ -598,8 +671,110 @@ let guessGameState = {
     roomId: null,
     participants: {}, // { username: { attempts: 0, eliminated: false } }
     maxAttempts: 20,
-    totalAttempts: 0
+ totalAttempts: 0
 };
+
+// --- إعدادات لعبة تخمين الدولة ---
+let guessCountryState = {
+    active: false,
+    phase: 'idle', 
+    roomId: null,
+    participants: [],
+    round: 0, // الجولة الحالية
+    playersScores: {}, // { username: roundsWon }
+    maxRounds: 10,
+    currentCountry: null,
+    scrambledLetters: null
+};
+
+const COUNTRIES_FOR_GAME = [
+    "مصر", "الجزائر", "تونس", "المغرب", "السودان", "ليبيا", "موريتانيا", "السعودية", "الكويت", "الامارات",
+    "عمان", "قطر", "البحرين", "اليمن", "العراق", "سوريا", "لبنان", "فلسطين", "الاردن", "الصومال",
+    "جيبوتي", "فرنسا", "المانيا", "ايطاليا", "اسبانيا", "روسيا", "الصين", "اليابان", "البرازيل", "الارجنتين",
+    "كندا", "امريكا", "تركيا", "الهند", "كوريا", "باكستان", "اندونيسيا", "ماليزيا", "استراليا", "نيجيريا",
+    "اثيوبيا", "المكسيك", "النرويج", "هولندا", "اليونان", "سويسرا", "تايلاند", "فيتنام", "الفلبين"
+];
+
+function startGuessCountry(roomId) {
+    guessCountryState = {
+        active: true,
+        phase: 'registration',
+        roomId: roomId,
+        participants: [], // ستُستخدم لتخزين أسماء المشاركين في البداية
+        playersScores: {}, // تهيئة سجل النقاط لكل لاعب في اللعبة
+        round: 0,
+        maxRounds: 10,
+        scrambledLetters: null
+    };
+    sendSystemGameMessage(roomId, '🌍 <strong>لقد بدأت لعبة تخمين الدولة!</strong><br>سيرسل لك النظام مجموعة من الحروف المبعثرة التي ترمز لدولة مع حرف زائد مشوش.<br>هدفكم ترتيب الحروف بالشكل الصحيح لمعرفة الدولة واستبعاد الحرف الخاطئ.<br><br>🙋‍♂️ للمشاركة منشنني وقول "<strong>نعم</strong>"<br>🚀 للانطلاق منشنوني وقولو "<strong>تم</strong>"');
+}
+
+async function nextGuessCountryRound() {
+    if (!guessCountryState.active) return;
+
+    // التحقق من انتهاء جميع الجولات
+    if (guessCountryState.round >= guessCountryState.maxRounds) {
+        await endGuessCountryGame();
+        return;
+    }
+
+    guessCountryState.round++;
+    guessCountryState.phase = 'playing'; // تغيير الحالة إلى "اللعب" للسماح بالإجابات
+    
+    // اختيار دولة عشوائية جديدة
+    const country = COUNTRIES_FOR_GAME[Math.floor(Math.random() * COUNTRIES_FOR_GAME.length)];
+    guessCountryState.currentCountry = country; // تخزين الدولة الصحيحة
+    
+    // بعثرة الحروف وإضافة حرف مشوش
+    const letters = country.split('');
+    const alphabet = "ابتثجحخدذرزسشصضطظعغفقكلمنهوي"; // مجموعة الحروف العربية
+    const decoy = alphabet[Math.floor(Math.random() * alphabet.length)]; // حرف زائد مشوش
+    letters.push(decoy);
+    
+    // خلط الحروف
+    for (let i = letters.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [letters[i], letters[j]] = [letters[j], letters[i]];
+    }
+    
+    guessCountryState.scrambledLetters = letters.join(' - '); // عرض الحروف المبعثرة
+    sendSystemGameMessage(guessCountryState.roomId, `🚩 <strong>الجولة ${guessCountryState.round} من ${guessCountryState.maxRounds}</strong><br>🧩 الحروف المبعثرة هي:<br><strong class="text-yellow-400 text-2xl" dir="ltr">[ ${guessCountryState.scrambledLetters} ]</strong><br>🤔 ما هي الدولة؟ (تذكر استبعاد الحرف الزائد)`);
+}
+
+async function endGuessCountryGame() {
+    const roomId = guessCountryState.roomId;
+    const sortedScores = Object.entries(guessCountryState.playersScores)
+        .sort(([, a], [, b]) => b - a); // ترتيب تنازلي حسب عدد الجولات الفائزة
+
+    if (sortedScores.length > 0) {
+        let leaderboardMessage = '🏆 <strong>لوحة الفائزين في تخمين الدولة:</strong><br>';
+        for (let i = 0; i < sortedScores.length; i++) {
+            const [username, roundsWon] = sortedScores[i];
+            leaderboardMessage += `${i + 1}. <strong class="text-blue-400">${username}</strong> فاز بـ <span class="text-yellow-400">${roundsWon}</span> جولة.<br>`;
+        }
+        
+        // مكافأة المركز الأول
+        const [firstPlaceWinner, firstPlaceWins] = sortedScores[0];
+        if (firstPlaceWins > 0) { // فقط إذا فاز بجولة واحدة على الأقل
+            if (!userPoints[firstPlaceWinner]) userPoints[firstPlaceWinner] = { points: 0, level: 1 };
+            userPoints[firstPlaceWinner].points += 1000;
+            await saveUserPoints(firstPlaceWinner, userPoints[firstPlaceWinner].points, userPoints[firstPlaceWinner].level);
+            leaderboardMessage += `<br>🎉 <strong>مبروك!</strong> <strong class="text-yellow-400">${firstPlaceWinner}</strong> حصل على <strong>1000</strong> نقطة إضافية للريادة!`;
+        }
+
+        sendSystemGameMessage(roomId, leaderboardMessage);
+
+        // بعد لوحة الفائزين، رسالة النهاية التقليدية
+        setTimeout(() => {
+            sendSystemGameMessage(roomId, '🏁 <strong>انتهت اللعبة!</strong><br>لقد أتممنا 10 جولات كاملة، شكراً لجميع من شارك معنا في تخمين دول العالم.');
+            guessCountryState.active = false;
+        }, 5000);
+        guessCountryState.active = false;
+    } else {
+        sendSystemGameMessage(roomId, '🏁 <strong>انتهت اللعبة!</strong><br>لم يجب أحد بشكل صحيح في أي جولة. شكراً لجميع من شارك معنا في تخمين دول العالم.');
+        guessCountryState.active = false;
+    }
+}
 
 // --- ذاكرة الذكاء الاصطناعي ---
 const aiConversationHistory = {}; // { username: [ { role, content } ] }
@@ -747,6 +922,73 @@ function shuffleArray(array) {
         [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
+}
+
+// --- وظيفة تتبع النشاط الأسبوعي ---
+async function handleUserActivity(username) {
+  try {
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    const dayOfWeek = today.getDay(); // 0 (Sun) to 6 (Sat)
+    
+    let record = await UserPoints.findOne({ where: { username } });
+    if (!record) {
+      record = await UserPoints.create({ username, weeklyLogins: [false, false, false, false, false, false, false] });
+    }
+
+    // أخذ نسخة من المصفوفة لضمان اكتشاف التغيير
+    let logins = [...(record.weeklyLogins || [false, false, false, false, false, false, false])];
+    let resetDate = record.lastWeeklyReset;
+    
+    // حساب بداية الأسبوع الحالي (الأحد)
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - dayOfWeek);
+    startOfWeek.setHours(0,0,0,0);
+    const startOfWeekStr = startOfWeek.toISOString().split('T')[0];
+
+    // إذا تغير الأسبوع، نقوم بحساب النسبة السابقة وتصفير الجديد
+    if (resetDate && resetDate !== startOfWeekStr) {
+      const activeDays = logins.filter(v => v === true).length;
+      const weekPercentage = (activeDays / 7) * 100;
+
+      let currentTotal = record.totalActivityPercentage || 0;
+      let weeks = record.activityWeeksCount || 0;
+      
+      // المعادلة الحسابية للنسبة التراكمية
+      const newAvg = ((currentTotal * weeks) + weekPercentage) / (weeks + 1);
+      
+      record.totalActivityPercentage = newAvg;
+      record.activityWeeksCount = weeks + 1;
+      logins = [false, false, false, false, false, false, false];
+      record.lastWeeklyReset = startOfWeekStr;
+    } else if (!resetDate) {
+      record.lastWeeklyReset = startOfWeekStr;
+    }
+
+    // تحديث علامة اليوم إذا لم تكن موجودة أو إذا كان التاريخ قديماً
+    if (!logins[dayOfWeek] || record.lastActivityDate !== todayStr) {
+      logins[dayOfWeek] = true;
+      record.weeklyLogins = logins;
+      record.lastActivityDate = todayStr;
+      
+      // إخطار Sequelize بأن حقل الـ JSON قد تغير
+      record.changed('weeklyLogins', true);
+      
+      await record.save();
+      
+      // تحديث أو إنشاء الكاش في الذاكرة لضمان مزامنة البيانات فوراً
+      userPoints[username] = {
+        ...(userPoints[username] || { points: record.points, level: record.level }),
+        weeklyLogins: logins,
+        totalActivityPercentage: record.totalActivityPercentage,
+        activityWeeksCount: record.activityWeeksCount,
+        lastActivityDate: todayStr,
+        lastWeeklyReset: record.lastWeeklyReset
+      };
+    }
+  } catch (err) {
+    console.error('Error updating activity:', err);
+  }
 }
 
 // --- وظائف QuizBot ---
@@ -1065,6 +1307,19 @@ async function loadData() {
       }
     }
 
+    // التحقق من أعمدة النشاط الأسبوعي
+    const hasWeeklyLogins = await columnExists('UserPoints', 'weeklyLogins');
+    if (!hasWeeklyLogins) {
+      try {
+        await sequelize.getQueryInterface().addColumn('UserPoints', 'weeklyLogins', { type: DataTypes.JSON, defaultValue: [false, false, false, false, false, false, false] });
+        await sequelize.getQueryInterface().addColumn('UserPoints', 'totalActivityPercentage', { type: DataTypes.FLOAT, defaultValue: 0 });
+        await sequelize.getQueryInterface().addColumn('UserPoints', 'activityWeeksCount', { type: DataTypes.INTEGER, defaultValue: 0 });
+        await sequelize.getQueryInterface().addColumn('UserPoints', 'lastActivityDate', { type: DataTypes.STRING, allowNull: true });
+        await sequelize.getQueryInterface().addColumn('UserPoints', 'lastWeeklyReset', { type: DataTypes.STRING, allowNull: true });
+        console.log('تم إضافة أعمدة النشاط الأسبوعي بنجاح');
+      } catch (err) { console.error('فشل إضافة أعمدة النشاط:', err); }
+    }
+
     // التحقق من عمود nameFont
     const hasNameFont = await columnExists('Users', 'nameFont');
     if (!hasNameFont) {
@@ -1110,6 +1365,19 @@ async function loadData() {
         await sequelize.getQueryInterface().addColumn('Users', 'joinMessageBackground', { type: DataTypes.STRING, allowNull: true });
         console.log('تم إضافة عمود joinMessageBackground بنجاح');
       } catch (err) { console.error('فشل إضافة عمود joinMessageBackground:', err); }
+    }
+
+    // التحقق من عمود structureColor في إعدادات الغرفة
+    const hasStructureColor = await columnExists('RoomSettings', 'structureColor');
+    if (!hasStructureColor) {
+      try {
+        await sequelize.getQueryInterface().addColumn('RoomSettings', 'structureColor', { 
+            type: DataTypes.STRING, 
+            allowNull: true, 
+            defaultValue: 'bg-gray-900/90' 
+        });
+        console.log('تم إضافة عمود structureColor بنجاح');
+      } catch (err) { console.error('فشل إضافة عمود structureColor:', err); }
     }
 
     await delay(10); // تقليل وقت الانتظار لتسريع البدء
@@ -1158,6 +1426,9 @@ async function loadData() {
     const roomManagersData = await RoomManager.findAll();
     await delay(10);
 
+    const roomUsersData = await RoomUser.findAll();
+    await delay(10);
+
     const roomBgData = await RoomBackground.findAll();
     await delay(10);
     const roomSettingsData = await RoomSettings.findAll();
@@ -1177,6 +1448,8 @@ async function loadData() {
     const postsData = await Post.findAll({ order: [['timestamp', 'DESC']], limit: 20 });
     await delay(10);
     const likesData = await PostLike.findAll();
+    const angryData = await PostAngry.findAll(); // Load Angry reactions
+    const sadData = await PostSad.findAll();     // Load Sad reactions
     await delay(10);
     const laughsData = await PostLaugh.findAll();
     await delay(10);
@@ -1190,6 +1463,8 @@ async function loadData() {
     const userAchievementsData = await UserAchievement.findAll();
     await delay(10);
 
+    // تحميل رسائل النظام وباقي الإعدادات بعد التأكد من اتصال قاعدة البيانات
+    await loadAutomatedMessagesFromDb();
     systemSettingsData.forEach(setting => {
       if (setting.key === 'botAvatar') BOT_AVATAR_URL = setting.value;
     });
@@ -1232,7 +1507,7 @@ async function loadData() {
     if (storedRankDefinitions.length > 0) {
         ranks = {};
         for (const r of storedRankDefinitions) {
-            // تحديث الأيقونات القديمة (الإيموجي) إلى الأيقونات الثابتة الجديدة في قاعدة البيانات
+            // تحديث الأيقونات وتصحيح توزيع الأجنحة
             const oldToNewIcons = {
                 '🏆': 'rank-trophy',
                 '👑': 'rank-crown',
@@ -1251,11 +1526,14 @@ async function loadData() {
                 await RankDefinition.update({ icon: currentIcon }, { where: { name: r.name } });
             }
 
-            ranks[r.name] = { color: r.color, icon: currentIcon, level: r.level, wingId: r.wingId };
+            // تصحيح الجناح بناءً على المستوى
+            const correctedWingId = r.level >= 5 ? 'owners' : (r.level >= 3 ? 'kings' : (r.level >= 1 ? 'distinguished' : 'members'));
+            
+            ranks[r.name] = { color: r.color, icon: currentIcon, level: r.level, wingId: correctedWingId };
         }
     } else {
         for (const [name, data] of Object.entries(ranks)) {
-             const wingId = data.level >= 5 ? 'owners' : (data.level >= 3 ? 'kings' : 'distinguished');
+             const wingId = data.level >= 5 ? 'owners' : (data.level >= 3 ? 'kings' : (data.level >= 1 ? 'distinguished' : 'members'));
              await RankDefinition.findOrCreate({ where: { name }, defaults: { color: data.color, icon: data.icon, level: data.level, wingId } });
              ranks[name].wingId = wingId;
         }
@@ -1296,6 +1574,11 @@ async function loadData() {
             showInTop: point.showInTop !== false, 
             interactionScore: point.interactionScore || 0, 
             xp: point.xp || 0,
+            weeklyLogins: point.weeklyLogins || [false, false, false, false, false, false, false],
+            totalActivityPercentage: point.totalActivityPercentage || 0,
+            activityWeeksCount: point.activityWeeksCount || 0,
+            lastActivityDate: point.lastActivityDate,
+            lastWeeklyReset: point.lastWeeklyReset
         }; 
     });
     lastSeenData.forEach(seen => userLastSeen[seen.username] = parseInt(seen.lastSeen, 10));
@@ -1317,7 +1600,7 @@ async function loadData() {
       const data = setting.get ? setting.get({ plain: true }) : setting;
       const roomId = parseInt(data.roomId);
       if (roomId) {
-        roomSettings[roomId] = { description: data.description, textColor: data.textColor, messageBackground: data.messageBackground };
+        roomSettings[roomId] = { description: data.description, textColor: data.textColor, messageBackground: data.messageBackground, structureColor: data.structureColor };
       }
     });
     console.log(`تم تحميل ${roomSettingsData.length} إعدادات غرف:`, Object.keys(roomSettings));
@@ -1376,6 +1659,30 @@ async function loadData() {
         })
         .map(roomInstance => {
           const room = roomInstance.get({ plain: true });
+          const roomUsers = roomUsersData
+            .filter(ru => ru.roomId === room.id)
+            .map(ru => {
+                const u = users[ru.username];
+                if (!u) return null;
+                return {
+                    name: ru.username,
+                    rank: userRanks[ru.username] || null,
+                    gender: u.gender || 'male',
+                    avatar: userAvatars[ru.username] || DEFAULT_AVATAR_URL,
+                    nameColor: u.nameColor,
+                    nameBackground: u.nameBackground,
+                    avatarFrame: u.avatarFrame,
+                    userCardBackground: u.userCardBackground,
+                    nameCardBorder: u.nameCardBorder,
+                    nameFont: u.nameFont,
+                    joinMessageBackground: u.joinMessageBackground,
+                    status: u.status,
+                    country: u.country,
+                    age: u.age,
+                    isOnline: false
+                };
+            })
+            .filter(u => u !== null);
           return { 
             id: room.id, 
             name: room.name, 
@@ -1383,7 +1690,7 @@ async function loadData() {
             description: room.description, 
             protected: room.protected, 
             order: room.order, 
-            users: [], 
+            users: roomUsers, 
             managers: roomManagers[room.id] || [],
             background: roomBackgrounds[room.id] || { type: 'color', value: '#000000' },
             settings: roomSettings[room.id] || { description: room.description, textColor: 'text-white', messageBackground: 'bg-gray-800' }
@@ -1403,6 +1710,30 @@ async function loadData() {
       const createdRooms = await Room.findAll({ order: [['order', 'ASC'], ['id', 'ASC']] });
       rooms = createdRooms.map(roomInstance => {
         const room = roomInstance.get({ plain: true });
+        const roomUsers = roomUsersData
+          .filter(ru => ru.roomId === room.id)
+          .map(ru => {
+              const u = users[ru.username];
+              if (!u) return null;
+              return {
+                  name: ru.username,
+                  rank: userRanks[ru.username] || null,
+                  gender: u.gender || 'male',
+                  avatar: userAvatars[ru.username] || DEFAULT_AVATAR_URL,
+                  nameColor: u.nameColor,
+                  nameBackground: u.nameBackground,
+                  avatarFrame: u.avatarFrame,
+                  userCardBackground: u.userCardBackground,
+                  nameCardBorder: u.nameCardBorder,
+                  nameFont: u.nameFont,
+                  joinMessageBackground: u.joinMessageBackground,
+                  status: u.status,
+                  country: u.country,
+                  age: u.age,
+                  isOnline: false
+              };
+          })
+          .filter(u => u !== null);
         return { 
           id: room.id, 
           name: room.name, 
@@ -1410,7 +1741,7 @@ async function loadData() {
           description: room.description, 
           protected: room.protected, 
           order: room.order, 
-          users: [], 
+          users: roomUsers, 
           managers: roomManagers[room.id] || [],
           background: roomBackgrounds[room.id] || { type: 'color', value: '#000000' },
           settings: roomSettings[room.id] || { description: room.description, textColor: 'text-white', messageBackground: 'bg-gray-800' }
@@ -2386,6 +2717,13 @@ socket.on('like post', async (data) => {
             await removePostLike(postId, username);
             posts[postId].likes = posts[postId].likes.filter(u => u !== username);
         } else {
+            // إلغاء تفاعل "اضحكني" إذا وجد لضمان تفاعل واحد فقط
+            if (posts[postId].laughs && posts[postId].laughs.includes(username)) {
+                await removePostLaugh(postId, username);
+                posts[postId].laughs = posts[postId].laughs.filter(u => u !== username);
+                io.emit('post laughed', { postId, laughs: posts[postId].laughs });
+            }
+
             // إضافة إعجاب
             await savePostLike(postId, username, Date.now());
             posts[postId].likes.push(username);
@@ -2434,6 +2772,13 @@ socket.on('laugh post', async (data) => {
             await removePostLaugh(postId, username);
             posts[postId].laughs = posts[postId].laughs.filter(u => u !== username);
         } else {
+            // إلغاء تفاعل "أعجبني" إذا وجد لضمان تفاعل واحد فقط
+            if (posts[postId].likes && posts[postId].likes.includes(username)) {
+                await removePostLike(postId, username);
+                posts[postId].likes = posts[postId].likes.filter(u => u !== username);
+                io.emit('post liked', { postId, likes: posts[postId].likes });
+            }
+
             await savePostLaugh(postId, username, Date.now());
             posts[postId].laughs.push(username);
 
@@ -2826,11 +3171,17 @@ socket.on('join room', async (data) => {
         return;
     }
 
+    // تحديث النشاط بمجرد دخول غرفة
+    handleUserActivity(user.name);
+
     // --- التحقق من الحظر من الغرفة ---
     if (userManagement.bannedFromRoom[room.name] && userManagement.bannedFromRoom[room.name][user.name]) {
         socket.emit('banned from room', { room: room.name, reason: userManagement.bannedFromRoom[room.name][user.name].reason });
         return;
     }
+
+    // حفظ المستخدم في قاعدة بيانات الغرفة للاحتفاظ به كمستخدم غير متصل لاحقاً
+    RoomUser.upsert({ roomId: room.id, username: user.name, lastJoinedAt: new Date() }).catch(e => {});
 
     
     // التأكد من تحميل الصورة الرمزية للمستخدم إذا لم تكن في الذاكرة
@@ -2937,13 +3288,21 @@ socket.on('join room', async (data) => {
 
     if (!skipJoinMessage) {
         const rankInfo = user.rank ? ranks[user.rank] : null;
+
+        let displayRank = user.rank;
+        // التحقق مما إذا كان المستخدم مسجلاً ولا يملك رتبة وليس زائراً
+        if (!user.isGuest && !userRanks[user.name]) {
+          const level = userPoints[user.name] ? userPoints[user.name].level : 1;
+          displayRank = `عضو مسجل مستوى ${level}`;
+        }
+
         const welcomeMessage = {
           type: 'system',
           subType: 'join',
           messageId: 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9), // إضافة معرف للرسالة لتمكين حذفها
           user: user.name,
           avatar: userAvatars[user.name] || DEFAULT_AVATAR_URL,
-          rank: user.rank,
+          rank: displayRank,
           rankLevel: rankInfo ? rankInfo.level : 0,
           // استخدم نسخة المستخدم المتصلة إن كانت موجودة (تضمن التغييرات الفورية للمخزون)
           joinBg: (onlineUsers[socket.id] && onlineUsers[socket.id].joinMessageBackground) || users[user.name]?.joinMessageBackground,
@@ -3295,19 +3654,14 @@ socket.on('join room', async (data) => {
       if (!userPoints[user.name].isInfinite) {
           userPoints[user.name].points += 1;
 
-      // التحقق من ترقية المستوى
-      const currentLevel = userPoints[user.name].level;
-      const pointsNeededForNextLevel = currentLevel * 100;
-      if (userPoints[user.name].points >= pointsNeededForNextLevel) {
-        userPoints[user.name].level += 1;
-        
-        // إرسال إشعار ترقية للمستخدم وللغرفة
-        const levelUpMessage = {
-          type: 'system',
-          content: `🎉 تهانينا! <strong class="text-white">${user.name}</strong> ارتقى إلى المستوى <strong class="text-yellow-300">${userPoints[user.name].level}</strong>! 🎉`,
-          time: new Date().toLocaleTimeString('ar-SA')
-        };
-        // io.to(roomId).emit('new message', levelUpMessage); // تم إيقاف الإشعار العام
+      // التحقق من ترقية المستوى (القفز للمستوى المناسب مباشرة)
+      let oldLevel = userPoints[user.name].level;
+      let newLevel = oldLevel;
+      while (userPoints[user.name].points >= newLevel * 100) {
+        newLevel++;
+      }
+      if (newLevel > oldLevel) {
+        userPoints[user.name].level = newLevel;
         
         // إرسال إشعار خاص للمستخدم
         socket.emit('level up', { level: userPoints[user.name].level });
@@ -3629,6 +3983,76 @@ socket.on('join room', async (data) => {
                 if (quizState.timer) clearTimeout(quizState.timer);
                 quizState.timer = setTimeout(askQuizQuestion, 30000);
             }, 5000);
+        }
+    }
+
+    // --- منطق لعبة تخمين الدولة ---
+    if (message.includes(systemMention) && message.includes("ايقاف لعبة تخمين الدولة")) {
+        if (guessCountryState.active) {
+            guessCountryState.active = false;
+            guessCountryState.phase = 'idle';
+            sendSystemGameMessage(roomId, '🛑 <strong>تم إيقاف لعبة تخمين الدولة بنجاح.</strong>');
+        }
+    } else if (message.includes(systemMention) && message.includes("لعبة تخمين الدولة")) {
+        if (!guessCountryState.active) {
+            if (hideAndSeekState.active || guessGameState.active) {
+                sendSystemGameMessage(roomId, '⚠️ <strong>عذراً!</strong> لا يمكن بدء اللعبة لأن هناك لعبة أخرى قيد التشغيل حالياً.');
+            } else {
+                sendSystemGameMessage(roomId, '🔄 جاري تحضير "لعبة تخمين الدولة"...');
+                setTimeout(() => {
+                    if (!guessCountryState.active) startGuessCountry(roomId);
+                }, 5000);
+            }
+        }
+    }
+
+    if (guessCountryState.active && guessCountryState.roomId === roomId) {
+        // مرحلة التسجيل
+        if (guessCountryState.phase === 'registration') {
+            if (message.includes(systemMention) && message.includes('نعم')) {
+                if (!guessCountryState.participants.includes(user.name)) {
+                    guessCountryState.playersScores[user.name] = 0; // تهيئة عدد الجولات الفائزة للاعب
+                    guessCountryState.participants.push(user.name);
+                }
+            }
+            if (message.includes(systemMention) && message.includes('تم')) {
+                if (guessCountryState.participants.length === 0) {
+                    sendSystemGameMessage(roomId, '❌ لم يشارك أحد، تم إلغاء اللعبة.');
+                    guessCountryState.active = false;
+                } else {
+                    guessCountryState.phase = 'starting';
+                    setTimeout(() => {
+                        const names = guessCountryState.participants.map(p => `<span class="text-blue-400">${p}</span>`).join('، ');
+                        sendSystemGameMessage(roomId, `👥 المشاركون هم: ${names}`);
+                        setTimeout(() => {
+                            nextGuessCountryRound();
+                        }, 5000);
+                    }, 5000);
+                }
+            }
+        } 
+        // مرحلة اللعب
+        else if (guessCountryState.phase === 'playing') {
+            if (guessCountryState.participants.includes(user.name)) {
+                const cleanGuess = message.trim().replace(/\s+/g, '');
+                const cleanTarget = guessCountryState.currentCountry.replace(/\s+/g, '');
+                
+                if (cleanGuess === cleanTarget) {
+                    guessCountryState.phase = 'resolved'; // منع أي إجابات أخرى لهذه الجولة
+                    
+                    setTimeout(async () => {
+                        if (!userPoints[user.name]) userPoints[user.name] = { points: 0, level: 1 };
+                        userPoints[user.name].points += 500;
+                        guessCountryState.playersScores[user.name] = (guessCountryState.playersScores[user.name] || 0) + 1; // زيادة عدد الجولات الفائزة
+                        await saveUserPoints(user.name, userPoints[user.name].points, userPoints[user.name].level);
+                        
+                        sendSystemGameMessage(roomId, `🎉 <strong>إجابة صحيحة!</strong> الدولة هي <strong class="text-green-400">${guessCountryState.currentCountry}</strong>.<br>🏆 مبروك <strong class="text-yellow-400">${user.name}</strong> لقد حصلت على 500 نقطة!`);
+                        
+                        
+                        setTimeout(() => { nextGuessCountryRound(); }, 5000);
+                    }, 5000);
+                }
+            }
         }
     }
   });
@@ -4463,8 +4887,11 @@ socket.on('leave room', async (data) => {
   socket.on('get user profile', async (data) => {
     const username = typeof data === 'string' ? data : data.username;
     const isInventoryRequest = typeof data === 'object' ? data.isInventoryRequest : false;
+    const isWeeklyActivityRequest = typeof data === 'object' ? data.isWeeklyActivityRequest : false;
 
     if (!username) return;
+
+    await handleUserActivity(username); // تحديث النشاط فوراً عند طلب الملف أو المركز اليومي
 
     // تحميل البيانات الكبيرة عند الطلب إذا لم تكن موجودة في الذاكرة
     if (users[username] && (users[username].bio === undefined || users[username].profileCover === undefined)) {
@@ -4622,6 +5049,9 @@ socket.on('leave room', async (data) => {
         age: userData ? userData.age : null,
         rankExpiry: userRankExpiry[username] || null, // إرسال تاريخ انتهاء الرتبة
         interactionScore: pointsData.interactionScore || 0, // درجة التفاعل
+        weeklyLogins: pointsData.weeklyLogins || [false, false, false, false, false, false, false],
+        totalActivityPercentage: pointsData.totalActivityPercentage || 0,
+        activityWeeksCount: pointsData.activityWeeksCount || 0,
         xp: pointsData.xp || 0, // نقاط الخبرة
         xpRank: xpRank, // ترتيب XP
         oldestRank: oldestRank, // ترتيب الأقدمية
@@ -4630,7 +5060,8 @@ socket.on('leave room', async (data) => {
         friends: friendsDetails,
         achievements: achievementsList,
         inventory: inventoryWithDetails,
-        isInventoryRequest
+        isInventoryRequest,
+        isWeeklyActivityRequest
     });
     
   });
@@ -4693,7 +5124,7 @@ socket.on('leave room', async (data) => {
     const userRank = userRanks[username];
     const level = ranks[userRank]?.level || 0;
     
-    if (level < 4 && username !== SITE_OWNER.username) {
+    if (level < 1 && username !== SITE_OWNER.username) {
         socket.emit('feature error', 'هذه الميزة متاحة فقط للرتب العالية.');
         return;
     }
@@ -4822,7 +5253,7 @@ socket.on('leave room', async (data) => {
     // 1. Security Check
     const userRank = userRanks[oldUsername];
     const level = ranks[userRank]?.level || 0;
-    if (level < 4 && oldUsername !== SITE_OWNER.username) {
+    if (level < 1 && oldUsername !== SITE_OWNER.username) {
         return socket.emit('username change error', 'هذه الميزة متاحة فقط للرتب العالية.');
     }
 
@@ -5144,6 +5575,7 @@ socket.on('get private messages', async (data) => {
     const textMessages = dbTextMessages.map(msg => ({
       from: msg.fromUser,
       to: msg.toUser,
+      read: msg.read,
       content: msg.content,
       time: msg.time,
       timestamp: Number(msg.timestamp),
@@ -5188,6 +5620,13 @@ socket.on('get private messages', async (data) => {
   await PrivateMessage.update({ read: true }, {
     where: { fromUser: otherUser, toUser: currentUser, read: false }
   });
+  // أبلغ المرسل أن مستلم المحادثة قرأ الرسائل بحيث تظهر علامة القراءة للمرسل
+  try {
+    const convId = [currentUser, otherUser].sort().join('_');
+    io.to(otherUser).emit('private messages read', { reader: currentUser, conversationId: convId });
+  } catch (err) {
+    console.error('خطأ عند إشعار المرسل بقراءة الرسائل:', err);
+  }
   socket.emit('private conversations updated'); // تحديث القائمة للمرسل
 });
 
@@ -5247,6 +5686,42 @@ socket.on('get private messages', async (data) => {
     }
   });
 
+  // إدارة رسائل النظام عبر socket
+  socket.on('get system messages', () => {
+    // نرسل القائمة الحالية من الذاكرة لضمان السرعة
+    const list = Array.isArray(automatedMessages) ? automatedMessages : [];
+    socket.emit('system messages list', list);
+  });
+
+  socket.on('add system message', async (data) => {
+    const { text } = data || {};
+    if (!text || typeof text !== 'string') return;
+    automatedMessages.push(text);
+    await saveAutomatedMessagesToDb();
+    socket.emit('system messages list', automatedMessages);
+    socket.emit('management success', 'تم إضافة رسالة النظام بنجاح');
+  });
+
+  socket.on('update system message', async (data) => {
+    const { index, text } = data || {};
+    if (typeof index !== 'number' || !text || typeof text !== 'string') return;
+    if (index < 0 || index >= automatedMessages.length) return;
+    automatedMessages[index] = text;
+    await saveAutomatedMessagesToDb();
+    socket.emit('system messages list', automatedMessages);
+    socket.emit('management success', 'تم تحديث رسالة النظام بنجاح');
+  });
+
+  socket.on('delete system message', async (data) => {
+    const { index } = data || {};
+    if (typeof index !== 'number') return;
+    if (index < 0 || index >= automatedMessages.length) return;
+    automatedMessages.splice(index, 1);
+    await saveAutomatedMessagesToDb();
+    socket.emit('system messages list', automatedMessages);
+    socket.emit('management success', 'تم حذف رسالة النظام');
+  });
+
   // حدث لتحديد الرسائل الخاصة كمقروءة
   socket.on('mark private messages as read', async (data) => {
     const { reader, fromUser } = data;
@@ -5255,6 +5730,13 @@ socket.on('get private messages', async (data) => {
       await PrivateMessage.update({ read: true }, { where: { toUser: reader, fromUser: fromUser, read: false } });
       // إرسال تحديث للمستخدم للتأكد من إزالة مؤشرات "غير مقروء"
       socket.emit('private conversations updated');
+      // إعلام المرسل أن رسائله قد قُرئت لعرض علامة القراءة
+      try {
+        const convId = [reader, fromUser].sort().join('_');
+        io.to(fromUser).emit('private messages read', { reader: reader, conversationId: convId });
+      } catch (err) {
+        console.error('خطأ عند إشعار المرسل بقراءة الرسائل:', err);
+      }
     } catch (error) {
       console.error('خطأ في تحديث حالة الرسائل الخاصة:', error);
     }
@@ -5591,7 +6073,7 @@ socket.on('get private messages', async (data) => {
   });
 
   socket.on('update room settings', async (data) => {
-    const { roomId, description, textColor, messageBackground, currentUser } = data;
+    const { roomId, description, textColor, messageBackground, structureColor, currentUser } = data;
     const roomIdInt = parseInt(roomId);
     
     if (!canManageRoom(currentUser.name, roomIdInt)) {
@@ -5611,6 +6093,8 @@ socket.on('get private messages', async (data) => {
         description: description || room.description,
         textColor: textColor || 'text-white',
         messageBackground: messageBackground || 'bg-gray-800',
+        structureColor: structureColor || 'bg-gray-900/90',
+
         updatedBy: currentUser.name
       });
 
@@ -5623,7 +6107,8 @@ socket.on('get private messages', async (data) => {
       roomSettings[roomIdInt] = {
         description: description || room.description,
         textColor: textColor || 'text-white',
-        messageBackground: messageBackground || 'bg-gray-800'
+        messageBackground: messageBackground || 'bg-gray-800',
+        structureColor: structureColor || 'bg-gray-900/90'
       };
 
       room.settings = roomSettings[roomIdInt];
@@ -5927,12 +6412,22 @@ socket.on('get private messages', async (data) => {
       // 2. مسح الصور من قاعدة البيانات
       await ChatImage.destroy({ where: { roomId: roomIdInt } });
 
-      // 3. مسح من الذاكرة
+      // 3. مسح المستخدمين غير المتصلين من قاعدة البيانات لهذه الغرفة
+      await RoomUser.destroy({ where: { roomId: roomIdInt } });
+      
+      const room = rooms.find(r => r.id === roomIdInt);
+      if (room) {
+          // تحديث قائمة المستخدمين في الذاكرة لإبقاء المتصلين فقط
+          room.users = room.users.filter(u => u.isOnline);
+          io.to(roomIdInt).emit('users update', room.users);
+      }
+
+      // 4. مسح من الذاكرة
       if (messages[roomIdInt]) {
         messages[roomIdInt] = [];
       }
 
-      // 4. إشعار العملاء
+      // 5. إشعار العملاء
       io.to(roomIdInt).emit('room history cleared', { roomId: roomIdInt });
       socket.emit('management success', 'تم مسح سجل الغرفة بنجاح');
 
@@ -6296,11 +6791,19 @@ socket.on('disconnect', async (reason) => {
       if (!userPoints[toUser].isInfinite) {
         userPoints[toUser].points += amount;
 
-        // التحقق من ترقية مستوى المستلم
-        const recipientLevel = userPoints[toUser].level;
-        const pointsNeeded = recipientLevel * 100;
-        if (userPoints[toUser].points >= pointsNeeded) {
-            userPoints[toUser].level += 1;
+        // التحقق من ترقية مستوى المستلم (القفز للمستوى المناسب مباشرة)
+        let oldLevel = userPoints[toUser].level;
+        let newLevel = oldLevel;
+        while (userPoints[toUser].points >= newLevel * 100) {
+            newLevel++;
+        }
+        if (newLevel > oldLevel) {
+            userPoints[toUser].level = newLevel;
+            // إشعار المستلم بالارتقاء إذا كان متصلاً
+            const recipientSocketId = Object.keys(onlineUsers).find(id => onlineUsers[id].name === toUser);
+            if (recipientSocketId) {
+                io.to(recipientSocketId).emit('level up', { level: newLevel });
+            }
         }
         await saveUserPoints(toUser, userPoints[toUser].points, userPoints[toUser].level);
       }
@@ -7099,7 +7602,7 @@ socket.on('disconnect', async (reason) => {
         // ملاحظة: تحديث المستخدمين الذين يملكون الاسم القديم يتطلب منطقاً إضافياً معقداً
         // للتبسيط هنا سنقوم بتحديث الرتبة الجديدة فقط، المستخدمون بالرتبة القديمة قد يحتاجون إعادة تعيين
     }
-    const wingId = parseInt(level) >= 100 ? 'owners' : (parseInt(level) >= 5 ? 'owners' : (parseInt(level) >= 3 ? 'kings' : 'distinguished'));
+    const wingId = parseInt(level) >= 5 ? 'owners' : (parseInt(level) >= 3 ? 'kings' : (parseInt(level) >= 1 ? 'distinguished' : 'members'));
 
     ranks[name] = {
         color: color,
@@ -7509,8 +8012,21 @@ socket.on('disconnect', async (reason) => {
       userPoint.points += reward;
       userPoint.lastDailyClaim = today;
       userPoint.dailyStreak = streak;
+
+      // التحقق من ترقية المستوى بعد المكافأة
+      let oldLevel = userPoint.level;
+      let newLevel = oldLevel;
+      while (userPoint.points >= newLevel * 100) {
+          newLevel++;
+      }
+      if (newLevel > oldLevel) {
+          userPoint.level = newLevel;
+          socket.emit('level up', { level: newLevel });
+      }
+
       await userPoint.save();
       userPoints[username].points = userPoint.points; // تحديث الذاكرة
+      userPoints[username].level = userPoint.level;
 
       socket.emit('daily reward success', { points: reward, streak, totalPoints: userPoint.points });
       
@@ -7701,6 +8217,7 @@ app.get('/check-auth', async (req, res) => {
 
         if (user && user.password === sessionData.password) {
             // الجلسة صالحة
+            handleUserActivity(sessionData.username);
             return res.json({
                 authenticated: true,
                 user: {
