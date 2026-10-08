@@ -8245,7 +8245,7 @@ app.get('/check-auth', async (req, res) => {
     return res.json({ authenticated: false });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8000;
 
 // يجب أن يكون هذا المسار في النهاية للتعامل مع أي طلبات أخرى غير معرفة
 app.get('*', (req, res) => {
