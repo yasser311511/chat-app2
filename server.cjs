@@ -1,6 +1,7 @@
 require('dotenv').config({ override: true });
 const bcrypt = require('bcryptjs');
 const express = require('express');
+app.set('trust proxy', 1);
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
