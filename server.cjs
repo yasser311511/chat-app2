@@ -254,7 +254,6 @@ const UserAchievement = sequelize.define('UserAchievement', {
 
 
 const compression = require('compression');
-const app = express();
 app.use(compression());
 
 // إعداد التخزين المؤقت للملفات الثابتة لتحسين السرعة
