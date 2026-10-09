@@ -8245,7 +8245,7 @@ app.get('/check-auth', async (req, res) => {
     return res.json({ authenticated: false });
 });
 
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 3000;
 server.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
