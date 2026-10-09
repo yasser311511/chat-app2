@@ -8245,8 +8245,10 @@ app.get('/check-auth', async (req, res) => {
     return res.json({ authenticated: false });
 });
 
-const PORT = process.env.PORT || 8000;
-
+const port = process.env.PORT || 8000;
+server.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
 // يجب أن يكون هذا المسار في النهاية للتعامل مع أي طلبات أخرى غير معرفة
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
