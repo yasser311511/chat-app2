@@ -8248,9 +8248,7 @@ app.get('/check-auth', async (req, res) => {
 });
 
 const port = process.env.PORT || 3000;
-server.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+
 // يجب أن يكون هذا المسار في النهاية للتعامل مع أي طلبات أخرى غير معرفة
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
