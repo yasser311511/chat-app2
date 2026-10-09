@@ -270,6 +270,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 
 const server = http.createServer(app);
 const io = socketIo(server, {
+  path: '/socket.io/',
   pingTimeout: 30000,
   pingInterval: 10000,
   connectTimeout: 45000,
