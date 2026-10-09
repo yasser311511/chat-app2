@@ -8247,8 +8247,6 @@ app.get('/check-auth', async (req, res) => {
     return res.json({ authenticated: false });
 });
 
-const port = process.env.PORT || 3000;
-
 // يجب أن يكون هذا المسار في النهاية للتعامل مع أي طلبات أخرى غير معرفة
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
@@ -8325,5 +8323,8 @@ async function startServer() {
     console.log(`السيرفر يعمل على المنفذ ${PORT}`);
   });
 }
-
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
 startServer();
